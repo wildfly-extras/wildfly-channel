@@ -21,26 +21,35 @@
  */
 package org.wildfly.channel;
 
-import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class ChannelMapper {
-
+public class MavenRepositoryTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
 
-    static Channel from(URL channelURL) {
-        requireNonNull(channelURL);
+    static MavenRepository from(String str) throws IOException {
+        return OBJECT_MAPPER.readValue(str, MavenRepository.class);
+    }
 
-        try {
-            Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    @Test
+    public void testValidMavenRepository() throws IOException {
+        MavenRepository repository = from("id: maven-central\n" +
+                "url: https://repo1.maven.org/maven2/");
+        assertEquals("maven-central", repository.getId());
+        assertEquals(new URL("https://repo1.maven.org/maven2/"), repository.getUrl());
+    }
+
+    @Test
+    public void testURLIsMandatory() {
+        Assertions.assertThrows(Exception.class, () -> {
+            from("id: maven-central");
+        });
     }
 }

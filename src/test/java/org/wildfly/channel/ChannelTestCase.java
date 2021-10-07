@@ -23,14 +23,15 @@ package org.wildfly.channel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collection;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ChannelMapperTestCase {
+public class ChannelTestCase {
 
     @Test
     public void nonExistingChannelTest() {
@@ -51,14 +52,14 @@ public class ChannelMapperTestCase {
     }
 
     @Test
-    public void simpleChannelTest() {
+    public void simpleChannelTest() throws MalformedURLException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL file = tccl.getResource("simple-channel.yaml");
         System.out.println(file);
 
         Channel channel = ChannelMapper.from(file);
 
-        assertEquals("my-channel", channel.getID());
+        assertEquals("my-channel", channel.getId());
         assertEquals("My Channel", channel.getName());
         assertEquals("This is my channel\n" +
                 "with my stuff", channel.getDescription());
@@ -67,7 +68,23 @@ public class ChannelMapperTestCase {
         assertNotNull(vendor);
         assertEquals("My Vendor", vendor.getName());
         assertEquals(Vendor.Support.COMMUNITY, vendor.getSupport());
+
+        Collection<ChannelRequirement> requires = channel.getChannelRequirements();
+        assertEquals(1, requires.size());
+        ChannelRequirement requirement = requires.iterator().next();
+        assertEquals(new URL("file:///tmp/my-other-channel"), requirement.getURL());
+
+        Collection<MavenRepository> repositories = channel.getRepositories();
+        assertEquals(1, requires.size());
+        MavenRepository repository = repositories.iterator().next();
+        assertEquals("maven-central", repository.getId());
+        assertEquals(new URL("https://repo1.maven.org/maven2/"), repository.getUrl());
+
+        Collection<Stream> streams = channel.getStreams();
+        assertEquals(1, streams.size());
+        Stream stream = streams.iterator().next();
+        assertEquals("org.wildfly", stream.getGroupId());
+        assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
+        assertEquals("26.0.0.Final", stream.getVersion());
     }
-
-
 }

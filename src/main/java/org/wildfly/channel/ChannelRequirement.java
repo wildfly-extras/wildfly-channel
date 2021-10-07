@@ -21,26 +21,33 @@
  */
 package org.wildfly.channel;
 
-import static java.util.Objects.requireNonNull;
-
-import java.io.IOException;
 import java.net.URL;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ChannelMapper {
+/**
+ * Java representation of a Channel requirement.
+ */
+public class ChannelRequirement {
+    /**
+     * URL of the required channel.
+     */
+    private URL url;
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+    @JsonCreator
+    ChannelRequirement(@JsonProperty(value = "url", required = true) URL url) {
+        this.url = url;
+    }
 
-    static Channel from(URL channelURL) {
-        requireNonNull(channelURL);
+    public URL getURL() {
+        return url;
+    }
 
-        try {
-            Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    @Override
+    public String toString() {
+        return "ChannelRequirement{" +
+                "url=" + url +
+                '}';
     }
 }

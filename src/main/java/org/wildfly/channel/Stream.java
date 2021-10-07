@@ -22,52 +22,59 @@
 package org.wildfly.channel;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Java representation of a Vendor.
+ * Java representation of a Stream.
  */
-public class Vendor {
+public class Stream {
     /**
-     * Name of the vendor.
+     * GroupId of the stream.
+     * It must be either a valid groupId (corresponding to a G of a Maven GAV) or {@code *} to represent any groupId.
      */
-    private final String name;
+    private final String groupId;
 
     /**
-     * Support level provided by the vendor.
+     * ArtifactId of the stream.
+     * It must be either a valid artifactId (corresponding to the A of a Maven GAV) or {@code *} to represent any artifactId.
      */
-    private final Support support;
+    private final String artifactId;
+
+    /**
+     * Version of the stream.
+     * It must be a valid version (corresponding the V of a Maven GAV).
+     * This is an optional field.
+     */
+    private final String version;
 
     @JsonCreator
-    Vendor(@JsonProperty(value = "name", required = true) String name, @JsonProperty(value = "support", required = true) Support support) {
-        this.name = name;
-        this.support = support;
+    Stream(@JsonProperty(value = "groupId", required = true) String groupId,
+           @JsonProperty(value = "artifactId", required = true) String artifactId,
+           @JsonProperty("version") String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
     }
 
-    public String getName() {
-        return name;
+    public String getGroupId() {
+        return groupId;
     }
 
-    public Support getSupport() {
-        return support;
+    public String getArtifactId() {
+        return artifactId;
     }
 
-    @JsonFormat(shape = JsonFormat.Shape.OBJECT)
-    public enum Support {
-        @JsonProperty("supported")
-        SUPPORTED,
-        @JsonProperty("tech-preview")
-        TECH_PREVIEW,
-        @JsonProperty("community")
-        COMMUNITY;
+    public String getVersion() {
+        return version;
     }
 
     @Override
     public String toString() {
-        return "Vendor{" +
-                "name='" + name + '\'' +
-                ", support=" + support +
+        return "Stream{" +
+                "groupId='" + groupId + '\'' +
+                ", artifactId='" + artifactId + '\'' +
+                ", version='" + version + '\'' +
                 '}';
     }
+
 }

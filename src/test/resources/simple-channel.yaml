@@ -6,3 +6,12 @@ description: |-
 vendor:
   name: My Vendor
   support: community
+requires:
+  - url: file:///tmp/my-other-channel
+repositories:
+  - id: maven-central
+    url: https://repo1.maven.org/maven2/
+streams:
+  - groupId: org.wildfly
+    artifactId: wildfly-ee-galleon-pack
+    version: 26.0.0.Final

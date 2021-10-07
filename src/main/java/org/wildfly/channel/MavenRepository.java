@@ -21,26 +21,45 @@
  */
 package org.wildfly.channel;
 
-import static java.util.Objects.requireNonNull;
-
-import java.io.IOException;
 import java.net.URL;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ChannelMapper {
+/**
+ * Java representation of a Maven repository
+ */
+public class MavenRepository {
+    /**
+     * Identifier of the Maven repository.
+     * This is an optional field.
+     */
+    private String id;
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+    /**
+     * Base URL of the Maven repository.
+     */
+    private URL url;
 
-    static Channel from(URL channelURL) {
-        requireNonNull(channelURL);
+    @JsonCreator
+    MavenRepository(@JsonProperty("id") String id, @JsonProperty(value = "url", required = true) URL url) {
+        this.id = id;
+        this.url = url;
+    }
 
-        try {
-            Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public String getId() {
+        return id;
+    }
+
+    public URL getUrl() {
+        return url;
+    }
+
+    @Override
+    public String toString() {
+        return "MavenRepository{" +
+                "id='" + id + '\'' +
+                ", url=" + url +
+                '}';
     }
 }

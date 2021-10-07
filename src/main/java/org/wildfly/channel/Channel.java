@@ -21,13 +21,60 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Collections.emptySet;
+
+import java.util.Collection;
+import java.util.Collections;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Java representation of a Channel.
+ */
 public class Channel {
+    /**
+     * Identifier of the channel.
+     * This is an optional field.
+     */
     private String id;
+
+    /**
+     * Name of the channel (as an one-line human readable description of the channel).
+     * This is an optional field.
+     */
     private String name;
+
+    /**
+     * Description of the channel. It can use multiple lines.
+     * This is an optional field.
+     */
     private String description;
+
+    /**
+     * Vendor of the channel.
+     * This is an optional field.
+     */
     private Vendor vendor;
 
-    public String getID() {
+    /**
+     * Other channels that are required by the channel.
+     * This is an optional field.
+     */
+    @JsonProperty("requires")
+    private Collection<ChannelRequirement> channelRequirements = emptySet();
+
+    /**
+     * Maven repositories that contains all artifacts from this channel.
+     * This is an optional field.
+     */
+    private Collection<MavenRepository> repositories = emptySet();
+
+    /**
+     * Streams of components that are provides by this channel.
+     */
+    private Collection<Stream> streams = emptySet();
+
+    public String getId() {
         return id;
     }
 
@@ -41,5 +88,17 @@ public class Channel {
 
     public Vendor getVendor() {
         return vendor;
+    }
+
+    public Collection<ChannelRequirement> getChannelRequirements() {
+        return channelRequirements;
+    }
+
+    public Collection<MavenRepository> getRepositories() {
+        return repositories;
+    }
+
+    public Collection<Stream> getStreams() {
+        return streams;
     }
 }

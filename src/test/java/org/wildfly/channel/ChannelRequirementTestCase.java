@@ -21,26 +21,33 @@
  */
 package org.wildfly.channel;
 
-import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class ChannelMapper {
-
+public class ChannelRequirementTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
 
-    static Channel from(URL channelURL) {
-        requireNonNull(channelURL);
+    static ChannelRequirement from(String str) throws IOException {
+        return OBJECT_MAPPER.readValue(str, ChannelRequirement.class);
+    }
 
-        try {
-            Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    @Test
+    public void testValidRequires() throws IOException {
+        ChannelRequirement requirement = from("url: file:///tmp/my-other-channel");
+        assertEquals(new URL("file:///tmp/my-other-channel"), requirement.getURL());
+    }
+
+    @Test
+    public void testURLIsMandatory() {
+        Assertions.assertThrows(Exception.class, () -> {
+            from("# empty requirement");
+        });
     }
 }
