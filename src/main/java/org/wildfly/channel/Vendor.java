@@ -21,25 +21,35 @@
  */
 package org.wildfly.channel;
 
-public class Channel {
-    private String id;
-    private String name;
-    private String description;
-    private Vendor vendor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    public String getID() {
-        return id;
+public class Vendor {
+    private final String name;
+    private final Support support;
+
+    @JsonCreator
+    public Vendor(@JsonProperty(value = "name", required = true) String name, @JsonProperty(value = "support", required = true) Support support) {
+        this.name = name;
+        this.support = support;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getDescription() {
-        return description;
+    public Support getSupport() {
+        return support;
     }
 
-    public Vendor getVendor() {
-        return vendor;
+    @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+    public enum Support {
+        @JsonProperty("supported")
+        SUPPORTED,
+        @JsonProperty("tech-preview")
+        TECH_PREVIEW,
+        @JsonProperty("community")
+        COMMUNITY;
     }
 }
