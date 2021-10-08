@@ -19,39 +19,33 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel;
+package org.wildfly.channel.version;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.IOException;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+public class FixedVersionComparator implements VersionComparator {
 
-public class ChannelMapper {
+    private final List<String> versions;
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
-
-    public static Channel from(URL channelURL) {
-        requireNonNull(channelURL);
-
-        try {
-            Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public FixedVersionComparator(List<String> versions) {
+        requireNonNull(versions);
+        this.versions = new ArrayList<>(versions);
+        this.versions.sort(Comparator.comparing( String::toString ).reversed());
     }
 
-    public static Channel fromString(String yamlContent) {
-        requireNonNull(yamlContent);
-
-        try {
-            Channel channel = OBJECT_MAPPER.readValue(yamlContent, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    @Override
+    public Optional<String> matches(List<String> samples) {
+        requireNonNull(samples);
+        for (String version : versions) {
+            if (samples.contains(version)) {
+                return Optional.of(version);
+            }
         }
+        return Optional.empty();
     }
 }

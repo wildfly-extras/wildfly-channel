@@ -21,8 +21,16 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Arrays.asList;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.wildfly.channel.version.FixedVersionComparator;
+import org.wildfly.channel.version.VersionComparator;
 
 /**
  * Java representation of a Stream.
@@ -54,6 +62,8 @@ public class Stream {
      */
     private boolean resolveWithLocalCache;
 
+    private VersionComparator versionComparator;
+
     @JsonCreator
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
@@ -63,6 +73,27 @@ public class Stream {
         this.artifactId = artifactId;
         this.version = version;
         this.resolveWithLocalCache = resolveWithLocalCache;
+        validate();
+        initVersionComparator();
+    }
+
+    private void initVersionComparator() {
+        if (version != null) {
+            List<String> versions = asList(version.split("[\\s,]+"));
+            versionComparator = new FixedVersionComparator(versions);
+        } else {
+            // let's instead find a version matching the pattern
+            versionComparator = new FixedVersionComparator(Collections.emptyList());
+        }
+    }
+
+    private void validate() {
+        if ("*".equals(groupId)) {
+            if (!"*".equals(artifactId)) {
+                throw new IllegalArgumentException(
+                        String.format("Invalid stream %s:%s. It is not valid to use a * groupId if the artifactId is defined", groupId, artifactId));
+            }
+        }
     }
 
     public String getGroupId() {
@@ -81,13 +112,19 @@ public class Stream {
         return resolveWithLocalCache;
     }
 
+
+    public VersionComparator getVersionComparator() {
+        return versionComparator;
+    }
+
     @Override
     public String toString() {
         return "Stream{" +
                 "groupId='" + groupId + '\'' +
                 ", artifactId='" + artifactId + '\'' +
                 ", version='" + version + '\'' +
-                ", resolveVersionWithLocalCache=" + resolveWithLocalCache +
+                ", resolveWithLocalCache=" + resolveWithLocalCache +
+                ", versionComparator=" + versionComparator +
                 '}';
     }
 }

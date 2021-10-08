@@ -53,6 +53,30 @@ public class StreamTestCase {
     }
 
     @Test
+    public void testAnyGroupIdAndAnyArtifactIdStream() throws IOException {
+        Stream stream = from("groupId: \"*\"\n" +
+                "artifactId: \"*\"\n");
+        assertEquals("*", stream.getGroupId());
+        assertEquals("*", stream.getArtifactId());
+    }
+
+    @Test
+    public void testAnyArtifactIdStream() throws IOException {
+        Stream stream = from("groupId: org.wildfly\n" +
+                "artifactId: \"*\"\n");
+        assertEquals("org.wildfly", stream.getGroupId());
+        assertEquals("*", stream.getArtifactId());
+    }
+
+    @Test
+    public void testAnyGroupIdWithAGivenArtifactIdIsNotValid() {
+        Assertions.assertThrows(Exception.class, () -> {
+            Stream stream = from("groupId: \"*\"\n" +
+                    "artifactId: my-artifact\n");
+        });
+    }
+
+    @Test
     public void testGroupIdIsMandatory() {
         Assertions.assertThrows(Exception.class, () -> {
             from("artifactId: wildfly-ee-galleon-pack\n" +

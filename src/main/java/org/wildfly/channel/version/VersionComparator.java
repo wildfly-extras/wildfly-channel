@@ -21,34 +21,9 @@
  */
 package org.wildfly.channel.version;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-public class VersionComparator {
-
-    public Optional<String> matches(List<String> versions, List<String> samples) {
-        Objects.requireNonNull(versions);
-        Objects.requireNonNull(samples);
-
-        // highest version first
-        versions.sort(Comparator.comparing( String::toString ).reversed());
-        for (String version : versions) {
-            Optional<String> found = matches(version, samples);
-            if (found.isPresent()) {
-                return found;
-            }
-        }
-        return Optional.empty();
-    }
-
-    private Optional<String> matches(String version, List<String> samples) {
-        if (samples.contains(version)) {
-            return Optional.of(version);
-        } else {
-            return Optional.empty();
-        }
-    }
+public interface VersionComparator {
+    public Optional<String> matches(List<String> samples);
 }

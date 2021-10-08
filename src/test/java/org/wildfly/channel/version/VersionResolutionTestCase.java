@@ -78,24 +78,64 @@ public class VersionResolutionTestCase {
     }
 
     @Test
-    public void resolveVersion() throws IOException {
+    public void resolveStreamWithSingleVersion() throws IOException {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        StreamVersionResolver resolver = new SimpleVersionResolver();
+        MavenVersionResolver resolver = new SimpleVersionResolver();
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version: 1.0.1.Final");
-
-        Optional<String> found = resolver.resolveVersion(stream, mavenRepos);
-        assertTrue(found.isPresent());
-        assertEquals(found.get(), stream.getVersion());
+        Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals(foundVersion.get(), "1.0.1.Final");
 
         stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version: 1.3.0.Final");
-        found = resolver.resolveVersion(stream, mavenRepos);
-        assertFalse(found.isPresent());
+        foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertFalse(foundVersion.isPresent());
+    }
+
+    @Test
+    public void resolveStreamWithWildCard() throws IOException {
+        List<MavenRepository> mavenRepos = new ArrayList<>();
+        mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
+
+        MavenVersionResolver resolver = new SimpleVersionResolver();
+
+        Stream stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: \"*\"\n" +
+                "version: 1.0.1.Final");
+
+        Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals(foundVersion.get(), stream.getVersion());
+    }
+
+    @Test
+    public void resolveStreamWithManyVersions() throws IOException {
+        List<MavenRepository> mavenRepos = new ArrayList<>();
+        mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
+
+        MavenVersionResolver resolver = new SimpleVersionResolver();
+
+        Stream stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: foo-bar\n" +
+                "version: 1.0.0.Final, 1.0.1.Final");
+
+        Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals("1.0.1.Final", foundVersion.get());
+
+        // order of the versions does not matter
+        stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: foo-bar\n" +
+                "version: 1.0.0.Final, 1.1.1.Final, 1.0.1.Final");
+
+        foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals("1.1.1.Final", foundVersion.get());
     }
 }

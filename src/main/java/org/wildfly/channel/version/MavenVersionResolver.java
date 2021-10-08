@@ -25,8 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.Stream;
 
-public interface StreamVersionResolver {
-    Optional<String> resolveVersion(Stream stream, List<MavenRepository> mavenRepository);
+public interface MavenVersionResolver {
+    Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator);
 }

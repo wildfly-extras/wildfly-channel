@@ -21,16 +21,18 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.wildfly.channel.version.StreamVersionResolver;
+import org.wildfly.channel.version.FixedVersionComparator;
+import org.wildfly.channel.version.MavenVersionResolver;
 
 /**
  * Java representation of a Channel.
@@ -106,20 +108,41 @@ public class Channel {
         return streams;
     }
 
-    public List<String> getLatestGAVs(StreamVersionResolver resolver) {
-        List<String> resolvedGAVs = new ArrayList<>();
-        for (Stream stream : resolveStreams()) {
-            Optional<String> version = resolver.resolveVersion(stream, getRepositories());
-            if (version.isPresent()) {
-                resolvedGAVs.add(stream.getGroupId() + ":" + stream.getArtifactId() + ":" + version.get());
-            }
+    public Optional<String> resolveLatestVersion(String groupId, String artifactId, MavenVersionResolver resolver) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(resolver);
+
+        // first we find if there is a stream for that given (groupId, artifactId).
+        Optional<Stream> foundStream = findStreamFor(groupId, artifactId);
+        if (!foundStream.isPresent()) {
+            return Optional.empty();
         }
-        return resolvedGAVs;
+        // there is a stream, let's now check its version
+        String version = foundStream.get().getVersion();
+        if (version != null) {
+            List<String> versionsFromStream = asList(foundStream.get().getVersion().split("[\\s,]+"));
+            return resolver.resolve(groupId, artifactId, repositories, foundStream.get().isResolveWithLocalCache(), new FixedVersionComparator(versionsFromStream));
+        } else {
+            // let's instead find a version matching the pattern
+        }
+        // if there is no match, we return empty()
+        return Optional.empty();
     }
 
-    private Collection<Stream> resolveStreams() {
-        // streams can have * as groupId or artifactId
-        // first thing is to match them to actual groupId and artifactId
-        return streams;
+    protected Optional<Stream> findStreamFor(String groupId, String artifactId) {
+        // first exact match:
+        Optional<Stream> stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId)).findFirst();
+        if (stream.isPresent()) {
+            return stream;
+        }
+        // check if there is a stream for groupId:*
+        stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals("*")).findFirst();
+        if (stream.isPresent()) {
+            return stream;
+        }
+        // finally check if there is a stream for *:*
+        stream = streams.stream().filter(s -> s.getGroupId().equals("*") && s.getArtifactId().equals("*")).findFirst();
+        return stream;
     }
 }

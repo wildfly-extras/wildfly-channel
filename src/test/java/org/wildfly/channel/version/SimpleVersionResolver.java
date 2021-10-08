@@ -22,43 +22,36 @@
  */
 package org.wildfly.channel.version;
 
-import static java.util.Arrays.asList;
-
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.Stream;
 
-public class SimpleVersionResolver implements StreamVersionResolver{
+public class SimpleVersionResolver implements MavenVersionResolver {
 
-    VersionComparator comparator = new VersionComparator();
-
-    public Optional<String> resolveVersion(Stream stream, List<MavenRepository> mavenRepository) {
-        for (MavenRepository repository : mavenRepository) {
-            Optional<String> found = resolveVersion(stream, repository);
+    @Override
+    public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
+        for (MavenRepository repository : mavenRepositories) {
+            Optional<String> found = resolve(groupId, artifactId, repository, versionComparator);
             if (found.isPresent()) {
                 return found;
             }
         }
-        if (stream.isResolveWithLocalCache()) {
-            Optional<String> found = resolveVersionFromLocalCache(stream);
+        if (resolveLocalCache) {
+            Optional<String> found = resolveFromLocalCache(groupId, artifactId, versionComparator);
             return found;
         }
         return Optional.empty();
     }
 
-    private Optional<String> resolveVersionFromLocalCache(Stream stream) {
+    private Optional<String> resolveFromLocalCache(String groupId, String artifactId, VersionComparator versionComparator) {
         return Optional.empty();
     }
 
-    private Optional<String> resolveVersion(Stream stream, MavenRepository mavenRepository)  {
+    private Optional<String> resolve(String groupId, String artifactId, MavenRepository mavenRepository, VersionComparator versionComparator) {
         Path mavenRepo;
         try {
             mavenRepo = Paths.get(mavenRepository.getUrl().toURI());
@@ -66,9 +59,7 @@ public class SimpleVersionResolver implements StreamVersionResolver{
             throw new RuntimeException(e);
         }
         SimplisticMavenRepoManager mavenRepoManager = SimplisticMavenRepoManager.getInstance(mavenRepo);
-        List<String> versionsFromRepo = mavenRepoManager.getAllVersions(stream.getGroupId(), stream.getArtifactId());
-
-        List<String> versionsFromStream = asList(stream.getVersion().split("[\\s,]+"));
-        return comparator.matches(versionsFromStream, versionsFromRepo);
+        List<String> versionsFromRepo = mavenRepoManager.getAllVersions(groupId, artifactId);
+        return versionComparator.matches(versionsFromRepo);
     }
 }
