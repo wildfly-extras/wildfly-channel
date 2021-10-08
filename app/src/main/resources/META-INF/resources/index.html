@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>WildFly Channel App</title>
+    <style type="text/css" media="screen">
+.ace_editor {
+  border: 1px solid lightgray;
+  height: 600px;
+  width: 80%;
+}
+
+</style>
+    <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <!-- CSS
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+    <!-- Favicon
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <link rel="icon" type="image/png" href="images/favicon.png">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>WildFly Channel App</h1>
+
+
+    <form method="post">
+        <h2>Channels Definitions</h2>
+        <div class="row">
+            <div class="ace_editor" id="editor"># Paste channel YAML definitions here
+
+
+            </div>
+        </div>
+        <br>
+        <input class="button-primary" type="submit" value="Validate" formaction="/validate">
+
+        <h2>Version Resolver</h2>
+        <div class="row">
+            <div class="six columns">
+                <label for="groupId">groupId</label>
+                <input class="u-full-width" placeholder="org.wildfly" id="groupId">
+            </div>
+            <div class="six columns">
+                <label for="artifactId">artifactId</label>
+                <input class="u-full-width" formaction="/latest" placeholder="wildfly-ee-feature-pack" id="artifactId">
+            </div>
+        </div>
+        <div class="row">
+            <div class="six columns">
+                <input class="button-primary" type="submit" formaction="/latest" value="Get latest version">
+            </div>
+        </div>
+        </fieldset>
+    </form>
+</div>
+<script src="/js/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/dracula");
+    editor.session.setMode("ace/mode/yaml");
+</script>
+
+</body>
+</html>
