@@ -21,12 +21,16 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.wildfly.channel.version.StreamVersionResolver;
 
 /**
  * Java representation of a Channel.
@@ -61,13 +65,13 @@ public class Channel {
      * This is an optional field.
      */
     @JsonProperty("requires")
-    private Collection<ChannelRequirement> channelRequirements = emptySet();
+    private List<ChannelRequirement> channelRequirements = emptyList();
 
     /**
      * Maven repositories that contains all artifacts from this channel.
      * This is an optional field.
      */
-    private Collection<MavenRepository> repositories = emptySet();
+    private List<MavenRepository> repositories = emptyList();
 
     /**
      * Streams of components that are provides by this channel.
@@ -90,15 +94,32 @@ public class Channel {
         return vendor;
     }
 
-    public Collection<ChannelRequirement> getChannelRequirements() {
+    public List<ChannelRequirement> getChannelRequirements() {
         return channelRequirements;
     }
 
-    public Collection<MavenRepository> getRepositories() {
+    public List<MavenRepository> getRepositories() {
         return repositories;
     }
 
     public Collection<Stream> getStreams() {
+        return streams;
+    }
+
+    public List<String> getLatestGAVs(StreamVersionResolver resolver) {
+        List<String> resolvedGAVs = new ArrayList<>();
+        for (Stream stream : resolveStreams()) {
+            Optional<String> version = resolver.resolveVersion(stream, getRepositories());
+            if (version.isPresent()) {
+                resolvedGAVs.add(stream.getGroupId() + ":" + stream.getArtifactId() + ":" + version.get());
+            }
+        }
+        return resolvedGAVs;
+    }
+
+    private Collection<Stream> resolveStreams() {
+        // streams can have * as groupId or artifactId
+        // first thing is to match them to actual groupId and artifactId
         return streams;
     }
 }

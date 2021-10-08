@@ -47,13 +47,22 @@ public class Stream {
      */
     private final String version;
 
+    /**
+     * Whether the local cache from Maven must be checked to resolve the latest version of this stream.
+     * This is an optional field.
+     * It is false by default.
+     */
+    private boolean resolveWithLocalCache;
+
     @JsonCreator
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
-           @JsonProperty("version") String version) {
+           @JsonProperty("version") String version,
+           @JsonProperty("resolve-with-local-cache") boolean resolveWithLocalCache) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
+        this.resolveWithLocalCache = resolveWithLocalCache;
     }
 
     public String getGroupId() {
@@ -68,13 +77,17 @@ public class Stream {
         return version;
     }
 
+    public boolean isResolveWithLocalCache() {
+        return resolveWithLocalCache;
+    }
+
     @Override
     public String toString() {
         return "Stream{" +
                 "groupId='" + groupId + '\'' +
                 ", artifactId='" + artifactId + '\'' +
                 ", version='" + version + '\'' +
+                ", resolveVersionWithLocalCache=" + resolveWithLocalCache +
                 '}';
     }
-
 }

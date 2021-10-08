@@ -22,7 +22,9 @@
 package org.wildfly.channel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 
@@ -42,10 +44,12 @@ public class StreamTestCase {
     public void testValidStream() throws IOException {
         Stream stream = from("groupId: org.wildfly\n" +
                 "artifactId: wildfly-ee-galleon-pack\n" +
-                "version: 26.0.0.Final");
+                "version: 26.0.0.Final\n" +
+                "resolve-with-local-cache: true");
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
         assertEquals("26.0.0.Final", stream.getVersion());
+        assertTrue(stream.isResolveWithLocalCache());
     }
 
     @Test
@@ -69,5 +73,12 @@ public class StreamTestCase {
         Stream stream = from("groupId: org.wildfly\n" +
                 "artifactId: wildfly-ee-galleon-pack");
         assertNull(stream.getVersion());
+    }
+
+    @Test
+    public void testResolveWithLocalCacheIsOptional() throws IOException {
+        Stream stream = from("groupId: org.wildfly\n" +
+                "artifactId: wildfly-ee-galleon-pack");
+        assertFalse(stream.isResolveWithLocalCache());
     }
 }

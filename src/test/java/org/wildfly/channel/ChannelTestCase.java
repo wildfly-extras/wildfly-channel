@@ -45,7 +45,7 @@ public class ChannelTestCase {
     @Test()
     public void emptyChannelTest() {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        URL file = tccl.getResource("empty-channel.yaml");
+        URL file = tccl.getResource("channels/empty-channel.yaml");
         Assertions.assertThrows(RuntimeException.class, () -> {
             ChannelMapper.from(file);
         });
@@ -54,7 +54,7 @@ public class ChannelTestCase {
     @Test
     public void simpleChannelTest() throws MalformedURLException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        URL file = tccl.getResource("simple-channel.yaml");
+        URL file = tccl.getResource("channels/simple-channel.yaml");
         System.out.println(file);
 
         Channel channel = ChannelMapper.from(file);
