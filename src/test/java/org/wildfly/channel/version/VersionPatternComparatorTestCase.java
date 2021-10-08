@@ -76,6 +76,26 @@ public class VersionPatternComparatorTestCase {
         assertEquals("1.1.0.SP1", match.get());
     }
 
+    @Test
+    public void testVersionPattern_2() {
+        // they are unordered by design
+        List<String> samples = Arrays.asList(
+                "1.0.0.Final-jbossorg-00001",
+                "1.1.0.Final-jbossorg-00001",
+                "1.1.0.Final-jbossorg-00002",
+                "2.0.0.Final-jbossorg-00001",
+                "2.1.0.Final-jbossorg-00001");
+
+        Optional<String> match = matches("1\\..\\..*Final-jbossorg-\\d+", samples);
+        assertTrue(match.isPresent());
+        assertEquals("1.1.0.Final-jbossorg-00002", match.get());
+
+        match = matches("2\\..\\..*Final-jbossorg-\\d+", samples);
+        assertTrue(match.isPresent());
+        assertEquals("2.1.0.Final-jbossorg-00001", match.get());
+    }
+
+
     public Optional<String> matches(String pattern, List<String> samples) {
         VersionPatternComparator comparator = new VersionPatternComparator(Pattern.compile(pattern));
         return comparator.matches(samples);
