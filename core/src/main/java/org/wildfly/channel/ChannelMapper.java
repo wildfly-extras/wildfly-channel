@@ -25,13 +25,17 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 
 public class ChannelMapper {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final YAMLFactory YAML_FACTORY = new YAMLFactory();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY);
 
     public static Channel from(URL channelURL) {
         requireNonNull(channelURL);
@@ -53,5 +57,11 @@ public class ChannelMapper {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static List<Channel> channelsFromString(String yamlContent) throws IOException {
+        YAMLParser parser = YAML_FACTORY.createParser(yamlContent);
+        List<Channel> channels = OBJECT_MAPPER.readValues(parser, Channel.class).readAll();
+        return channels;
     }
 }

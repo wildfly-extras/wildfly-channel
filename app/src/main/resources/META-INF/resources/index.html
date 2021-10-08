@@ -7,6 +7,7 @@
   border: 1px solid lightgray;
   height: 600px;
   width: 80%;
+  font-size: 12pt
 }
 
 </style>
@@ -28,13 +29,14 @@
     <h1>WildFly Channel App</h1>
 
 
-    <form method="post">
+    <form method="post" onsubmit="javascript: return process();">
         <h2>Channels Definitions</h2>
         <div class="row">
             <div class="ace_editor" id="editor"># Paste channel YAML definitions here
 
 
             </div>
+            <input type="hidden" id="channels" name="channels">
         </div>
         <br>
         <input class="button-primary" type="submit" value="Validate" formaction="/validate">
@@ -63,6 +65,11 @@
     var editor = ace.edit("editor");
     editor.setTheme("ace/theme/dracula");
     editor.session.setMode("ace/mode/yaml");
+
+function process() {
+  document.getElementById("channels").value = editor.getValue();
+  return true;
+}
 </script>
 
 </body>
