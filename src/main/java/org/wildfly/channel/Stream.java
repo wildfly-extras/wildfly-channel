@@ -25,7 +25,7 @@ import static java.util.Arrays.asList;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -50,10 +50,20 @@ public class Stream {
 
     /**
      * Version of the stream.
-     * It must be a valid version (corresponding the V of a Maven GAV).
-     * This is an optional field.
+     * This must be either a single version (e.g. "1.0.0.Final") or a list of comma-separated versions
+     * (e.g. "1.0.0.Final, 1.0.1.Final, 1.1.0.Final")
+     *
+     * Either this field or the versionPattern field must be set.
      */
     private final String version;
+
+    /**
+     * Version of the stream.
+     * This is a regular expression that matches any version from this stream (e.g. "2\.2\..*").
+     *
+     * Either this field or the versionPattern field must be set.
+     */
+    private final Pattern versionPattern;
 
     /**
      * Whether the local cache from Maven must be checked to resolve the latest version of this stream.
@@ -68,10 +78,12 @@ public class Stream {
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
+           @JsonProperty("version-pattern") Pattern versionPattern,
            @JsonProperty("resolve-with-local-cache") boolean resolveWithLocalCache) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
+        this.versionPattern = versionPattern;
         this.resolveWithLocalCache = resolveWithLocalCache;
         validate();
         initVersionComparator();
@@ -94,6 +106,15 @@ public class Stream {
                         String.format("Invalid stream %s:%s. It is not valid to use a * groupId if the artifactId is defined", groupId, artifactId));
             }
         }
+
+        if (version != null && versionPattern != null) {
+            throw  new IllegalArgumentException(
+                    String.format("Invalid stream. only one of version or versionPattern field must be set"));
+        }
+        if (version == null && versionPattern == null) {
+            throw  new IllegalArgumentException(
+                    String.format("Invalid stream. Either one of version or versionPattern field must be set"));
+        }
     }
 
     public String getGroupId() {
@@ -106,6 +127,10 @@ public class Stream {
 
     public String getVersion() {
         return version;
+    }
+
+    public Pattern getVersionPattern() {
+        return versionPattern;
     }
 
     public boolean isResolveWithLocalCache() {
@@ -123,6 +148,7 @@ public class Stream {
                 "groupId='" + groupId + '\'' +
                 ", artifactId='" + artifactId + '\'' +
                 ", version='" + version + '\'' +
+                ", versionPattern=" + versionPattern +
                 ", resolveWithLocalCache=" + resolveWithLocalCache +
                 ", versionComparator=" + versionComparator +
                 '}';

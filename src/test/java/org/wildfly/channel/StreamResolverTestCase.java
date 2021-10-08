@@ -47,13 +47,17 @@ public class StreamResolverTestCase {
         String yamlContent = "streams:\n" +
                 "  - groupId: \"*\"\n" +
                 "    artifactId: \"*\"\n" +
+                "    version: 3.0.Final\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: \"*\"\n" +
+                "    version: 3.0.Final\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: undertow-core\n" +
+                "    version: 3.0.Final\n" +
                 "  - groupId: io.undertow\n" +
-                "    artifactId: undertow-servlet\n";
-        Channel channel = ChannelMapper.fromString(yamlContent);
+                "    artifactId: undertow-servlet\n" +
+                "    version: 3.0.Final";
+                Channel channel = ChannelMapper.fromString(yamlContent);
 
         Optional<Stream> stream = channel.findStreamFor("io.undertow", "undertow-core");
         assertTrue(stream.isPresent());

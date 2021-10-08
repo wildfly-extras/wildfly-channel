@@ -24,25 +24,30 @@ package org.wildfly.channel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.net.URL;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class StreamTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
 
-    static Stream from(String str) throws IOException {
+    static Stream fromYamlContent(String str) throws IOException {
         return OBJECT_MAPPER.readValue(str, Stream.class);
+    }
+
+    static Stream fromURL(URL url) throws IOException {
+        return OBJECT_MAPPER.readValue(url, Stream.class);
     }
 
     @Test
     public void testValidStream() throws IOException {
-        Stream stream = from("groupId: org.wildfly\n" +
+        Stream stream = fromYamlContent("groupId: org.wildfly\n" +
                 "artifactId: wildfly-ee-galleon-pack\n" +
                 "version: 26.0.0.Final\n" +
                 "resolve-with-local-cache: true");
@@ -53,56 +58,73 @@ public class StreamTestCase {
     }
 
     @Test
+    public void testValidStreamWithVersionPattern() throws IOException {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("streams/stream-with-version-pattern.yaml");
+        Stream stream = fromURL(file);
+        System.out.println("stream.getVersionPattern() = " + stream.getVersionPattern());
+        assertEquals("org.example", stream.getGroupId());
+        assertEquals("foo", stream.getArtifactId());
+        assertNull(stream.getVersion());
+        assertEquals("2\\.2\\..*", stream.getVersionPattern().pattern());
+    }
+
+    @Test
     public void testAnyGroupIdAndAnyArtifactIdStream() throws IOException {
-        Stream stream = from("groupId: \"*\"\n" +
-                "artifactId: \"*\"\n");
+        Stream stream = fromYamlContent("groupId: \"*\"\n" +
+                "artifactId: \"*\"\n" +
+                "version: 1.1.1.Final");
         assertEquals("*", stream.getGroupId());
         assertEquals("*", stream.getArtifactId());
     }
 
     @Test
     public void testAnyArtifactIdStream() throws IOException {
-        Stream stream = from("groupId: org.wildfly\n" +
-                "artifactId: \"*\"\n");
+        Stream stream = fromYamlContent("groupId: org.wildfly\n" +
+                "artifactId: \"*\"\n" +
+                "version: 1.2.0.Final");
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("*", stream.getArtifactId());
     }
 
     @Test
     public void testAnyGroupIdWithAGivenArtifactIdIsNotValid() {
-        Assertions.assertThrows(Exception.class, () -> {
-            Stream stream = from("groupId: \"*\"\n" +
-                    "artifactId: my-artifact\n");
+        assertThrows(Exception.class, () -> {
+            Stream stream = fromYamlContent("groupId: \"*\"\n" +
+                    "artifactId: my-artifact\n" +
+                    "version: 1.2.0.Final");
         });
     }
 
     @Test
     public void testGroupIdIsMandatory() {
-        Assertions.assertThrows(Exception.class, () -> {
-            from("artifactId: wildfly-ee-galleon-pack\n" +
+        assertThrows(Exception.class, () -> {
+            fromYamlContent("artifactId: wildfly-ee-galleon-pack\n" +
                     "version: 26.0.0.Final");
         });
     }
 
     @Test
     public void testArtifactIdIsMandatory() {
-        Assertions.assertThrows(Exception.class, () -> {
-            from("groupId: org.wildfly\n" +
+        assertThrows(Exception.class, () -> {
+            fromYamlContent("groupId: org.wildfly\n" +
                     "version: 26.0.0.Final");
         });
     }
 
     @Test
-    public void testVersionIsOptional() throws IOException {
-        Stream stream = from("groupId: org.wildfly\n" +
-                "artifactId: wildfly-ee-galleon-pack");
-        assertNull(stream.getVersion());
+    public void testMissingVersionAndVersionPattern()  {
+        assertThrows(Exception.class, () -> {
+            Stream stream = fromYamlContent("groupId: org.wildfly\n" +
+                    "artifactId: wildfly-ee-galleon-pack");
+        });
     }
 
     @Test
     public void testResolveWithLocalCacheIsOptional() throws IOException {
-        Stream stream = from("groupId: org.wildfly\n" +
-                "artifactId: wildfly-ee-galleon-pack");
+        Stream stream = fromYamlContent("groupId: org.wildfly\n" +
+                "artifactId: wildfly-ee-galleon-pack\n" +
+                "version: 26.0.0.Final");
         assertFalse(stream.isResolveWithLocalCache());
     }
 }
