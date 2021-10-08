@@ -45,11 +45,11 @@ public class StreamResolverTestCase {
     public void testFindingStreamMatchingArtifactIdAndGroupId() {
 
         String yamlContent = "streams:\n" +
-                "  - groupId: \"*\"\n" +
-                "    artifactId: \"*\"\n" +
+                "  - groupId: '*'\n" +
+                "    artifactId: '*'\n" +
                 "    version: 3.0.Final\n" +
                 "  - groupId: io.undertow\n" +
-                "    artifactId: \"*\"\n" +
+                "    artifactId: '*'\n" +
                 "    version: 3.0.Final\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: undertow-core\n" +

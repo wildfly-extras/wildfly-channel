@@ -70,8 +70,8 @@ public class StreamTestCase {
 
     @Test
     public void testAnyGroupIdAndAnyArtifactIdStream() throws IOException {
-        Stream stream = fromYamlContent("groupId: \"*\"\n" +
-                "artifactId: \"*\"\n" +
+        Stream stream = fromYamlContent("groupId: '*'\n" +
+                "artifactId: '*'\n" +
                 "version: 1.1.1.Final");
         assertEquals("*", stream.getGroupId());
         assertEquals("*", stream.getArtifactId());
@@ -80,7 +80,7 @@ public class StreamTestCase {
     @Test
     public void testAnyArtifactIdStream() throws IOException {
         Stream stream = fromYamlContent("groupId: org.wildfly\n" +
-                "artifactId: \"*\"\n" +
+                "artifactId: '*'\n" +
                 "version: 1.2.0.Final");
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("*", stream.getArtifactId());
@@ -89,7 +89,7 @@ public class StreamTestCase {
     @Test
     public void testAnyGroupIdWithAGivenArtifactIdIsNotValid() {
         assertThrows(Exception.class, () -> {
-            Stream stream = fromYamlContent("groupId: \"*\"\n" +
+            Stream stream = fromYamlContent("groupId: '*'\n" +
                     "artifactId: my-artifact\n" +
                     "version: 1.2.0.Final");
         });

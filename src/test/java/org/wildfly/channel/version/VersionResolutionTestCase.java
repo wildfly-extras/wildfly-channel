@@ -107,7 +107,7 @@ public class VersionResolutionTestCase {
         MavenVersionResolver resolver = new SimpleVersionResolver();
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
-                "artifactId: \"*\"\n" +
+                "artifactId: '*'\n" +
                 "version: 1.0.1.Final");
 
         Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
@@ -149,7 +149,7 @@ public class VersionResolutionTestCase {
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: \"1\\\\.0\\\\..*\""); // regex is 1\.0\..*
+                "version-pattern: '1\\.0\\..*'");
         Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
         assertTrue(foundVersion.isPresent());
         assertEquals( "1.0.1.Final", foundVersion.get());
@@ -164,7 +164,7 @@ public class VersionResolutionTestCase {
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: \"1\\\\.*\\\\..*\""); // regex is 1\..\..*
+                "version-pattern: '1\\.*\\..*'");
         Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
         assertTrue(foundVersion.isPresent());
         assertEquals( "1.1.1.Final", foundVersion.get());
@@ -179,7 +179,7 @@ public class VersionResolutionTestCase {
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: \"1\\\\.1\\\\..*\"\n" +
+                "version-pattern: '1\\.1\\..*'\n" +
                 "resolve-with-local-cache: true");
         Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
         assertTrue(foundVersion.isPresent());
@@ -187,11 +187,11 @@ public class VersionResolutionTestCase {
 
         stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: \"2\\\\.0\\\\..*\"\n" +
+                "version-pattern: '2\\.0\\..*'\n" +
                 "resolve-with-local-cache: true");
         foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
         assertTrue(foundVersion.isPresent());
         assertEquals( "2.0.0.Final", foundVersion.get());
     }
 
-    }
+}
