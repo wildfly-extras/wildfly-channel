@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.version.FixedVersionComparator;
 import org.wildfly.channel.version.VersionComparator;
+import org.wildfly.channel.version.VersionPatternComparator;
 
 /**
  * Java representation of a Stream.
@@ -95,7 +96,7 @@ public class Stream {
             versionComparator = new FixedVersionComparator(versions);
         } else {
             // let's instead find a version matching the pattern
-            versionComparator = new FixedVersionComparator(Collections.emptyList());
+            versionComparator = new VersionPatternComparator(versionPattern);
         }
     }
 

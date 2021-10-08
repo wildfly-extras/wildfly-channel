@@ -21,9 +21,34 @@
  */
 package org.wildfly.channel.version;
 
+import static java.util.Optional.empty;
+
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
-public interface VersionComparator {
-    Optional<String> matches(List<String> samples);
+public class VersionPatternComparator implements VersionComparator {
+    private Pattern pattern;
+
+    public VersionPatternComparator(Pattern pattern) {
+        this.pattern = pattern;
+    }
+
+    @Override
+    public Optional<String> matches(List<String> samples) {
+        List<String> matches = new ArrayList<>();
+        for (String sample : samples) {
+            if (pattern.matcher(sample).matches()) {
+                matches.add(sample);
+            }
+        }
+        if (matches.isEmpty()) {
+            return empty();
+        }
+
+        matches.sort(Comparator.comparing( String::toString ).reversed());
+        return Optional.of(matches.get(0));
+    }
 }

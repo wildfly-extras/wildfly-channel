@@ -37,6 +37,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Test;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.Stream;
+import org.wildfly.channel.spi.MavenVersionResolver;
 
 public class VersionResolutionTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
@@ -49,7 +50,7 @@ public class VersionResolutionTestCase {
         return OBJECT_MAPPER.readValue(yamlContent, MavenRepository.class);
     }
 
-    private static Path getTestMavenRepositoryURI(String name) {
+    static Path getTestMavenRepositoryURI(String name) {
         return Paths.get("src","test","resources", "maven-repositories", name);
     }
 
@@ -138,4 +139,59 @@ public class VersionResolutionTestCase {
         assertTrue(foundVersion.isPresent());
         assertEquals("1.1.1.Final", foundVersion.get());
     }
-}
+
+    @Test
+    public void resolveStreamWithVersionPattern() throws IOException {
+        List<MavenRepository> mavenRepos = new ArrayList<>();
+        mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
+
+        MavenVersionResolver resolver = new SimpleVersionResolver();
+
+        Stream stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: foo-bar\n" +
+                "version-pattern: \"1\\\\.0\\\\..*\""); // regex is 1\.0\..*
+        Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals( "1.0.1.Final", foundVersion.get());
+    }
+
+    @Test
+    public void resolveStreamWithVersionPattern_2() throws IOException {
+        List<MavenRepository> mavenRepos = new ArrayList<>();
+        mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
+
+        MavenVersionResolver resolver = new SimpleVersionResolver();
+
+        Stream stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: foo-bar\n" +
+                "version-pattern: \"1\\\\.*\\\\..*\""); // regex is 1\..\..*
+        Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals( "1.1.1.Final", foundVersion.get());
+    }
+
+    @Test
+    public void resolveStreamWithLocalCache() throws IOException {
+        List<MavenRepository> mavenRepos = new ArrayList<>();
+        mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
+
+        MavenVersionResolver resolver = new SimpleVersionResolver();
+
+        Stream stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: foo-bar\n" +
+                "version-pattern: \"1\\\\.1\\\\..*\"\n" +
+                "resolve-with-local-cache: true");
+        Optional<String> foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals( "1.1.2.Final-SNAPSHOT", foundVersion.get());
+
+        stream = streamFromYaml("groupId: org.example.foo\n" +
+                "artifactId: foo-bar\n" +
+                "version-pattern: \"2\\\\.0\\\\..*\"\n" +
+                "resolve-with-local-cache: true");
+        foundVersion = resolver.resolve("org.example.foo", "foo-bar", mavenRepos, stream.isResolveWithLocalCache(), stream.getVersionComparator());
+        assertTrue(foundVersion.isPresent());
+        assertEquals( "2.0.0.Final", foundVersion.get());
+    }
+
+    }

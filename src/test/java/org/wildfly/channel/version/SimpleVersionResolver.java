@@ -22,6 +22,10 @@
  */
 package org.wildfly.channel.version;
 
+import static org.wildfly.channel.version.VersionResolutionTestCase.getTestMavenRepositoryURI;
+import static org.wildfly.channel.version.VersionResolutionTestCase.mavenRepositoryFromYaml;
+
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,25 +33,30 @@ import java.util.List;
 import java.util.Optional;
 
 import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.spi.MavenVersionResolver;
 
 public class SimpleVersionResolver implements MavenVersionResolver {
 
+    MavenRepository localCache;
+
+    SimpleVersionResolver() throws IOException {
+        localCache = mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("local-cache").toUri());
+    }
+
     @Override
     public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
+        if (resolveLocalCache) {
+            Optional<String> found = resolve(groupId, artifactId, localCache, versionComparator);
+            if (found.isPresent()) {
+                return found;
+            }
+        }
         for (MavenRepository repository : mavenRepositories) {
             Optional<String> found = resolve(groupId, artifactId, repository, versionComparator);
             if (found.isPresent()) {
                 return found;
             }
         }
-        if (resolveLocalCache) {
-            Optional<String> found = resolveFromLocalCache(groupId, artifactId, versionComparator);
-            return found;
-        }
-        return Optional.empty();
-    }
-
-    private Optional<String> resolveFromLocalCache(String groupId, String artifactId, VersionComparator versionComparator) {
         return Optional.empty();
     }
 

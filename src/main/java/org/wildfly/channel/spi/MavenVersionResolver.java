@@ -19,12 +19,13 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel.version;
+package org.wildfly.channel.spi;
 
 import java.util.List;
 import java.util.Optional;
 
 import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.version.VersionComparator;
 
 public interface MavenVersionResolver {
     Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator);

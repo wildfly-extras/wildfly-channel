@@ -21,7 +21,6 @@
  */
 package org.wildfly.channel;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
@@ -31,8 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.wildfly.channel.version.FixedVersionComparator;
-import org.wildfly.channel.version.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionResolver;
 
 /**
  * Java representation of a Channel.
@@ -119,15 +117,7 @@ public class Channel {
             return Optional.empty();
         }
         // there is a stream, let's now check its version
-        String version = foundStream.get().getVersion();
-        if (version != null) {
-            List<String> versionsFromStream = asList(foundStream.get().getVersion().split("[\\s,]+"));
-            return resolver.resolve(groupId, artifactId, repositories, foundStream.get().isResolveWithLocalCache(), new FixedVersionComparator(versionsFromStream));
-        } else {
-            // let's instead find a version matching the pattern
-        }
-        // if there is no match, we return empty()
-        return Optional.empty();
+        return resolver.resolve(groupId, artifactId, repositories, foundStream.get().isResolveWithLocalCache(), foundStream.get().getVersionComparator());
     }
 
     protected Optional<Stream> findStreamFor(String groupId, String artifactId) {

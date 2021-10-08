@@ -62,7 +62,6 @@ public class StreamTestCase {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL file = tccl.getResource("streams/stream-with-version-pattern.yaml");
         Stream stream = fromURL(file);
-        System.out.println("stream.getVersionPattern() = " + stream.getVersionPattern());
         assertEquals("org.example", stream.getGroupId());
         assertEquals("foo", stream.getArtifactId());
         assertNull(stream.getVersion());

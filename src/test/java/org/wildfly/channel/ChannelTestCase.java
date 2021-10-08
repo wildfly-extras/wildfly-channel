@@ -55,7 +55,6 @@ public class ChannelTestCase {
     public void simpleChannelTest() throws MalformedURLException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL file = tccl.getResource("channels/simple-channel.yaml");
-        System.out.println(file);
 
         Channel channel = ChannelMapper.from(file);
 
