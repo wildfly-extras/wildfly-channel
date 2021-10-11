@@ -15,6 +15,9 @@ streams:
   - groupId: org.wildfly.core
     artifactId: '*'
     version: 16.0.1.Final
+  - groupId: org.wildfly.security
+    artifactId: '*'
+    version: 1.16.1.Final
   - groupId: io.netty
     artifactId: netty-all
     version: 4.1.66.Final
