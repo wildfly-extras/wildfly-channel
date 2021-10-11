@@ -21,16 +21,64 @@
  */
 package org.wildfly.channel.app;
 
-import javax.ws.rs.GET;
+import static java.util.Objects.requireNonNull;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.wildfly.channel.Channel;
+import org.wildfly.channel.ChannelMapper;
+import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.version.VersionComparator;
+
 @Path("/latest")
 public class VersionResolver {
- @GET
- @Produces(MediaType.TEXT_PLAIN)
- public String getLatestVersion() {
-  return "Latest version is 1.0.0.Final";
- }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getLatestVersion(@FormParam("channels") String yamlChannels,
+                                   @FormParam("groupId") String groupId,
+                                   @FormParam("artifactId") String artifactId) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+
+        MavenVersionResolver resolver = createMavenResolver();
+        List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
+
+        Optional<String> foundVersion = Optional.empty();
+        for (Channel channel : channels) {
+            Optional<String> found = channel.resolveLatestVersion(groupId, artifactId, resolver);
+            if (found.isPresent()) {
+                foundVersion = found;
+                break;
+            }
+        }
+
+        if (foundVersion.isPresent()) {
+            return groupId + ":" + artifactId + ":" + foundVersion.get();
+        } else {
+            return "N/A";
+        }
+    }
+
+    private MavenVersionResolver createMavenResolver() {
+        return new MavenVersionResolver() {
+            @Override
+            public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
+                return Optional.of("1.0.0.Final");
+            }
+        };
+    }
+
+
 }

@@ -30,7 +30,7 @@
     <h1>WildFly Channel App</h1>
 
 
-    <form method="post" onsubmit="javascript: return process();">
+    <form id="channel-form" method="post" onsubmit="javascript: return process();">
         <h2>Channels Definitions</h2>
         <div class="row">
                 <div class="ace_editor" id="editor"># Paste channel YAML definitions here</div>
@@ -49,19 +49,21 @@
         <div class="row">
             <div class="six columns">
                 <label for="groupId">groupId</label>
-                <input class="u-full-width" placeholder="org.wildfly" id="groupId">
+                <input class="u-full-width" placeholder="org.wildfly" id="groupId" name="groupId">
             </div>
             <div class="six columns">
                 <label for="artifactId">artifactId</label>
-                <input class="u-full-width" formaction="/latest" placeholder="wildfly-ee-feature-pack" id="artifactId">
+                <input class="u-full-width" placeholder="wildfly-ee-galleon-pack" id="artifactId" name="artifactId">
             </div>
         </div>
         <div class="row">
-            <div class="six columns">
-                <input class="button-primary" type="submit" formaction="/latest" value="Get latest version">
+            <div class="four columns">
+                <input class="button-primary" type="submit" id="get-latest-value" value="Get latest version">
+            </div>
+            <div class="eight columns">
+                <pre id="pre-version" hidden><code><p id="latest-version"></p></code></pre>
             </div>
         </div>
-        </fieldset>
     </form>
 </div>
 <script src="/js/ace.js" type="text/javascript" charset="utf-8"></script>
@@ -76,6 +78,7 @@ function process() {
 }
 
 $(document).ready(function(){
+
  $("#validator").click(function(event){
     event.preventDefault();
     process();
@@ -90,6 +93,26 @@ $(document).ready(function(){
       },
       error: function (jqXHR, textStatus, errorThrown) {
         $("#warnings").text(errorThrown.message);
+      }
+    });
+  });
+
+ $("#get-latest-value").click(function(event){
+    event.preventDefault();
+    process();
+    console.log("get latest version");
+    $.ajax({
+      type: "post",
+      url: "/latest",
+      data: $("#channel-form").serialize(),
+      dataType: "text",
+      success: function(response) {
+        $("#latest-version").text(response);
+        $("#pre-version").show();
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        $("#latest-version").text(errorThrown.message);
+        $("#pre-version").show();
       }
     });
   });
