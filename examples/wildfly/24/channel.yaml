@@ -1,0 +1,21 @@
+# Paste channel YAML definitions hereid: wildfly-24
+name: Channel for WildFly 24
+description: |-
+  This channel provides a stream of WildFly 24 Feature Packs.
+vendor:
+  name: WildFly
+  support: community
+repositories:
+  - id: maven-central
+    url: https://repo1.maven.org/maven2/
+streams:
+  - groupId: org.wildfly
+    artifactId: '*'
+    version-pattern: '24\.\d+\.\d+.Final'
+  - groupId: org.wildfly.core
+    artifactId: '*'
+    version: 16.0.1.Final
+  - groupId: io.netty
+    artifactId: netty-all
+    version: 4.1.66.Final
+    #version-pattern: '4\.1\..*.Final'
