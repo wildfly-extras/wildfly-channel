@@ -23,7 +23,6 @@ package org.wildfly.channel.app;
 
 import static java.util.Objects.requireNonNull;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,12 +35,12 @@ import javax.ws.rs.core.MediaType;
 
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
-import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionResolver;
-import org.wildfly.channel.version.VersionComparator;
 
 @Path("/latest")
-public class VersionResolver {
+public class LatestVersion {
+
+    private final MavenVersionResolver MAVEN_VERSION_RESOLVER = new SimpleMavenVersionResolver();
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -51,34 +50,16 @@ public class VersionResolver {
                                    @FormParam("artifactId") String artifactId) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
-
-        MavenVersionResolver resolver = createMavenResolver();
         List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
 
-        Optional<String> foundVersion = Optional.empty();
-        for (Channel channel : channels) {
-            Optional<String> found = channel.resolveLatestVersion(groupId, artifactId, resolver);
-            if (found.isPresent()) {
-                foundVersion = found;
-                break;
-            }
-        }
-
-        if (foundVersion.isPresent()) {
-            return groupId + ":" + artifactId + ":" + foundVersion.get();
+        Optional<String> version = channels.stream()
+                .map(c -> c.resolveLatestVersion(groupId, artifactId, MAVEN_VERSION_RESOLVER).orElse(null))
+                .filter(v -> v != null)
+                .findFirst();
+        if (version.isPresent()) {
+            return groupId + ":" + artifactId + ":" + version.get();
         } else {
             return "N/A";
         }
     }
-
-    private MavenVersionResolver createMavenResolver() {
-        return new MavenVersionResolver() {
-            @Override
-            public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
-                return Optional.of("1.0.0.Final");
-            }
-        };
-    }
-
-
 }
