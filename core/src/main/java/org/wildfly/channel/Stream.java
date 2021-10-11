@@ -59,7 +59,7 @@ public class Stream {
     private final String version;
 
     /**
-     * Version of the stream.
+     * VersionPattern of the stream.
      * This is a regular expression that matches any version from this stream (e.g. "2\.2\..*").
      *
      * Either this field or the versionPattern field must be set.

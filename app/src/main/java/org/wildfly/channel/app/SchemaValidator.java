@@ -23,6 +23,7 @@ package org.wildfly.channel.app;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
@@ -31,8 +32,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
+import org.wildfly.channel.InvalidChannelException;
 
 @Path("/validate")
 public class SchemaValidator {
@@ -40,20 +41,17 @@ public class SchemaValidator {
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public String validate(@FormParam("channels") String yamlChannels) {
+    public String validate(@FormParam("channels") String yamlChannels) throws IOException {
+
+        System.out.println("SchemaValidator.validate");
         System.out.println("yamlChannels = " + yamlChannels);
-
-
-        List<Channel> channels = null;
         try {
-            channels = ChannelMapper.channelsFromString(yamlChannels);
-        } catch (IOException e) {
-            return "FAIL\n\n" +
-                    e.getLocalizedMessage();
+            ChannelMapper.channelsFromString(yamlChannels);
+        } catch (InvalidChannelException e) {
+            return e.getValidationMessages().stream().collect(Collectors.joining("\n"));
+        } catch (RuntimeException e) {
+            return e.getLocalizedMessage();
         }
-
-
-
-        return "OK";
+        return "Validation OK";
     }
 }

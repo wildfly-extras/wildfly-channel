@@ -74,7 +74,7 @@ public class Channel {
     private List<MavenRepository> repositories = emptyList();
 
     /**
-     * Streams of components that are provides by this channel.
+     * Streams of components that are provided by this channel.
      */
     private Collection<Stream> streams = emptySet();
 

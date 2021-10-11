@@ -21,6 +21,7 @@
     <!-- Favicon
       –––––––––––––––––––––––––––––––––––––––––––––––––– -->
     <link rel="icon" type="image/png" href="images/favicon.png">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
 
@@ -32,14 +33,17 @@
     <form method="post" onsubmit="javascript: return process();">
         <h2>Channels Definitions</h2>
         <div class="row">
-            <div class="ace_editor" id="editor"># Paste channel YAML definitions here
-
-
-            </div>
+                <div class="ace_editor" id="editor"># Paste channel YAML definitions here</div>
             <input type="hidden" id="channels" name="channels">
         </div>
+        <div class="row">
+            <div id="warnings"></div>
+        </div>
+        <hr />
+        <div class="row">
+            <input class="button-primary" id="validator" type="submit" value="Validate">
+        </div>
         <br>
-        <input class="button-primary" type="submit" value="Validate" formaction="/validate">
 
         <h2>Version Resolver</h2>
         <div class="row">
@@ -62,14 +66,35 @@
 </div>
 <script src="/js/ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/dracula");
-    editor.session.setMode("ace/mode/yaml");
+var editor = ace.edit("editor");
+editor.setTheme("ace/theme/dracula");
+editor.session.setMode("ace/mode/yaml");
 
 function process() {
   document.getElementById("channels").value = editor.getValue();
   return true;
 }
+
+$(document).ready(function(){
+ $("#validator").click(function(event){
+    event.preventDefault();
+    process();
+    console.log("validate schema");
+    $.ajax({
+      type: "post",
+      url: "/validate",
+      data: $("#channels").serialize(),
+      dataType: "text",
+      success: function(response) {
+        $("#warnings").text(response);
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        $("#warnings").text(errorThrown.message);
+      }
+    });
+  });
+});
+
 </script>
 
 </body>
