@@ -21,11 +21,11 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,9 +57,7 @@ public class ChannelMapper {
             Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
             return channel;
         } catch (IOException e) {
-            InvalidChannelException ice = new InvalidChannelException("Cannot read channel", Collections.emptyList());
-            ice.initCause(e);
-            throw ice;
+            throw wrapException(e);
         }
     }
 
@@ -74,9 +72,7 @@ public class ChannelMapper {
             Channel channel = OBJECT_MAPPER.readValue(yamlContent, Channel.class);
             return channel;
         } catch (IOException e) {
-            InvalidChannelException ice = new InvalidChannelException("Cannot read channel", Collections.emptyList());
-            ice.initCause(e);
-            throw ice;
+            throw wrapException(e);
         }
     }
 
@@ -91,10 +87,7 @@ public class ChannelMapper {
             List<Channel> channels = OBJECT_MAPPER.readValues(parser, Channel.class).readAll();
             return channels;
         } catch (IOException e) {
-            e.printStackTrace();
-            InvalidChannelException ice = new InvalidChannelException("Invalid Channel", Collections.emptyList());
-            ice.initCause(e);
-            throw ice;
+            throw wrapException(e);
         }
     }
 
@@ -108,5 +101,11 @@ public class ChannelMapper {
         JsonNode node = OBJECT_MAPPER.readTree(yamlContent);
         Set<ValidationMessage> validationMessages = SCHEMA.validate(node);
         return validationMessages.stream().map(ValidationMessage::getMessage).collect(Collectors.toList());
+    }
+
+    private static InvalidChannelException wrapException(Exception e) {
+        InvalidChannelException ice = new InvalidChannelException("Invalid Channel", singletonList(e.getLocalizedMessage()));
+        ice.initCause(e);
+        return ice;
     }
 }

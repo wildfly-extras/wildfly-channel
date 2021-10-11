@@ -37,12 +37,13 @@ import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.VersionRangeRequest;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionResolver;
 import org.wildfly.channel.version.VersionComparator;
@@ -51,28 +52,30 @@ public class SimpleMavenVersionResolver implements MavenVersionResolver {
     @Override
     public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
 
-        List<RemoteRepository> remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
+        System.out.println(String.format("Resolving the latest version of %s:%s in repositories: %s",
+                groupId, artifactId, mavenRepositories.stream().map(r -> r.getUrl().toString()).collect(Collectors.joining(","))));
 
+        List<RemoteRepository> remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
         RepositorySystem system = newRepositorySystem();
         RepositorySystemSession session = newRepositorySystemSession(system);
 
-        Artifact artifact = new DefaultArtifact("org.eclipse.aether:aether-util:1.0.0.v20140518");
-        ArtifactRequest artifactRequest = new ArtifactRequest();
-        artifactRequest.setArtifact(artifact);
-        artifactRequest.setRepositories(remoteRepositories);
+        Artifact artifact = new DefaultArtifact(groupId, artifactId, null, "[0,)");
+        VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
+        versionRangeRequest.setArtifact(artifact);
+        versionRangeRequest.setRepositories(remoteRepositories);
 
-        ArtifactResult artifactResult = null;
         try {
-            artifactResult = system.resolveArtifact(session, artifactRequest);
-            artifact = artifactResult.getArtifact();
+            VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
+            List<String> versions = versionRangeResult.getVersions().stream().map(Version::toString).collect(Collectors.toList());
+            System.out.println("All versions in the repositories: " + versions);
 
-            System.out.println(artifact + " resolved to  " + artifact.getFile());
-            return Optional.of("1.0.0.Final");
-        } catch (ArtifactResolutionException e) {
+            Optional<String> found = versionComparator.matches(versions);
+            System.out.println("found = " + found);
+            return found;
+        } catch (VersionRangeResolutionException e) {
             e.printStackTrace();
             return empty();
         }
-
     }
 
     public static RepositorySystem newRepositorySystem() {

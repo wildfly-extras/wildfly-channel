@@ -106,7 +106,7 @@
             "required": ["version"]
           },
           {
-            "required": ["versionPattern"]
+            "required": ["version-pattern"]
           }
         ]
       }

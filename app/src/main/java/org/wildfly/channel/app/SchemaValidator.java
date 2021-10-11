@@ -42,16 +42,13 @@ public class SchemaValidator {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
     public String validate(@FormParam("channels") String yamlChannels) throws IOException {
-
-        System.out.println("SchemaValidator.validate");
-        System.out.println("yamlChannels = " + yamlChannels);
         try {
             ChannelMapper.channelsFromString(yamlChannels);
         } catch (InvalidChannelException e) {
             return e.getValidationMessages().stream().collect(Collectors.joining("\n"));
-        } catch (RuntimeException e) {
-            return e.getLocalizedMessage();
+        } catch (Throwable t) {
+            return t.getLocalizedMessage();
         }
-        return "Validation OK";
+        return "Validation is OK";
     }
 }
