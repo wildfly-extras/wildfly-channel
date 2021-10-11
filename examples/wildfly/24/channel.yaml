@@ -1,4 +1,4 @@
-# Paste channel YAML definitions hereid: wildfly-24
+id: wildfly-24
 name: Channel for WildFly 24
 description: |-
   This channel provides a stream of WildFly 24 Feature Packs.
