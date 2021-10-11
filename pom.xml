@@ -10,7 +10,7 @@
 
     <groupId>org.wildfly.channel</groupId>
     <artifactId>channel-parent</artifactId>
-    <version>1.0.0.Alpha1</version>
+    <version>1.0.0.Alpha1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>WildFly Channel - Parent</name>
 
