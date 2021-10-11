@@ -14,6 +14,13 @@
     <packaging>pom</packaging>
     <name>WildFly Channel - Parent</name>
 
+    <scm>
+        <connection>scm:git:git@github.com:jmesnil/wildfly-channel.git</connection>
+        <developerConnection>scm:git:git@github.com:jmesnil/wildfly-channel.git</developerConnection>
+        <url>https://github.com/jmesnil/wildfly-channel</url>
+        <tag>HEAD</tag>
+    </scm>
+
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
@@ -59,8 +66,4 @@
             </plugin>
         </plugins>
     </build>
-
-  <scm>
-    <tag>1.0.0.Alpha1</tag>
-  </scm>
 </project>
