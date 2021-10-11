@@ -23,6 +23,7 @@ package org.wildfly.channel.app;
 
 import static java.util.Optional.empty;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.repository.LocalArtifactRequest;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRangeRequest;
@@ -49,15 +51,21 @@ import org.wildfly.channel.spi.MavenVersionResolver;
 import org.wildfly.channel.version.VersionComparator;
 
 public class SimpleMavenVersionResolver implements MavenVersionResolver {
+
+    private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
+
     @Override
     public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
 
-        System.out.println(String.format("Resolving the latest version of %s:%s in repositories: %s",
-                groupId, artifactId, mavenRepositories.stream().map(r -> r.getUrl().toString()).collect(Collectors.joining(","))));
-
         List<RemoteRepository> remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
+
+        System.out.println("remoteRepositories = " + remoteRepositories);
+
+        System.out.println(String.format("Resolving the latest version of %s:%s in repositories: %s",
+                groupId, artifactId, remoteRepositories.stream().map(r -> r.getUrl()).collect(Collectors.joining(","))));
+
         RepositorySystem system = newRepositorySystem();
-        RepositorySystemSession session = newRepositorySystemSession(system);
+        RepositorySystemSession session = newRepositorySystemSession(system, resolveLocalCache);
 
         Artifact artifact = new DefaultArtifact(groupId, artifactId, null, "[0,)");
         VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
@@ -91,14 +99,17 @@ public class SimpleMavenVersionResolver implements MavenVersionResolver {
         return locator.getService(RepositorySystem.class);
     }
 
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system) {
+    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, boolean resolveLocalCache) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
-        LocalRepository localRepo = new LocalRepository("target/local-repo");
+        String location;
+        if (resolveLocalCache) {
+            location = LOCAL_MAVEN_REPO;
+        } else {
+           location = "target/local-repo" ;
+        }
+        LocalRepository localRepo = new LocalRepository(location);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
-        // uncomment to generate dirty trees
-        // session.setDependencyGraphTransformer( null );
-
         return session;
     }
 
