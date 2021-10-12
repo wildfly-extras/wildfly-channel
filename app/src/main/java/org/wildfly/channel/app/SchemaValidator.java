@@ -22,11 +22,11 @@
 package org.wildfly.channel.app;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -35,12 +35,13 @@ import javax.ws.rs.core.MediaType;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.InvalidChannelException;
 
-@Path("/validate")
+@Path("/")
 public class SchemaValidator {
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
+    @Path("/validate")
     public String validate(@FormParam("channels") String yamlChannels) throws IOException {
         try {
             ChannelMapper.channelsFromString(yamlChannels);
@@ -50,5 +51,12 @@ public class SchemaValidator {
             return t.getLocalizedMessage();
         }
         return "Validation is OK";
+    }
+
+    @GET
+    @Path("/schema")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getSchema() throws IOException {
+        return ChannelMapper.getSchema();
     }
 }

@@ -25,7 +25,9 @@ import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,10 +43,11 @@ import com.networknt.schema.ValidationMessage;
 
 public class ChannelMapper {
 
+    private static String SCHEMA_FILE = "org/wildfly/channel/channel-schema.json";
     private static final YAMLFactory YAML_FACTORY = new YAMLFactory();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY);
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(OBJECT_MAPPER).build();
-    private static final JsonSchema SCHEMA = SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream("org/wildfly/channel/channel-schema.json"));
+    private static final JsonSchema SCHEMA = SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE));
 
     public static Channel from(URL channelURL) throws InvalidChannelException {
         requireNonNull(channelURL);
@@ -88,6 +91,12 @@ public class ChannelMapper {
             return channels;
         } catch (IOException e) {
             throw wrapException(e);
+        }
+    }
+
+    public static String getSchema() throws IOException {
+        try (InputStream stream = ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE)) {
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 
