@@ -64,9 +64,8 @@ public class SimpleMavenVersionResolver implements MavenVersionResolver {
         system = newRepositorySystem();
     }
 
-    @Override
-    public List<MavenRepository> getMavenRepositories() {
-        return mavenRepositories;
+    public List<RemoteRepository> getRemoteRepositories() {
+        return remoteRepositories;
     }
 
     @Override
@@ -122,5 +121,9 @@ public class SimpleMavenVersionResolver implements MavenVersionResolver {
 
     private static RemoteRepository newRemoteRepository(MavenRepository mavenRepository) {
         return new RemoteRepository.Builder(mavenRepository.getId(), "default", mavenRepository.getUrl().toExternalForm()).build();
+    }
+
+    public void install(String gav) {
+        System.out.println(String.format("install %s from %s", gav, remoteRepositories));
     }
 }

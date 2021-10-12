@@ -37,7 +37,7 @@ import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenResolverBuilder;
 import org.wildfly.channel.spi.MavenVersionResolver;
 
-public class SimpleResolverBuilder implements MavenResolverBuilder {
+public class SimpleResolverBuilder implements MavenResolverBuilder<MavenVersionResolver> {
 
     MavenRepository localCache;
 
@@ -48,10 +48,6 @@ public class SimpleResolverBuilder implements MavenResolverBuilder {
     @Override
     public MavenVersionResolver create(List<MavenRepository> mavenRepositories) {
         return new MavenVersionResolver() {
-            @Override
-            public List<MavenRepository> getMavenRepositories() {
-                return new ArrayList<>(mavenRepositories);
-            }
 
             @Override
             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {

@@ -19,13 +19,21 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel.spi;
+package org.wildfly.channel;
 
-import java.util.Set;
+import java.net.URL;
 
-/**
- * SPI Interface implemented by tooling doing the Maven request to get all the versions for the given artifact.
- */
-public interface MavenVersionResolver {
-   Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache);
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class ChannelWithRequirementsTestCase {
+
+    @Test
+    public void testChannelWithSingleChannelRequirement() {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("this-channel-does-not-exist.yaml");
+        Assertions.assertThrows(RuntimeException.class, () -> {
+            ChannelMapper.from(file);
+        });
+    }
 }

@@ -48,14 +48,23 @@ public class LatestVersion {
                                    @FormParam("artifactId") String artifactId) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
-        List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
 
-        ChannelSession session = new ChannelSession(channels, new SimpleMavenVersionResolverBuilder());
-        Optional<ChannelSession.LatestVersionResult> latestVersion = session.getLatestVersion(groupId, artifactId, null, null);
-        if (latestVersion.isPresent()) {
-            return groupId + ":" + artifactId + ":" + latestVersion.get().getVersion();
+        List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
+        ChannelSession<SimpleMavenVersionResolver> session = new ChannelSession<>(channels, new SimpleMavenVersionResolverBuilder());
+
+        Optional<ChannelSession.Result<SimpleMavenVersionResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
+        if (result.isPresent()) {
+            String gav =  groupId + ":" + artifactId + ":" + result.get().getVersion();
+            System.out.println(String.format("latest version found in %s", result.get().getResolver().getRemoteRepositories()));
+
+            // here, we could have a MavenVersionResolver that does the actual resolution of the file corresponding to the gav
+            // SimpleMavenVersionResolver resolver = result.get().getResolver();
+            // resolver.install(gav);
+
+            return gav;
         } else {
             return "N/A";
         }
+
     }
 }

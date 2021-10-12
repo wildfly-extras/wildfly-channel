@@ -26,10 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,7 +34,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.channel.spi.MavenResolverBuilder;
 import org.wildfly.channel.spi.MavenVersionResolver;
-import org.wildfly.channel.version.SimpleResolverBuilder;
 
 public class ChannelSessionTestCase {
 
@@ -67,30 +62,19 @@ public class ChannelSessionTestCase {
 
         ChannelSession session = new ChannelSession(channels,
                 // dummy maven resolver that returns the version based on the id of the maven repositories
-                new MavenResolverBuilder() {
+                (MavenResolverBuilder<MavenVersionResolver>) mavenRepositories -> new MavenVersionResolver() {
                     @Override
-                    public MavenVersionResolver create(List<MavenRepository> mavenRepositories) {
-                        return new MavenVersionResolver() {
-                            @Override
-                            public List<MavenRepository> getMavenRepositories() {
-                                return mavenRepositories;
-                            }
-
-                            @Override
-                            public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
-                                if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {
-                                    return singleton("24.0.0.Final");
-                                } else {
-                                    return singleton("25.0.0.Final");
-                                }
-                            }
-                        };
+                    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+                        if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {
+                            return singleton("24.0.0.Final");
+                        } else {
+                            return singleton("25.0.0.Final");
+                        }
                     }
                 });
 
-        Optional<ChannelSession.LatestVersionResult> found = session.getLatestVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+        Optional<ChannelSession.Result> found = session.getLatestVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null);
         assertTrue(found.isPresent());
         assertEquals("25.0.0.Final", found.get().getVersion());
-        assertEquals("repo-wildfly-25", found.get().getResolver().getMavenRepositories().get(0).getId());
     }
 }

@@ -32,42 +32,41 @@ import java.util.Set;
 import org.wildfly.channel.spi.MavenResolverBuilder;
 import org.wildfly.channel.spi.MavenVersionResolver;
 
-public class ChannelSession {
+public class ChannelSession<T extends MavenVersionResolver> {
     private List<Channel> channels;
-    private MavenResolverBuilder builder;
+    private MavenResolverBuilder<T> builder;
 
-    public ChannelSession(List<Channel> channels, MavenResolverBuilder builder) {
+    public ChannelSession(List<Channel> channels, MavenResolverBuilder<T> builder) {
         Objects.requireNonNull(channels);
         Objects.requireNonNull(builder);
         this.channels = channels;
         this.builder = builder;
     }
 
-    public Optional<LatestVersionResult> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
+    public Optional<Result<T>> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
         Objects.requireNonNull(groupId);
         Objects.requireNonNull(artifactId);
 
         // find all latest versions from the different channels;
-        Set<LatestVersionResult> found = new HashSet<>();
+        Set<Result<T>> found = new HashSet<>();
         for (Channel channel : channels) {
-            MavenVersionResolver versionResolver = builder.create(channel.getRepositories());
+            T versionResolver = builder.create(channel.getRepositories());
             Optional<String> foundLatestVersionInChannel = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, versionResolver);
             if (foundLatestVersionInChannel.isPresent()) {
-                found.add(new LatestVersionResult(foundLatestVersionInChannel.get(), versionResolver));
+                found.add(new Result<>(foundLatestVersionInChannel.get(), versionResolver));
             }
         }
-
         // compare all latest version from the channels to find the latest overall
         return found.stream()
                 .sorted((lvr1, lvr2) -> COMPARATOR.reversed().compare(lvr1.version, lvr2.version))
                 .findFirst();
     }
 
-    public class LatestVersionResult {
+    public static class Result<T> {
         String version;
-        MavenVersionResolver resolver;
+        T resolver;
 
-        private LatestVersionResult(String version, MavenVersionResolver resolver) {
+        private Result(String version, T resolver) {
             this.version = version;
             this.resolver = resolver;
         }
@@ -82,7 +81,7 @@ public class ChannelSession {
         /**
          * The MavenVersionResolver that found the latest version.
          */
-        public MavenVersionResolver getResolver() {
+        public T getResolver() {
             return resolver;
         }
     }

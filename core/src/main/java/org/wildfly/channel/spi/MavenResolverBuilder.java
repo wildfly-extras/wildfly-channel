@@ -28,7 +28,7 @@ import org.wildfly.channel.MavenRepository;
 /**
  * Builder API to build MavenVersionResolver.
  */
-public interface MavenResolverBuilder {
+public interface MavenResolverBuilder<T extends MavenVersionResolver> {
 
-    MavenVersionResolver create(List<MavenRepository> mavenRepositories);
+    T create(List<MavenRepository> mavenRepositories);
 }

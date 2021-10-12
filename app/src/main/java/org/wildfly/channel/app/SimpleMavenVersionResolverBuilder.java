@@ -28,7 +28,7 @@ import java.util.List;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenResolverBuilder;
 
-public class SimpleMavenVersionResolverBuilder implements MavenResolverBuilder {
+public class SimpleMavenVersionResolverBuilder implements MavenResolverBuilder<SimpleMavenVersionResolver> {
 
     @Override
     public SimpleMavenVersionResolver create(List<MavenRepository> mavenRepositories) {
