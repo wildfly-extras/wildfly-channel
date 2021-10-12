@@ -24,13 +24,18 @@ package org.wildfly.channel;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.empty;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.swing.text.html.Option;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.wildfly.channel.spi.MavenResolverBuilder;
 import org.wildfly.channel.spi.MavenVersionResolver;
 
 /**
@@ -107,19 +112,34 @@ public class Channel {
         return streams;
     }
 
-    Optional<String> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenVersionResolver resolver) {
+    <T extends MavenVersionResolver> Optional<ChannelSession.Result<T>> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenResolverBuilder<T> builder) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
-        requireNonNull(resolver);
-        
+        requireNonNull(builder);
+
+        // first we looked into the required channels
+        List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
+        ChannelSession sessionForRequiredChannel = new ChannelSession(requiredChannels, builder);
+        Optional<ChannelSession.Result<T>> resultFromRequiredChannel = sessionForRequiredChannel.getLatestVersion(groupId, artifactId, extension, classifier);
+
         // first we find if there is a stream for that given (groupId, artifactId).
         Optional<Stream> foundStream = findStreamFor(groupId, artifactId);
         if (!foundStream.isPresent()) {
-            return Optional.empty();
+            // we return any result from the required channel
+            return resultFromRequiredChannel;
         }
+
+        T resolver = builder.create(repositories);
         // there is a stream, let's now check its version
         Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier, foundStream.get().isResolveWithLocalCache());
-        return foundStream.get().getVersionComparator().matches(versions);
+        Optional<String> foundVersion = foundStream.get().getVersionComparator().matches(versions);
+        // if a version is found in this channel, it always wins against any stream in its required channel
+        if (foundVersion.isPresent()) {
+            return Optional.of(new ChannelSession.Result<>(foundVersion.get(), resolver));
+        } else {
+            // we return any result from the required channel
+            return resultFromRequiredChannel;
+        }
     }
 
     Optional<Stream> findStreamFor(String groupId, String artifactId) {

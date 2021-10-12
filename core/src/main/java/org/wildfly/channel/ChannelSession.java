@@ -50,10 +50,9 @@ public class ChannelSession<T extends MavenVersionResolver> {
         // find all latest versions from the different channels;
         Set<Result<T>> found = new HashSet<>();
         for (Channel channel : channels) {
-            T versionResolver = builder.create(channel.getRepositories());
-            Optional<String> foundLatestVersionInChannel = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, versionResolver);
-            if (foundLatestVersionInChannel.isPresent()) {
-                found.add(new Result<>(foundLatestVersionInChannel.get(), versionResolver));
+            Optional<Result<T>> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, builder);
+            if (result.isPresent()) {
+                found.add(result.get());
             }
         }
         // compare all latest version from the channels to find the latest overall
@@ -66,7 +65,7 @@ public class ChannelSession<T extends MavenVersionResolver> {
         String version;
         T resolver;
 
-        private Result(String version, T resolver) {
+        Result(String version, T resolver) {
             this.version = version;
             this.resolver = resolver;
         }

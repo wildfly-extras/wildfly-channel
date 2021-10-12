@@ -21,19 +21,47 @@
  */
 package org.wildfly.channel;
 
-import java.net.URL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.Assertions;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
+import org.wildfly.channel.spi.MavenResolverBuilder;
+import org.wildfly.channel.spi.MavenVersionResolver;
 
 public class ChannelWithRequirementsTestCase {
 
     @Test
-    public void testChannelWithSingleChannelRequirement() {
+    public void testChannelWithSingleChannelRequirement() throws URISyntaxException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        URL file = tccl.getResource("this-channel-does-not-exist.yaml");
-        Assertions.assertThrows(RuntimeException.class, () -> {
-            ChannelMapper.from(file);
+        URL requiredChannel = tccl.getResource("channels/required-channel.yaml");
+        Channel channel = ChannelMapper.fromString("id: my-channel\n" +
+                "name: My Channel\n" +
+                "requires:\n" +
+                "  - url: " + requiredChannel.toURI());
+
+        assertEquals(1, channel.getChannelRequirements().size());
+
+        ChannelSession<MavenVersionResolver> session = new ChannelSession(Collections.singletonList(channel), new MavenResolverBuilder<MavenVersionResolver>() {
+            @Override
+            public MavenVersionResolver create(List list) {
+                return new MavenVersionResolver() {
+                    @Override
+                    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+                        return Collections.singleton("1.2.0.Final");
+                    }
+                };
+            }
         });
+
+        Optional < ChannelSession.Result < MavenVersionResolver >> result = session.getLatestVersion("org.example", "foo-bar", null, null);
+        assertTrue(result.isPresent());
+        assertEquals("1.2.0.Final", result.get().version);
     }
 }

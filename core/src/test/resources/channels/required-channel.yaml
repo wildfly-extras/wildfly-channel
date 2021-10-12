@@ -1,0 +1,6 @@
+id: my-required-channel
+name: My Required Channel
+streams:
+  - groupId: org.example
+    artifactId: foo-bar
+    version: 1.2.0.Final
