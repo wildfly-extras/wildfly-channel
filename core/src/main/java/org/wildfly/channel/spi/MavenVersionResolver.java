@@ -26,8 +26,14 @@ import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
 
+/**
+ * SPI Interface implemented by tooling doing the Maven request to get all the versions for the given artifact.
+ */
 public interface MavenVersionResolver {
+   /**
+    * @return the list of Maven Repositories that are queried to get all the versions.
+    */
    List<MavenRepository> getMavenRepositories();
 
-   Set<String> resolve(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache);
+   Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache);
 }

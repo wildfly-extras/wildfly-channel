@@ -22,8 +22,8 @@
 package org.wildfly.channel.version;
 
 import static java.util.Collections.emptySet;
-import static org.wildfly.channel.version.VersionResolutionTestCase.getTestMavenRepositoryURI;
-import static org.wildfly.channel.version.VersionResolutionTestCase.mavenRepositoryFromYaml;
+import static org.wildfly.channel.version.VersionMatcherTestCase.getTestMavenRepositoryURI;
+import static org.wildfly.channel.version.VersionMatcherTestCase.mavenRepositoryFromYaml;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -54,7 +54,7 @@ public class SimpleResolverBuilder implements MavenResolverBuilder {
             }
 
             @Override
-            public Set<String> resolve(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+            public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
                 try {
                     List<SimplisticMavenRepoManager> repoManagers = new ArrayList<>();
                     if (resolveLocalCache) {

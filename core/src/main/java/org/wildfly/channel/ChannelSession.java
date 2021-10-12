@@ -31,7 +31,6 @@ import java.util.Set;
 
 import org.wildfly.channel.spi.MavenResolverBuilder;
 import org.wildfly.channel.spi.MavenVersionResolver;
-import org.wildfly.channel.version.VersionMatcher;
 
 public class ChannelSession {
     private List<Channel> channels;
@@ -44,39 +43,45 @@ public class ChannelSession {
         this.builder = builder;
     }
 
-    public Optional<LatestVersionResolver> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
+    public Optional<LatestVersionResult> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
         Objects.requireNonNull(groupId);
         Objects.requireNonNull(artifactId);
 
         // find all latest versions from the different channels;
-        Set<LatestVersionResolver> found = new HashSet<>();
+        Set<LatestVersionResult> found = new HashSet<>();
         for (Channel channel : channels) {
             MavenVersionResolver versionResolver = builder.create(channel.getRepositories());
             Optional<String> foundLatestVersionInChannel = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, versionResolver);
             if (foundLatestVersionInChannel.isPresent()) {
-                found.add(new LatestVersionResolver(foundLatestVersionInChannel.get(), versionResolver));
+                found.add(new LatestVersionResult(foundLatestVersionInChannel.get(), versionResolver));
             }
         }
 
-        // compare all latest version from the channel to find the latest overall
+        // compare all latest version from the channels to find the latest overall
         return found.stream()
-                .sorted((lvr1, lvr2) -> COMPARATOR.compare(lvr1.version, lvr2.version))
+                .sorted((lvr1, lvr2) -> COMPARATOR.reversed().compare(lvr1.version, lvr2.version))
                 .findFirst();
     }
 
-    public class LatestVersionResolver {
+    public class LatestVersionResult {
         String version;
         MavenVersionResolver resolver;
 
-        public LatestVersionResolver(String version, MavenVersionResolver resolver) {
+        private LatestVersionResult(String version, MavenVersionResolver resolver) {
             this.version = version;
             this.resolver = resolver;
         }
 
+        /**
+         * The latest version.
+         */
         public String getVersion() {
             return version;
         }
 
+        /**
+         * The MavenVersionResolver that found the latest version.
+         */
         public MavenVersionResolver getResolver() {
             return resolver;
         }

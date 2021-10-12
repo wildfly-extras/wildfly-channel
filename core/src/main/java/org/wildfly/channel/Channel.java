@@ -107,7 +107,7 @@ public class Channel {
         return streams;
     }
 
-    protected Optional<String> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenVersionResolver resolver) {
+    Optional<String> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenVersionResolver resolver) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(resolver);
@@ -118,11 +118,11 @@ public class Channel {
             return Optional.empty();
         }
         // there is a stream, let's now check its version
-        Set<String> versions = resolver.resolve(groupId, artifactId, extension, classifier, foundStream.get().isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier, foundStream.get().isResolveWithLocalCache());
         return foundStream.get().getVersionComparator().matches(versions);
     }
 
-    protected Optional<Stream> findStreamFor(String groupId, String artifactId) {
+    Optional<Stream> findStreamFor(String groupId, String artifactId) {
         // first exact match:
         Optional<Stream> stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId)).findFirst();
         if (stream.isPresent()) {

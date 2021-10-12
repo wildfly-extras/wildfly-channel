@@ -21,111 +21,19 @@
  */
 package org.wildfly.channel.app;
 
-import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.VersionRangeRequest;
-import org.eclipse.aether.resolution.VersionRangeResolutionException;
-import org.eclipse.aether.resolution.VersionRangeResult;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
-import org.eclipse.aether.transport.http.HttpTransporterFactory;
-import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenResolverBuilder;
-import org.wildfly.channel.spi.MavenVersionResolver;
 
 public class SimpleMavenVersionResolverBuilder implements MavenResolverBuilder {
 
-    private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
-
     @Override
-    public MavenVersionResolver create(List<MavenRepository> mavenRepositories) {
+    public SimpleMavenVersionResolver create(List<MavenRepository> mavenRepositories) {
         requireNonNull(mavenRepositories);
 
-        return new MavenVersionResolver() {
-
-            @Override
-            public List<MavenRepository> getMavenRepositories() {
-                return new ArrayList<>(mavenRepositories);
-            }
-
-            @Override
-            public Set<String> resolve(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
-                requireNonNull(groupId);
-                requireNonNull(artifactId);
-
-                List<RemoteRepository> remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
-
-                System.out.println("remoteRepositories = " + remoteRepositories);
-
-                System.out.println(String.format("Resolving the latest version of %s:%s in repositories: %s",
-                        groupId, artifactId, remoteRepositories.stream().map(r -> r.getUrl()).collect(Collectors.joining(","))));
-
-                RepositorySystem system = newRepositorySystem();
-                RepositorySystemSession session = newRepositorySystemSession(system, resolveLocalCache);
-
-                Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
-                VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
-                versionRangeRequest.setArtifact(artifact);
-                versionRangeRequest.setRepositories(remoteRepositories);
-
-                try {
-                    VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
-                    Set<String> versions = versionRangeResult.getVersions().stream().map(Version::toString).collect(Collectors.toSet());
-                    System.out.println("All versions in the repositories: " + versions);
-                    return versions;
-                } catch (VersionRangeResolutionException e) {
-                    e.printStackTrace();
-                    return emptySet();
-                }
-            }
-        };
-    }
-
-    public static RepositorySystem newRepositorySystem() {
-        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
-        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
-            @Override
-            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                exception.printStackTrace();
-            }
-        });
-        return locator.getService(RepositorySystem.class);
-    }
-
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, boolean resolveLocalCache) {
-        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
-
-        String location;
-        if (resolveLocalCache) {
-            location = LOCAL_MAVEN_REPO;
-        } else {
-            location = "target/local-repo" ;
-        }
-        LocalRepository localRepo = new LocalRepository(location);
-        session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
-        return session;
-    }
-
-    private static RemoteRepository newRemoteRepository(MavenRepository mavenRepository) {
-        return new RemoteRepository.Builder(mavenRepository.getId(), "default", mavenRepository.getUrl().toExternalForm()).build();
+        return new SimpleMavenVersionResolver(mavenRepositories);
     }
 }

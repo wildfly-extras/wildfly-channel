@@ -51,7 +51,7 @@ public class LatestVersion {
         List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
 
         ChannelSession session = new ChannelSession(channels, new SimpleMavenVersionResolverBuilder());
-        Optional<ChannelSession.LatestVersionResolver> latestVersion = session.getLatestVersion(groupId, artifactId, null, null);
+        Optional<ChannelSession.LatestVersionResult> latestVersion = session.getLatestVersion(groupId, artifactId, null, null);
         if (latestVersion.isPresent()) {
             return groupId + ":" + artifactId + ":" + latestVersion.get().getVersion();
         } else {

@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 
-public class VersionPatternComparatorTestCase {
+public class VersionPatternMatcherTestCase {
 
     @Test
     public void testVersionPattern() {
@@ -108,7 +108,5 @@ public class VersionPatternComparatorTestCase {
     public Optional<String> matches(String pattern, Set<String> samples) {
         VersionPatternMatcher comparator = new VersionPatternMatcher(Pattern.compile(pattern));
         return comparator.matches(samples);
-
     }
-
 }

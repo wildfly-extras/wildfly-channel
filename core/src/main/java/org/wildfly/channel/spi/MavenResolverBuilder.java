@@ -25,6 +25,10 @@ import java.util.List;
 
 import org.wildfly.channel.MavenRepository;
 
+/**
+ * Builder API to build MavenVersionResolver.
+ */
 public interface MavenResolverBuilder {
- MavenVersionResolver create(List<MavenRepository> mavenRepositories);
+
+    MavenVersionResolver create(List<MavenRepository> mavenRepositories);
 }
