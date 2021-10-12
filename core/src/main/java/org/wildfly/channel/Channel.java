@@ -63,6 +63,14 @@ public class Channel {
     private Vendor vendor;
 
     /**
+     * Whether the local cache from Maven must be checked to resolve the latest versions from this channel.
+     * This is an optional field.
+     * It is false by default.
+     */
+    @JsonProperty("resolve-with-local-cache")
+    private boolean resolveWithLocalCache;
+
+    /**
      * Other channels that are required by the channel.
      * This is an optional field.
      */
@@ -100,6 +108,10 @@ public class Channel {
         return channelRequirements;
     }
 
+    public boolean isResolveWithLocalCache() {
+        return resolveWithLocalCache;
+    }
+
     public List<MavenRepository> getRepositories() {
         return repositories;
     }
@@ -125,9 +137,9 @@ public class Channel {
             return resultFromRequiredChannel;
         }
 
-        T resolver = factory.create(repositories);
+        T resolver = factory.create(repositories, resolveWithLocalCache);
         // there is a stream, let's now check its version
-        Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier, foundStream.get().isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
         Optional<String> foundVersion = foundStream.get().getVersionComparator().matches(versions);
         // if a version is found in this channel, it always wins against any stream in its required channel
         if (foundVersion.isPresent()) {

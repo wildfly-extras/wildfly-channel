@@ -24,7 +24,6 @@ package org.wildfly.channel.app;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
@@ -53,29 +51,23 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
     private final RepositorySystem system;
+    private final DefaultRepositorySystemSession session;
 
-    private List<MavenRepository> mavenRepositories;
     private final List<RemoteRepository> remoteRepositories;
 
-    SimpleMavenVersionsResolver(List<MavenRepository> mavenRepositories) {
+    SimpleMavenVersionsResolver(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
         Objects.requireNonNull(mavenRepositories);
-        this.mavenRepositories = new ArrayList<>(mavenRepositories);
         remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
         system = newRepositorySystem();
-    }
-
-    public List<RemoteRepository> getRemoteRepositories() {
-        return remoteRepositories;
+        session = newRepositorySystemSession(system, resolveLocalCache);
     }
 
     @Override
-    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         System.out.println(String.format("Resolving the latest version of %s:%s in repositories: %s",
                 groupId, artifactId, remoteRepositories.stream().map(r -> r.getUrl()).collect(Collectors.joining(","))));
-
-        RepositorySystemSession session = newRepositorySystemSession(system, resolveLocalCache);
 
         Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
         VersionRangeRequest versionRangeRequest = new VersionRangeRequest();

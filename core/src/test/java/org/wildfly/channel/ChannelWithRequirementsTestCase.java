@@ -49,10 +49,10 @@ public class ChannelWithRequirementsTestCase {
 
         ChannelSession<MavenVersionsResolver> session = new ChannelSession(Collections.singletonList(channel), new MavenVersionsResolver.Factory() {
             @Override
-            public MavenVersionsResolver create(List list) {
+            public MavenVersionsResolver create(List list, boolean resolveLocalCache) {
                 return new MavenVersionsResolver() {
                     @Override
-                    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+                    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                         return Collections.singleton("1.2.0.Final");
                     }
                 };

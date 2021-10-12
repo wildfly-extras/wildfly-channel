@@ -51,6 +51,11 @@
         "required": ["url"]
       }
     },
+    "resolve-with-local-cache": {
+      "description": "Whether the local cache from Maven must be checked to resolve the latest versions from this channel.",
+      "type": "boolean",
+      "default": false
+    },
     "repositories": {
       "description": "Maven repositories that contains all artifacts from this channel.",
       "type": "array",
@@ -93,11 +98,6 @@
           "version-pattern" : {
             "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Either this field or the versionPattern field must be set.",
             "type": "string"
-          },
-          "resolve-with-local-cache": {
-            "description": "Whether the local cache from Maven must be checked to resolve the latest version of this stream.",
-            "type": "boolean",
-            "default": false
           }
         },
         "required": ["groupId", "artifactId"],

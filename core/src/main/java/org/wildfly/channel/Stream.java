@@ -65,26 +65,17 @@ public class Stream {
      */
     private final Pattern versionPattern;
 
-    /**
-     * Whether the local cache from Maven must be checked to resolve the latest version of this stream.
-     * This is an optional field.
-     * It is false by default.
-     */
-    private boolean resolveWithLocalCache;
-
     private VersionMatcher versionMatcher;
 
     @JsonCreator
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
-           @JsonProperty("version-pattern") Pattern versionPattern,
-           @JsonProperty("resolve-with-local-cache") boolean resolveWithLocalCache) {
+           @JsonProperty("version-pattern") Pattern versionPattern) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.versionPattern = versionPattern;
-        this.resolveWithLocalCache = resolveWithLocalCache;
         validate();
         initVersionComparator();
     }
@@ -133,11 +124,6 @@ public class Stream {
         return versionPattern;
     }
 
-    public boolean isResolveWithLocalCache() {
-        return resolveWithLocalCache;
-    }
-
-
     public VersionMatcher getVersionComparator() {
         return versionMatcher;
     }
@@ -149,7 +135,6 @@ public class Stream {
                 ", artifactId='" + artifactId + '\'' +
                 ", version='" + version + '\'' +
                 ", versionPattern=" + versionPattern +
-                ", resolveWithLocalCache=" + resolveWithLocalCache +
                 ", versionComparator=" + versionMatcher +
                 '}';
     }

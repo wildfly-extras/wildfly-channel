@@ -68,6 +68,8 @@ public class ChannelTestCase {
         assertEquals("My Vendor", vendor.getName());
         assertEquals(Vendor.Support.COMMUNITY, vendor.getSupport());
 
+        assertEquals(false, channel.isResolveWithLocalCache());
+
         Collection<ChannelRequirement> requires = channel.getChannelRequirements();
         assertEquals(1, requires.size());
         ChannelRequirement requirement = requires.iterator().next();

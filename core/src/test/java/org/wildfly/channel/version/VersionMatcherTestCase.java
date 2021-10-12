@@ -85,12 +85,12 @@ public class VersionMatcherTestCase {
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
         SimpleResolverFactory factory = new SimpleResolverFactory();
-        MavenVersionsResolver resolver = factory.create(mavenRepos);
+        MavenVersionsResolver resolver = factory.create(mavenRepos, false);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version: 1.0.1.Final");
-        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
         assertEquals(foundVersion.get(), "1.0.1.Final");
@@ -98,7 +98,7 @@ public class VersionMatcherTestCase {
         stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version: 1.3.0.Final");
-        versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         foundVersion = stream.getVersionComparator().matches(versions);
         assertFalse(foundVersion.isPresent());
     }
@@ -109,13 +109,13 @@ public class VersionMatcherTestCase {
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
         SimpleResolverFactory factory = new SimpleResolverFactory();
-        MavenVersionsResolver resolver = factory.create(mavenRepos);
+        MavenVersionsResolver resolver = factory.create(mavenRepos, false);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: '*'\n" +
                 "version: 1.0.1.Final");
 
-        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
         assertEquals(foundVersion.get(), stream.getVersion());
@@ -127,13 +127,13 @@ public class VersionMatcherTestCase {
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
         SimpleResolverFactory factory = new SimpleResolverFactory();
-        MavenVersionsResolver resolver = factory.create(mavenRepos);
+        MavenVersionsResolver resolver = factory.create(mavenRepos, false);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version: 1.0.0.Final, 1.0.1.Final");
 
-        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
         assertEquals("1.0.1.Final", foundVersion.get());
@@ -143,7 +143,7 @@ public class VersionMatcherTestCase {
                 "artifactId: foo-bar\n" +
                 "version: 1.0.0.Final, 1.1.1.Final, 1.0.1.Final");
 
-        versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
         assertEquals("1.1.1.Final", foundVersion.get());
@@ -155,12 +155,12 @@ public class VersionMatcherTestCase {
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
         SimpleResolverFactory factory = new SimpleResolverFactory();
-        MavenVersionsResolver resolver = factory.create(mavenRepos);
+        MavenVersionsResolver resolver = factory.create(mavenRepos, false);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version-pattern: '1\\.0\\..*'");
-        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
         assertEquals( "1.0.1.Final", foundVersion.get());
@@ -172,12 +172,12 @@ public class VersionMatcherTestCase {
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
         SimpleResolverFactory factory = new SimpleResolverFactory();
-        MavenVersionsResolver resolver = factory.create(mavenRepos);
+        MavenVersionsResolver resolver = factory.create(mavenRepos, false);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
                 "version-pattern: '1\\.*\\..*'");
-        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertEquals( "1.1.1.Final", foundVersion.get());
     }
@@ -188,21 +188,19 @@ public class VersionMatcherTestCase {
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
         SimpleResolverFactory factory = new SimpleResolverFactory();
-        MavenVersionsResolver resolver = factory.create(mavenRepos);
+        MavenVersionsResolver resolver = factory.create(mavenRepos, true);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: '1\\.1\\..*'\n" +
-                "resolve-with-local-cache: true");
-        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+                "version-pattern: '1\\.1\\..*'");
+        Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertEquals( "1.1.2.Final-SNAPSHOT", foundVersion.get());
 
         stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: '2\\.0\\..*'\n" +
-                "resolve-with-local-cache: true");
-        versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null, stream.isResolveWithLocalCache());
+                "version-pattern: '2\\.0\\..*'");
+        versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
         assertEquals( "2.0.0.Final", foundVersion.get());

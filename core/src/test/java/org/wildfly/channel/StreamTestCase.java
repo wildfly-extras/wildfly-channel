@@ -49,12 +49,10 @@ public class StreamTestCase {
     public void testValidStream() throws IOException {
         Stream stream = fromYamlContent("groupId: org.wildfly\n" +
                 "artifactId: wildfly-ee-galleon-pack\n" +
-                "version: 26.0.0.Final\n" +
-                "resolve-with-local-cache: true");
+                "version: 26.0.0.Final");
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
         assertEquals("26.0.0.Final", stream.getVersion());
-        assertTrue(stream.isResolveWithLocalCache());
     }
 
     @Test
@@ -117,13 +115,5 @@ public class StreamTestCase {
             Stream stream = fromYamlContent("groupId: org.wildfly\n" +
                     "artifactId: wildfly-ee-galleon-pack");
         });
-    }
-
-    @Test
-    public void testResolveWithLocalCacheIsOptional() throws IOException {
-        Stream stream = fromYamlContent("groupId: org.wildfly\n" +
-                "artifactId: wildfly-ee-galleon-pack\n" +
-                "version: 26.0.0.Final");
-        assertFalse(stream.isResolveWithLocalCache());
     }
 }

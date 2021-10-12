@@ -60,14 +60,19 @@ public class ChannelSessionTestCase {
 
         ChannelSession session = new ChannelSession(channels,
                 // dummy maven resolver that returns the version based on the id of the maven repositories
-                (MavenVersionsResolver.Factory<MavenVersionsResolver>) mavenRepositories -> new MavenVersionsResolver() {
+                new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
                     @Override
-                    public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
-                        if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {
-                            return singleton("24.0.0.Final");
-                        } else {
-                            return singleton("25.0.0.Final");
-                        }
+                    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
+                        return new MavenVersionsResolver() {
+                            @Override
+                            public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
+                                if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {
+                                    return singleton("24.0.0.Final");
+                                } else {
+                                    return singleton("25.0.0.Final");
+                                }
+                            }
+                        };
                     }
                 });
 

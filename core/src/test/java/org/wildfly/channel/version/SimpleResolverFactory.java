@@ -44,12 +44,13 @@ public class SimpleResolverFactory implements MavenVersionsResolver.Factory<Mave
         localCache = mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("local-cache").toUri());
 
     }
+
     @Override
-    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories) {
+    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
         return new MavenVersionsResolver() {
 
             @Override
-            public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+            public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                 try {
                     List<SimplisticMavenRepoManager> repoManagers = new ArrayList<>();
                     if (resolveLocalCache) {
@@ -70,5 +71,6 @@ public class SimpleResolverFactory implements MavenVersionsResolver.Factory<Mave
 
             }
         };
+
     }
 }

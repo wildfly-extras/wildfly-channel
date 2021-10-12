@@ -31,9 +31,9 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 public class SimpleMavenVersionResolverFactory implements MavenVersionsResolver.Factory<SimpleMavenVersionsResolver> {
 
     @Override
-    public SimpleMavenVersionsResolver create(List<MavenRepository> mavenRepositories) {
+    public SimpleMavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
         requireNonNull(mavenRepositories);
 
-        return new SimpleMavenVersionsResolver(mavenRepositories);
+        return new SimpleMavenVersionsResolver(mavenRepositories, resolveLocalCache);
     }
 }

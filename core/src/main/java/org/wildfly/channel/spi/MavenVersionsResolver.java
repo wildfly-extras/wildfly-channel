@@ -39,11 +39,10 @@ public interface MavenVersionsResolver {
     * @param artifactId Maven ArtifactId - required
     * @param extension Maven extension - can be {@code null}
     * @param classifier Maven classifier - can be {@code null}
-    * @param resolveLocalCache Whether the Maven resolver must look into its local cache for versions
     *
     * @return the set of versions.
     */
-   Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache);
+   Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
 
    /**
     * Factory API to build MavenVersionResolver.
@@ -55,6 +54,9 @@ public interface MavenVersionsResolver {
     */
    interface Factory<T extends MavenVersionsResolver> {
 
-      T create(List<MavenRepository> mavenRepositories);
+      /**
+       * @param resolveLocalCache Whether the Maven resolver must look into its local cache for versions
+       */
+      T create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
    }
 }
