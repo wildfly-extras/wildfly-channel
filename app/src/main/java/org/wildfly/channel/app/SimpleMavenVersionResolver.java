@@ -21,11 +21,11 @@
  */
 package org.wildfly.channel.app;
 
-import static java.util.Optional.empty;
+import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -36,7 +36,6 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
-import org.eclipse.aether.repository.LocalArtifactRequest;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRangeRequest;
@@ -48,14 +47,17 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionResolver;
-import org.wildfly.channel.version.VersionComparator;
 
 public class SimpleMavenVersionResolver implements MavenVersionResolver {
 
     private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
 
+
     @Override
-    public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
+    public Set<String> resolve(String groupId, String artifactId, String extension, String classifier, List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(mavenRepositories);
 
         List<RemoteRepository> remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
 
@@ -67,22 +69,19 @@ public class SimpleMavenVersionResolver implements MavenVersionResolver {
         RepositorySystem system = newRepositorySystem();
         RepositorySystemSession session = newRepositorySystemSession(system, resolveLocalCache);
 
-        Artifact artifact = new DefaultArtifact(groupId, artifactId, null, "[0,)");
+        Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
         VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
         versionRangeRequest.setArtifact(artifact);
         versionRangeRequest.setRepositories(remoteRepositories);
 
         try {
             VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
-            List<String> versions = versionRangeResult.getVersions().stream().map(Version::toString).collect(Collectors.toList());
+            Set<String> versions = versionRangeResult.getVersions().stream().map(Version::toString).collect(Collectors.toSet());
             System.out.println("All versions in the repositories: " + versions);
-
-            Optional<String> found = versionComparator.matches(versions);
-            System.out.println("found = " + found);
-            return found;
+            return versions;
         } catch (VersionRangeResolutionException e) {
             e.printStackTrace();
-            return empty();
+            return emptySet();
         }
     }
 

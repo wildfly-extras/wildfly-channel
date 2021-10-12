@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class FixedVersionComparator implements VersionComparator {
 
@@ -39,7 +40,7 @@ public class FixedVersionComparator implements VersionComparator {
     }
 
     @Override
-    public Optional<String> matches(List<String> samples) {
+    public Optional<String> matches(Set<String> samples) {
         requireNonNull(samples);
         for (String version : versions) {
             if (samples.contains(version)) {

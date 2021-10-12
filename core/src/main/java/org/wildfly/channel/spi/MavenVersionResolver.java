@@ -22,11 +22,10 @@
 package org.wildfly.channel.spi;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.version.VersionComparator;
 
 public interface MavenVersionResolver {
-    Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator);
+   Set<String> resolve(String groupId, String artifactId, String extension, String classifier, List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
 }

@@ -53,7 +53,7 @@ public class LatestVersion {
         List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
 
         Optional<String> version = channels.stream()
-                .map(c -> c.resolveLatestVersion(groupId, artifactId, MAVEN_VERSION_RESOLVER).orElse(null))
+                .map(c -> c.resolveLatestVersion(groupId, artifactId, null, null, MAVEN_VERSION_RESOLVER).orElse(null))
                 .filter(v -> v != null)
                 .findFirst();
         if (version.isPresent()) {

@@ -21,13 +21,17 @@
  */
 package org.wildfly.channel.version;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
@@ -36,9 +40,7 @@ public class VersionPatternComparatorTestCase {
 
     @Test
     public void testVersionPattern() {
-
-        // they are unordered by design
-        List<String> samples = Arrays.asList(
+        Set<String> samples = new HashSet<>(asList(
                 "1.0.0.Final",
                 "1.0.1.Final",
                 "1.0.1.SP1",
@@ -46,7 +48,7 @@ public class VersionPatternComparatorTestCase {
                 "1.0.2.Final",
                 "1.1.0.SP1",
                 "2.0.0.Beta1",
-                "2.0.0.Final");
+                "2.0.0.Final"));
 
         Optional<String> match = matches(".*", samples);
         assertTrue(match.isPresent());
@@ -78,13 +80,12 @@ public class VersionPatternComparatorTestCase {
 
     @Test
     public void testVersionPattern_2() {
-        // they are unordered by design
-        List<String> samples = Arrays.asList(
+        Set<String> samples = new HashSet<>(asList(
                 "1.0.0.Final-jbossorg-00001",
                 "1.1.0.Final-jbossorg-00001",
                 "1.1.0.Final-jbossorg-00002",
                 "2.0.0.Final-jbossorg-00001",
-                "2.1.0.Final-jbossorg-00001");
+                "2.1.0.Final-jbossorg-00001"));
 
         Optional<String> match = matches("1\\..\\..*Final-jbossorg-\\d+", samples);
         assertTrue(match.isPresent());
@@ -97,18 +98,17 @@ public class VersionPatternComparatorTestCase {
 
     @Test
     public void testVersionPattern_3() {
-        // they are unordered by design
-        List<String> samples = Arrays.asList(
+        Set<String> samples = new HashSet<>(asList(
                 "1.0",
                 "1.9",
-                "1.10");
+                "1.10"));
 
         Optional<String> match = matches("1\\..*", samples);
         assertTrue(match.isPresent());
         assertEquals("1.10", match.get());
     }
 
-    public Optional<String> matches(String pattern, List<String> samples) {
+    public Optional<String> matches(String pattern, Set<String> samples) {
         VersionPatternComparator comparator = new VersionPatternComparator(Pattern.compile(pattern));
         return comparator.matches(samples);
 

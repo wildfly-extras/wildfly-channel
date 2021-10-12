@@ -22,15 +22,17 @@
  */
 package org.wildfly.channel.version;
 
+import static java.util.Collections.emptySet;
 import static org.wildfly.channel.version.VersionResolutionTestCase.getTestMavenRepositoryURI;
 import static org.wildfly.channel.version.VersionResolutionTestCase.mavenRepositoryFromYaml;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionResolver;
@@ -44,31 +46,23 @@ public class SimpleVersionResolver implements MavenVersionResolver {
     }
 
     @Override
-    public Optional<String> resolve(String groupId, String artifactId, List<MavenRepository> mavenRepositories, boolean resolveLocalCache, VersionComparator versionComparator) {
-        if (resolveLocalCache) {
-            Optional<String> found = resolve(groupId, artifactId, localCache, versionComparator);
-            if (found.isPresent()) {
-                return found;
-            }
-        }
-        for (MavenRepository repository : mavenRepositories) {
-            Optional<String> found = resolve(groupId, artifactId, repository, versionComparator);
-            if (found.isPresent()) {
-                return found;
-            }
-        }
-        return Optional.empty();
-    }
-
-    private Optional<String> resolve(String groupId, String artifactId, MavenRepository mavenRepository, VersionComparator versionComparator) {
-        Path mavenRepo;
+    public Set<String> resolve(String groupId, String artifactId, String extension, String classifier, List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
         try {
-            mavenRepo = Paths.get(mavenRepository.getUrl().toURI());
+            List<SimplisticMavenRepoManager> repoManagers = new ArrayList<>();
+            if (resolveLocalCache) {
+                repoManagers.add(SimplisticMavenRepoManager.getInstance(Paths.get(localCache.getUrl().toURI())));
+            }
+            for (MavenRepository mavenRepository : mavenRepositories) {
+                repoManagers.add(SimplisticMavenRepoManager.getInstance(Paths.get(mavenRepository.getUrl().toURI())));
+            }
+
+            Set<String> versions = new HashSet<>();
+            for (SimplisticMavenRepoManager repoManager : repoManagers) {
+                versions.addAll(repoManager.getAllVersions(groupId, artifactId));
+            }
+            return versions;
         } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+            return emptySet();
         }
-        SimplisticMavenRepoManager mavenRepoManager = SimplisticMavenRepoManager.getInstance(mavenRepo);
-        List<String> versionsFromRepo = mavenRepoManager.getAllVersions(groupId, artifactId);
-        return versionComparator.matches(versionsFromRepo);
     }
 }

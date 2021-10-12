@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class VersionPatternComparator implements VersionComparator {
@@ -37,7 +38,7 @@ public class VersionPatternComparator implements VersionComparator {
     }
 
     @Override
-    public Optional<String> matches(List<String> samples) {
+    public Optional<String> matches(Set<String> samples) {
         List<String> matches = new ArrayList<>();
         for (String sample : samples) {
             if (pattern.matcher(sample).matches()) {

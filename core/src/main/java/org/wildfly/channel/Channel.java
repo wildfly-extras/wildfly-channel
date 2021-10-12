@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionResolver;
@@ -106,7 +107,7 @@ public class Channel {
         return streams;
     }
 
-    public Optional<String> resolveLatestVersion(String groupId, String artifactId, MavenVersionResolver resolver) {
+    public Optional<String> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenVersionResolver resolver) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(resolver);
@@ -117,7 +118,8 @@ public class Channel {
             return Optional.empty();
         }
         // there is a stream, let's now check its version
-        return resolver.resolve(groupId, artifactId, repositories, foundStream.get().isResolveWithLocalCache(), foundStream.get().getVersionComparator());
+        Set<String> versions = resolver.resolve(groupId, artifactId, extension, classifier, repositories, foundStream.get().isResolveWithLocalCache());
+        return foundStream.get().getVersionComparator().matches(versions);
     }
 
     protected Optional<Stream> findStreamFor(String groupId, String artifactId) {
