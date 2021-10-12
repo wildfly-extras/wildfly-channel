@@ -19,13 +19,21 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel.spi;
+package org.wildfly.channel.app;
 
-import java.util.Set;
+import static java.util.Objects.requireNonNull;
 
-/**
- * SPI Interface implemented by tooling doing the Maven request to get all the versions for the given artifact.
- */
-public interface MavenVersionResolver {
-   Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache);
+import java.util.List;
+
+import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.spi.MavenVersionsResolver;
+
+public class SimpleMavenVersionResolverFactory implements MavenVersionsResolver.Factory<SimpleMavenVersionsResolver> {
+
+    @Override
+    public SimpleMavenVersionsResolver create(List<MavenRepository> mavenRepositories) {
+        requireNonNull(mavenRepositories);
+
+        return new SimpleMavenVersionsResolver(mavenRepositories);
+    }
 }

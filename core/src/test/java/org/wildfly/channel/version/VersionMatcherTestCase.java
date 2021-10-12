@@ -38,7 +38,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Test;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.Stream;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class VersionMatcherTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
@@ -84,8 +84,8 @@ public class VersionMatcherTestCase {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        SimpleResolverBuilder builder = new SimpleResolverBuilder();
-        MavenVersionResolver resolver = builder.create(mavenRepos);
+        SimpleResolverFactory factory = new SimpleResolverFactory();
+        MavenVersionsResolver resolver = factory.create(mavenRepos);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
@@ -108,8 +108,8 @@ public class VersionMatcherTestCase {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        SimpleResolverBuilder builder = new SimpleResolverBuilder();
-        MavenVersionResolver resolver = builder.create(mavenRepos);
+        SimpleResolverFactory factory = new SimpleResolverFactory();
+        MavenVersionsResolver resolver = factory.create(mavenRepos);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: '*'\n" +
@@ -126,8 +126,8 @@ public class VersionMatcherTestCase {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        SimpleResolverBuilder builder = new SimpleResolverBuilder();
-        MavenVersionResolver resolver = builder.create(mavenRepos);
+        SimpleResolverFactory factory = new SimpleResolverFactory();
+        MavenVersionsResolver resolver = factory.create(mavenRepos);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
@@ -154,8 +154,8 @@ public class VersionMatcherTestCase {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        SimpleResolverBuilder builder = new SimpleResolverBuilder();
-        MavenVersionResolver resolver = builder.create(mavenRepos);
+        SimpleResolverFactory factory = new SimpleResolverFactory();
+        MavenVersionsResolver resolver = factory.create(mavenRepos);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
@@ -171,8 +171,8 @@ public class VersionMatcherTestCase {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        SimpleResolverBuilder builder = new SimpleResolverBuilder();
-        MavenVersionResolver resolver = builder.create(mavenRepos);
+        SimpleResolverFactory factory = new SimpleResolverFactory();
+        MavenVersionsResolver resolver = factory.create(mavenRepos);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
@@ -187,8 +187,8 @@ public class VersionMatcherTestCase {
         List<MavenRepository> mavenRepos = new ArrayList<>();
         mavenRepos.add(mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("maven-repo1").toUri()));
 
-        SimpleResolverBuilder builder = new SimpleResolverBuilder();
-        MavenVersionResolver resolver = builder.create(mavenRepos);
+        SimpleResolverFactory factory = new SimpleResolverFactory();
+        MavenVersionsResolver resolver = factory.create(mavenRepos);
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +

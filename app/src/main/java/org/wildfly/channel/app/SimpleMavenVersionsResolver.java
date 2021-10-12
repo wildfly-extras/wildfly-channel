@@ -48,16 +48,16 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class SimpleMavenVersionResolver implements MavenVersionResolver {
+public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
     private final RepositorySystem system;
 
     private List<MavenRepository> mavenRepositories;
     private final List<RemoteRepository> remoteRepositories;
 
-    SimpleMavenVersionResolver(List<MavenRepository> mavenRepositories) {
+    SimpleMavenVersionsResolver(List<MavenRepository> mavenRepositories) {
         Objects.requireNonNull(mavenRepositories);
         this.mavenRepositories = new ArrayList<>(mavenRepositories);
         remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());

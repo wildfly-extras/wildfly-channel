@@ -29,18 +29,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.wildfly.channel.spi.MavenResolverBuilder;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class ChannelSession<T extends MavenVersionResolver> {
+public class ChannelSession<T extends MavenVersionsResolver> {
     private List<Channel> channels;
-    private MavenResolverBuilder<T> builder;
+    private MavenVersionsResolver.Factory<T> factory;
 
-    public ChannelSession(List<Channel> channels, MavenResolverBuilder<T> builder) {
+    public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory<T> factory) {
         Objects.requireNonNull(channels);
-        Objects.requireNonNull(builder);
+        Objects.requireNonNull(factory);
         this.channels = channels;
-        this.builder = builder;
+        this.factory = factory;
     }
 
     public Optional<Result<T>> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
@@ -50,7 +49,7 @@ public class ChannelSession<T extends MavenVersionResolver> {
         // find all latest versions from the different channels;
         Set<Result<T>> found = new HashSet<>();
         for (Channel channel : channels) {
-            Optional<Result<T>> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, builder);
+            Optional<Result<T>> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, factory);
             if (result.isPresent()) {
                 found.add(result.get());
             }

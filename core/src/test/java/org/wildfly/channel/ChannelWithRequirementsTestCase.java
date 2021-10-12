@@ -32,8 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.spi.MavenResolverBuilder;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelWithRequirementsTestCase {
 
@@ -48,10 +47,10 @@ public class ChannelWithRequirementsTestCase {
 
         assertEquals(1, channel.getChannelRequirements().size());
 
-        ChannelSession<MavenVersionResolver> session = new ChannelSession(Collections.singletonList(channel), new MavenResolverBuilder<MavenVersionResolver>() {
+        ChannelSession<MavenVersionsResolver> session = new ChannelSession(Collections.singletonList(channel), new MavenVersionsResolver.Factory() {
             @Override
-            public MavenVersionResolver create(List list) {
-                return new MavenVersionResolver() {
+            public MavenVersionsResolver create(List list) {
+                return new MavenVersionsResolver() {
                     @Override
                     public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
                         return Collections.singleton("1.2.0.Final");
@@ -60,7 +59,7 @@ public class ChannelWithRequirementsTestCase {
             }
         });
 
-        Optional < ChannelSession.Result < MavenVersionResolver >> result = session.getLatestVersion("org.example", "foo-bar", null, null);
+        Optional < ChannelSession.Result <MavenVersionsResolver>> result = session.getLatestVersion("org.example", "foo-bar", null, null);
         assertTrue(result.isPresent());
         assertEquals("1.2.0.Final", result.get().version);
     }

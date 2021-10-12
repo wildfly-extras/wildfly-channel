@@ -25,20 +25,18 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.spi.MavenResolverBuilder;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelSessionTestCase {
 
     @Test
-    public void testSession() throws IOException {
+    public void testSession() {
         List<Channel> channels = ChannelMapper.channelsFromString("---\n" +
                 "id: wildfly-24\n" +
                 "repositories:\n" +
@@ -62,7 +60,7 @@ public class ChannelSessionTestCase {
 
         ChannelSession session = new ChannelSession(channels,
                 // dummy maven resolver that returns the version based on the id of the maven repositories
-                (MavenResolverBuilder<MavenVersionResolver>) mavenRepositories -> new MavenVersionResolver() {
+                (MavenVersionsResolver.Factory<MavenVersionsResolver>) mavenRepositories -> new MavenVersionsResolver() {
                     @Override
                     public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
                         if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {

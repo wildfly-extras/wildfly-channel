@@ -52,9 +52,9 @@ public class LatestVersion {
         try {
 
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
-            ChannelSession<SimpleMavenVersionResolver> session = new ChannelSession<>(channels, new SimpleMavenVersionResolverBuilder());
+            ChannelSession<SimpleMavenVersionsResolver> session = new ChannelSession<>(channels, new SimpleMavenVersionResolverFactory());
 
-            Optional<ChannelSession.Result<SimpleMavenVersionResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
+            Optional<ChannelSession.Result<SimpleMavenVersionsResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
             if (result.isPresent()) {
                 String gav =  groupId + ":" + artifactId + ":" + result.get().getVersion();
                 System.out.println(String.format("latest version found in %s", result.get().getResolver().getRemoteRepositories()));

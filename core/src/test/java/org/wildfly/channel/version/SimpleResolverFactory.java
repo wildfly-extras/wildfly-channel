@@ -34,20 +34,19 @@ import java.util.List;
 import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.spi.MavenResolverBuilder;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class SimpleResolverBuilder implements MavenResolverBuilder<MavenVersionResolver> {
+public class SimpleResolverFactory implements MavenVersionsResolver.Factory<MavenVersionsResolver> {
 
     MavenRepository localCache;
 
-    SimpleResolverBuilder() throws IOException {
+    SimpleResolverFactory() throws IOException {
         localCache = mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("local-cache").toUri());
 
     }
     @Override
-    public MavenVersionResolver create(List<MavenRepository> mavenRepositories) {
-        return new MavenVersionResolver() {
+    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories) {
+        return new MavenVersionsResolver() {
 
             @Override
             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
