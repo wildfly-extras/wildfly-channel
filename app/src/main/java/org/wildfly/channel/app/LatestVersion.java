@@ -36,6 +36,7 @@ import javax.ws.rs.core.MediaType;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelSession;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
 @Path("/latest")
 public class LatestVersion {
@@ -51,17 +52,19 @@ public class LatestVersion {
 
         try {
 
+            // must be provided by client of this library
+            MavenVersionsResolver.Factory factory = new SimpleMavenVersionResolverFactory();
+
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
-            ChannelSession<SimpleMavenVersionsResolver> session = new ChannelSession<>(channels, new SimpleMavenVersionResolverFactory());
+            ChannelSession<SimpleMavenVersionsResolver> session = new ChannelSession<>(channels, factory);
 
             Optional<ChannelSession.Result<SimpleMavenVersionsResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
             if (result.isPresent()) {
                 String gav =  groupId + ":" + artifactId + ":" + result.get().getVersion();
-                System.out.println(String.format("latest version found in %s", result.get().getResolver().getRemoteRepositories()));
 
                 // here, we could have a MavenVersionResolver that does the actual resolution of the file corresponding to the gav
-                // SimpleMavenVersionResolver resolver = result.get().getResolver();
-                // resolver.install(gav);
+                SimpleMavenVersionsResolver resolver = result.get().getResolver();
+                resolver.install(gav);
 
                 return gav;
             } else {
