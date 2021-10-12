@@ -1,0 +1,7 @@
+id: local-dev
+resolve-with-local-cache: true
+streams:
+  - # use the latest version for all artifacts
+    groupId: '*'
+    artifactId: '*'
+    version-pattern: '.*'

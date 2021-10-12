@@ -1,0 +1,19 @@
+id: my-layered-product
+name: My Layered Product over WildFly 24
+description: |-
+  This channel provides a stream for My Layered Product.
+  It requires WildFLy 24 channel to get any updates for WildFly
+requires:
+  - url: https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/24/
+repositories:
+  - id: maven-central
+    url: https://repo1.maven.org/maven2/
+streams:
+  - # My Layered Product consumes a more recent version of Netty
+    groupId: io.netty
+    artifactId: netty-all
+    version-pattern: '4\.1\..*.Final'
+  - # get updates from SQL Server 9.2 (jre11)
+    groupId: com.microsoft.sqlserver
+    artifactId: "mssql-jdbc"
+    version-pattern: '9\.2\..*.jre11'
