@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -52,14 +53,20 @@ public class ChannelMapper {
     public static Channel from(URL channelURL) throws InvalidChannelException {
         requireNonNull(channelURL);
 
+
         try {
+            // QoL improvement
+            if (channelURL.toString().endsWith("/")) {
+                channelURL = channelURL.toURI().resolve("channel.yaml").toURL();
+            }
+
             List<String> messages = validate(channelURL);
             if (!messages.isEmpty()) {
                 throw new InvalidChannelException("Invalid channel", messages);
             }
             Channel channel = OBJECT_MAPPER.readValue(channelURL, Channel.class);
             return channel;
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             throw wrapException(e);
         }
     }

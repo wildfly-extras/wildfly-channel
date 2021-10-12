@@ -49,21 +49,26 @@ public class LatestVersion {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
-        List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
-        ChannelSession<SimpleMavenVersionResolver> session = new ChannelSession<>(channels, new SimpleMavenVersionResolverBuilder());
+        try {
 
-        Optional<ChannelSession.Result<SimpleMavenVersionResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
-        if (result.isPresent()) {
-            String gav =  groupId + ":" + artifactId + ":" + result.get().getVersion();
-            System.out.println(String.format("latest version found in %s", result.get().getResolver().getRemoteRepositories()));
+            List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
+            ChannelSession<SimpleMavenVersionResolver> session = new ChannelSession<>(channels, new SimpleMavenVersionResolverBuilder());
 
-            // here, we could have a MavenVersionResolver that does the actual resolution of the file corresponding to the gav
-            // SimpleMavenVersionResolver resolver = result.get().getResolver();
-            // resolver.install(gav);
+            Optional<ChannelSession.Result<SimpleMavenVersionResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
+            if (result.isPresent()) {
+                String gav =  groupId + ":" + artifactId + ":" + result.get().getVersion();
+                System.out.println(String.format("latest version found in %s", result.get().getResolver().getRemoteRepositories()));
 
-            return gav;
-        } else {
-            return "N/A";
+                // here, we could have a MavenVersionResolver that does the actual resolution of the file corresponding to the gav
+                // SimpleMavenVersionResolver resolver = result.get().getResolver();
+                // resolver.install(gav);
+
+                return gav;
+            } else {
+                return "N/A";
+            }
+        } catch (Throwable t) {
+            return "Err: " + t.getMessage();
         }
 
     }
