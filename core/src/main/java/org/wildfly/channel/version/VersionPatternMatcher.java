@@ -19,15 +19,36 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel.spi;
+package org.wildfly.channel.version;
 
+import static java.util.Optional.empty;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
-import org.wildfly.channel.MavenRepository;
+public class VersionPatternMatcher implements VersionMatcher {
+    private Pattern pattern;
 
-public interface MavenVersionResolver {
-   List<MavenRepository> getMavenRepositories();
+    public VersionPatternMatcher(Pattern pattern) {
+        this.pattern = pattern;
+    }
 
-   Set<String> resolve(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache);
+    @Override
+    public Optional<String> matches(Set<String> samples) {
+        List<String> matches = new ArrayList<>();
+        for (String sample : samples) {
+            if (pattern.matcher(sample).matches()) {
+                matches.add(sample);
+            }
+        }
+        if (matches.isEmpty()) {
+            return empty();
+        }
+
+        matches.sort(COMPARATOR);
+        return Optional.of(matches.get(matches.size() - 1));
+    }
 }

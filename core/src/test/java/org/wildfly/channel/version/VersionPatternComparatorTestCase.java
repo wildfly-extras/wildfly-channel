@@ -26,10 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -109,7 +106,7 @@ public class VersionPatternComparatorTestCase {
     }
 
     public Optional<String> matches(String pattern, Set<String> samples) {
-        VersionPatternComparator comparator = new VersionPatternComparator(Pattern.compile(pattern));
+        VersionPatternMatcher comparator = new VersionPatternMatcher(Pattern.compile(pattern));
         return comparator.matches(samples);
 
     }

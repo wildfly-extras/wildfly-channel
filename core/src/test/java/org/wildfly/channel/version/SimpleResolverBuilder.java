@@ -1,4 +1,3 @@
-
 /*
  * JBoss, Home of Professional Open Source.
  * Copyright 2020, Red Hat, Inc., and individual contributors
@@ -35,34 +34,46 @@ import java.util.List;
 import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.spi.MavenResolverBuilder;
 import org.wildfly.channel.spi.MavenVersionResolver;
 
-public class SimpleVersionResolver implements MavenVersionResolver {
+public class SimpleResolverBuilder implements MavenResolverBuilder {
 
     MavenRepository localCache;
 
-    SimpleVersionResolver() throws IOException {
+    SimpleResolverBuilder() throws IOException {
         localCache = mavenRepositoryFromYaml("url: " + getTestMavenRepositoryURI("local-cache").toUri());
+
     }
-
     @Override
-    public Set<String> resolve(String groupId, String artifactId, String extension, String classifier, List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-        try {
-            List<SimplisticMavenRepoManager> repoManagers = new ArrayList<>();
-            if (resolveLocalCache) {
-                repoManagers.add(SimplisticMavenRepoManager.getInstance(Paths.get(localCache.getUrl().toURI())));
-            }
-            for (MavenRepository mavenRepository : mavenRepositories) {
-                repoManagers.add(SimplisticMavenRepoManager.getInstance(Paths.get(mavenRepository.getUrl().toURI())));
+    public MavenVersionResolver create(List<MavenRepository> mavenRepositories) {
+        return new MavenVersionResolver() {
+            @Override
+            public List<MavenRepository> getMavenRepositories() {
+                return new ArrayList<>(mavenRepositories);
             }
 
-            Set<String> versions = new HashSet<>();
-            for (SimplisticMavenRepoManager repoManager : repoManagers) {
-                versions.addAll(repoManager.getAllVersions(groupId, artifactId));
+            @Override
+            public Set<String> resolve(String groupId, String artifactId, String extension, String classifier, boolean resolveLocalCache) {
+                try {
+                    List<SimplisticMavenRepoManager> repoManagers = new ArrayList<>();
+                    if (resolveLocalCache) {
+                        repoManagers.add(SimplisticMavenRepoManager.getInstance(Paths.get(localCache.getUrl().toURI())));
+                    }
+                    for (MavenRepository mavenRepository : mavenRepositories) {
+                        repoManagers.add(SimplisticMavenRepoManager.getInstance(Paths.get(mavenRepository.getUrl().toURI())));
+                    }
+
+                    Set<String> versions = new HashSet<>();
+                    for (SimplisticMavenRepoManager repoManager : repoManagers) {
+                        versions.addAll(repoManager.getAllVersions(groupId, artifactId));
+                    }
+                    return versions;
+                } catch (URISyntaxException e) {
+                    return emptySet();
+                }
+
             }
-            return versions;
-        } catch (URISyntaxException e) {
-            return emptySet();
-        }
+        };
     }
 }

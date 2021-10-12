@@ -21,43 +21,18 @@
  */
 package org.wildfly.channel.version;
 
-import static java.util.Optional.empty;
-
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
-public class VersionPatternComparator implements VersionComparator {
-    private Pattern pattern;
-
-    public VersionPatternComparator(Pattern pattern) {
-        this.pattern = pattern;
-    }
-
-    @Override
-    public Optional<String> matches(Set<String> samples) {
-        List<String> matches = new ArrayList<>();
-        for (String sample : samples) {
-            if (pattern.matcher(sample).matches()) {
-                matches.add(sample);
-            }
-        }
-        if (matches.isEmpty()) {
-            return empty();
-        }
-
-        matches.sort(COMPARATOR);
-        return Optional.of(matches.get(matches.size() - 1));
-    }
+public interface VersionMatcher {
+    Optional<String> matches(Set<String> samples);
 
     /**
      * Copied from https://raw.githubusercontent.com/wolfc/updepres/master/model/src/main/java/org/jboss/up/depres/version/VersionComparator.java
      * FIXME: proper attribution
      */
-    private final static Comparator<String> COMPARATOR = (v1, v2) -> {
+    Comparator<String> COMPARATOR = (v1, v2) -> {
         int i1 = 0, i2 = 0;
         final int epoch1;
         int i = v1.indexOf(":");

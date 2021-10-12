@@ -35,12 +35,10 @@ import javax.ws.rs.core.MediaType;
 
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
-import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.ChannelSession;
 
 @Path("/latest")
 public class LatestVersion {
-
-    private final MavenVersionResolver MAVEN_VERSION_RESOLVER = new SimpleMavenVersionResolver();
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -52,12 +50,10 @@ public class LatestVersion {
         requireNonNull(artifactId);
         List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
 
-        Optional<String> version = channels.stream()
-                .map(c -> c.resolveLatestVersion(groupId, artifactId, null, null, MAVEN_VERSION_RESOLVER).orElse(null))
-                .filter(v -> v != null)
-                .findFirst();
-        if (version.isPresent()) {
-            return groupId + ":" + artifactId + ":" + version.get();
+        ChannelSession session = new ChannelSession(channels, new SimpleMavenVersionResolverBuilder());
+        Optional<ChannelSession.LatestVersionResolver> latestVersion = session.getLatestVersion(groupId, artifactId, null, null);
+        if (latestVersion.isPresent()) {
+            return groupId + ":" + artifactId + ":" + latestVersion.get().getVersion();
         } else {
             return "N/A";
         }

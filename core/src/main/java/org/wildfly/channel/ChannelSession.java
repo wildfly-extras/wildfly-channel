@@ -1,0 +1,84 @@
+/*
+ * JBoss, Home of Professional Open Source.
+ * Copyright 2020, Red Hat, Inc., and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+package org.wildfly.channel;
+
+import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import org.wildfly.channel.spi.MavenResolverBuilder;
+import org.wildfly.channel.spi.MavenVersionResolver;
+import org.wildfly.channel.version.VersionMatcher;
+
+public class ChannelSession {
+    private List<Channel> channels;
+    private MavenResolverBuilder builder;
+
+    public ChannelSession(List<Channel> channels, MavenResolverBuilder builder) {
+        Objects.requireNonNull(channels);
+        Objects.requireNonNull(builder);
+        this.channels = channels;
+        this.builder = builder;
+    }
+
+    public Optional<LatestVersionResolver> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
+        Objects.requireNonNull(groupId);
+        Objects.requireNonNull(artifactId);
+
+        // find all latest versions from the different channels;
+        Set<LatestVersionResolver> found = new HashSet<>();
+        for (Channel channel : channels) {
+            MavenVersionResolver versionResolver = builder.create(channel.getRepositories());
+            Optional<String> foundLatestVersionInChannel = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, versionResolver);
+            if (foundLatestVersionInChannel.isPresent()) {
+                found.add(new LatestVersionResolver(foundLatestVersionInChannel.get(), versionResolver));
+            }
+        }
+
+        // compare all latest version from the channel to find the latest overall
+        return found.stream()
+                .sorted((lvr1, lvr2) -> COMPARATOR.compare(lvr1.version, lvr2.version))
+                .findFirst();
+    }
+
+    public class LatestVersionResolver {
+        String version;
+        MavenVersionResolver resolver;
+
+        public LatestVersionResolver(String version, MavenVersionResolver resolver) {
+            this.version = version;
+            this.resolver = resolver;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public MavenVersionResolver getResolver() {
+            return resolver;
+        }
+    }
+}

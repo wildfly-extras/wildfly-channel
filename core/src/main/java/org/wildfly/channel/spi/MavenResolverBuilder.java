@@ -19,34 +19,12 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel.version;
+package org.wildfly.channel.spi;
 
-import static java.util.Objects.requireNonNull;
-
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
-public class FixedVersionComparator implements VersionComparator {
+import org.wildfly.channel.MavenRepository;
 
-    private final List<String> versions;
-
-    public FixedVersionComparator(List<String> versions) {
-        requireNonNull(versions);
-        this.versions = new ArrayList<>(versions);
-        this.versions.sort(Comparator.comparing( String::toString ).reversed());
-    }
-
-    @Override
-    public Optional<String> matches(Set<String> samples) {
-        requireNonNull(samples);
-        for (String version : versions) {
-            if (samples.contains(version)) {
-                return Optional.of(version);
-            }
-        }
-        return Optional.empty();
-    }
+public interface MavenResolverBuilder {
+ MavenVersionResolver create(List<MavenRepository> mavenRepositories);
 }

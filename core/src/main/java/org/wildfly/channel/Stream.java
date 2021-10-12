@@ -23,15 +23,14 @@ package org.wildfly.channel;
 
 import static java.util.Arrays.asList;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.wildfly.channel.version.FixedVersionComparator;
-import org.wildfly.channel.version.VersionComparator;
-import org.wildfly.channel.version.VersionPatternComparator;
+import org.wildfly.channel.version.FixedVersionMatcher;
+import org.wildfly.channel.version.VersionMatcher;
+import org.wildfly.channel.version.VersionPatternMatcher;
 
 /**
  * Java representation of a Stream.
@@ -73,7 +72,7 @@ public class Stream {
      */
     private boolean resolveWithLocalCache;
 
-    private VersionComparator versionComparator;
+    private VersionMatcher versionMatcher;
 
     @JsonCreator
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
@@ -93,10 +92,10 @@ public class Stream {
     private void initVersionComparator() {
         if (version != null) {
             List<String> versions = asList(version.split("[\\s,]+"));
-            versionComparator = new FixedVersionComparator(versions);
+            versionMatcher = new FixedVersionMatcher(versions);
         } else {
             // let's instead find a version matching the pattern
-            versionComparator = new VersionPatternComparator(versionPattern);
+            versionMatcher = new VersionPatternMatcher(versionPattern);
         }
     }
 
@@ -139,8 +138,8 @@ public class Stream {
     }
 
 
-    public VersionComparator getVersionComparator() {
-        return versionComparator;
+    public VersionMatcher getVersionComparator() {
+        return versionMatcher;
     }
 
     @Override
@@ -151,7 +150,7 @@ public class Stream {
                 ", version='" + version + '\'' +
                 ", versionPattern=" + versionPattern +
                 ", resolveWithLocalCache=" + resolveWithLocalCache +
-                ", versionComparator=" + versionComparator +
+                ", versionComparator=" + versionMatcher +
                 '}';
     }
 }
