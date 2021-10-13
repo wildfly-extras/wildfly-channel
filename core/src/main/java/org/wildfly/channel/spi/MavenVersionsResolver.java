@@ -21,6 +21,8 @@
  */
 package org.wildfly.channel.spi;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -49,14 +51,18 @@ public interface MavenVersionsResolver {
     *
     * A client of this library is responsible to provide an implementation of the {@link Factory} interface.
     *
-    * The {@link #create(List)} method will be called once for every channel that will be checked for the latest version
+    * The {@link #create(List, boolean)} method will be called once for every channel that will be checked for the latest version
     * of a given Maven artifact.
     */
-   interface Factory<T extends MavenVersionsResolver> {
+   interface Factory<T extends MavenVersionsResolver> extends Closeable {
 
       /**
        * @param resolveLocalCache Whether the Maven resolver must look into its local cache for versions
        */
       T create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
+
+      default void close() throws IOException {
+
+      }
    }
 }

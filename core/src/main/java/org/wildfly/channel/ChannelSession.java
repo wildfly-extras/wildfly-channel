@@ -23,6 +23,7 @@ package org.wildfly.channel;
 
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
+import java.io.Closeable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +32,7 @@ import java.util.Set;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class ChannelSession<T extends MavenVersionsResolver> {
+public class ChannelSession<T extends MavenVersionsResolver> implements AutoCloseable {
     private List<Channel> channels;
     private MavenVersionsResolver.Factory<T> factory;
 
@@ -58,6 +59,11 @@ public class ChannelSession<T extends MavenVersionsResolver> {
         return found.stream()
                 .sorted((lvr1, lvr2) -> COMPARATOR.reversed().compare(lvr1.version, lvr2.version))
                 .findFirst();
+    }
+
+    @Override
+    public void close() throws Exception {
+        factory.close();
     }
 
     public static class Result<T> {
