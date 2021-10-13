@@ -283,7 +283,7 @@ public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
                 '}';
     }
 
-    String toYaml() throws IOException {
+    public String toYaml() throws IOException {
         return ChannelMapper.toYaml(this);
     }
 
