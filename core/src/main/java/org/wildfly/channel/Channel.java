@@ -75,7 +75,7 @@ public class Channel {
      * This is an optional field.
      * It is false by default.
      */
-    @JsonProperty("resolve-with-local-cache")
+    @JsonProperty("resolveWithLocalCache")
     private boolean resolveWithLocalCache;
 
     /**

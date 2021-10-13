@@ -46,7 +46,7 @@ public class ChannelSessionTestCase {
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    version-pattern: '24\\.\\d+\\.\\d+.Final'\n" +
+                "    versionPattern: '24\\.\\d+\\.\\d+.Final'\n" +
                 "---\n" +
                 "id: wildfly-25\n" +
                 "repositories:\n" +
@@ -55,7 +55,7 @@ public class ChannelSessionTestCase {
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    version-pattern: '25\\.\\d+\\.\\d+.Final'");
+                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
         Assertions.assertNotNull(channels);
         Assertions.assertEquals(2, channels.size());
 

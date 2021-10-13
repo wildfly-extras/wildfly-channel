@@ -12,8 +12,8 @@ streams:
   - # My Layered Product consumes a more recent version of Netty
     groupId: io.netty
     artifactId: netty-all
-    version-pattern: '4\.1\..*.Final'
+    versionPattern: '4\.1\..*.Final'
   - # get updates from SQL Server 9.2 (jre11)
     groupId: com.microsoft.sqlserver
     artifactId: "mssql-jdbc"
-    version-pattern: '9\.2\..*.jre11'
+    versionPattern: '9\.2\..*.jre11'

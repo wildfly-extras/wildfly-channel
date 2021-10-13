@@ -159,7 +159,7 @@ public class VersionMatcherTestCase {
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: '1\\.0\\..*'");
+                "versionPattern: '1\\.0\\..*'");
         Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());
@@ -176,7 +176,7 @@ public class VersionMatcherTestCase {
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: '1\\.*\\..*'");
+                "versionPattern: '1\\.*\\..*'");
         Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertEquals( "1.1.1.Final", foundVersion.get());
@@ -192,14 +192,14 @@ public class VersionMatcherTestCase {
 
         Stream stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: '1\\.1\\..*'");
+                "versionPattern: '1\\.1\\..*'");
         Set<String> versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         Optional<String> foundVersion = stream.getVersionComparator().matches(versions);
         assertEquals( "1.1.2.Final-SNAPSHOT", foundVersion.get());
 
         stream = streamFromYaml("groupId: org.example.foo\n" +
                 "artifactId: foo-bar\n" +
-                "version-pattern: '2\\.0\\..*'");
+                "versionPattern: '2\\.0\\..*'");
         versions = resolver.getAllVersions("org.example.foo", "foo-bar", null, null);
         foundVersion = stream.getVersionComparator().matches(versions);
         assertTrue(foundVersion.isPresent());

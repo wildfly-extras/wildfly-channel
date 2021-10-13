@@ -58,7 +58,7 @@ public class StreamTestCase {
     @Test
     public void testValidStreamWithVersionPattern() throws IOException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        URL file = tccl.getResource("streams/stream-with-version-pattern.yaml");
+        URL file = tccl.getResource("streams/stream-with-versionPattern.yaml");
         Stream stream = fromURL(file);
         assertEquals("org.example", stream.getGroupId());
         assertEquals("foo", stream.getArtifactId());

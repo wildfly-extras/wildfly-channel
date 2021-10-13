@@ -6,4 +6,4 @@ repositories:
 streams:
   - groupId: io.undertow
     artifactId: '*'
-    version-pattern: '2\.\d+\.\d+\.Final'
+    versionPattern: '2\.\d+\.\d+\.Final'

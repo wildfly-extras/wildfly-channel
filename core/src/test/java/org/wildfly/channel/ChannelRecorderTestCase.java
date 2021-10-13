@@ -47,10 +47,10 @@ public class ChannelRecorderTestCase {
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    version-pattern: '24\\.\\d+\\.\\d+.Final'\n" +
+                "    versionPattern: '24\\.\\d+\\.\\d+.Final'\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
-                "    version-pattern: '2\\.\\1\\.\\d+.Final'\n" +
+                "    versionPattern: '2\\.\\1\\.\\d+.Final'\n" +
                 "---\n" +
                 "id: channel2\n" +
                 "repositories:\n" +
@@ -59,7 +59,7 @@ public class ChannelRecorderTestCase {
                 "streams:\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
-                "    version-pattern: '2\\.\\d+\\.\\d+.Final'");
+                "    versionPattern: '2\\.\\d+\\.\\d+.Final'");
         Assertions.assertNotNull(channels);
         assertEquals(2, channels.size());
 

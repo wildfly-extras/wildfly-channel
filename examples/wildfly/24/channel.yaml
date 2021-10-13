@@ -11,7 +11,7 @@ repositories:
 streams:
   - groupId: org.wildfly
     artifactId: '*'
-    version-pattern: '24\.\d+\.\d+.Final'
+    versionPattern: '24\.\d+\.\d+.Final'
   - groupId: org.wildfly.core
     artifactId: '*'
     version: 16.0.1.Final
@@ -21,4 +21,4 @@ streams:
   - groupId: io.netty
     artifactId: netty-all
     version: 4.1.66.Final
-    #version-pattern: '4\.1\..*.Final'
+    #versionPattern: '4\.1\..*.Final'

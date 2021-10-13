@@ -74,7 +74,7 @@ public class Stream {
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
-           @JsonProperty("version-pattern") Pattern versionPattern) {
+           @JsonProperty("versionPattern") Pattern versionPattern) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;

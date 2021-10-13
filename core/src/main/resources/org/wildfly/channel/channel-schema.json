@@ -51,7 +51,7 @@
         "required": ["url"]
       }
     },
-    "resolve-with-local-cache": {
+    "resolveWithLocalCache": {
       "description": "Whether the local cache from Maven must be checked to resolve the latest versions from this channel.",
       "type": "boolean",
       "default": false
@@ -95,8 +95,8 @@
             "description": "Version of the stream. This must be either a single version or a list of comma-separated versions. Either this field or the versionPattern field must be set.",
             "type": "string"
           },
-          "version-pattern" : {
-            "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Either this field or the versionPattern field must be set.",
+          "versionPattern" : {
+            "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Either this field or the version field must be set.",
             "type": "string"
           }
         },
@@ -106,7 +106,7 @@
             "required": ["version"]
           },
           {
-            "required": ["version-pattern"]
+            "required": ["versionPattern"]
           }
         ]
       }
