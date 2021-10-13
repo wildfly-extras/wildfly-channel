@@ -30,7 +30,9 @@ import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -51,9 +53,16 @@ public class ChannelMapper {
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(OBJECT_MAPPER).build();
     private static final JsonSchema SCHEMA = SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE));
 
-    static String toYaml(Channel channel) throws IOException {
+    public static String toYaml(Channel... channels) throws IOException {
+        return toYaml(Arrays.asList(channels));
+    }
+
+    public static String toYaml(List<Channel> channels) throws IOException {
+        Objects.requireNonNull(channels);
         StringWriter w = new StringWriter();
-        OBJECT_MAPPER.writeValue(w, channel);
+        for (Channel channel : channels) {
+            OBJECT_MAPPER.writeValue(w, channel);
+        }
         return w.toString();
     }
 

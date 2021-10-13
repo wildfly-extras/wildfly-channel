@@ -29,7 +29,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -282,9 +281,4 @@ public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
                 ", streams=" + streams +
                 '}';
     }
-
-    public String toYaml() throws IOException {
-        return ChannelMapper.toYaml(this);
-    }
-
 }

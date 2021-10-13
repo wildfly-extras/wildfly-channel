@@ -98,9 +98,7 @@ public class ChannelRecorderTestCase {
         session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "2.1.2.Final");
 
         List<Channel> recordedChannels = session.getRecordedChannels();
-        for (Channel recordedChannel : recordedChannels) {
-            System.out.println(recordedChannel.toYaml());
-        }
+        System.out.println(ChannelMapper.toYaml(recordedChannels));
         assertEquals(1, recordedChannels.size());
 
 
