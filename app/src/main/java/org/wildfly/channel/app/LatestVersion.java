@@ -23,6 +23,8 @@ package org.wildfly.channel.app;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,8 +64,11 @@ public class LatestVersion {
 
             Optional<MavenArtifact> artifact = session.resolveMavenArtifact(groupId, artifactId, extension, null, baseVersion);
             if (artifact.isPresent()) {
-                return String.format("%s:%s:%s:%s", artifact.get().getGroupId(), artifact.get().getArtifactId(), artifact.get().getExtension(),
-                        artifact.get().getVersion());
+                java.nio.file.Path localRepo = Paths.get(new File("target/local-repo").toURI());
+                java.nio.file.Path artifactPath = localRepo.relativize(Paths.get(artifact.get().getFile().toURI()));
+
+                return String.format("GAV: %s:%s:%s:%s\nto File: \n%s", artifact.get().getGroupId(), artifact.get().getArtifactId(), artifact.get().getExtension(),
+                        artifact.get().getVersion(), artifactPath);
             } else {
                 return "N/A";
             }

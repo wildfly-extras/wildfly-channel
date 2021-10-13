@@ -25,6 +25,8 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -55,7 +57,9 @@ import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
-    private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
+    static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
+    static Path LOCAL_MAVEN_REPO_PATH = Paths.get(new File(LOCAL_MAVEN_REPO).toURI());
+
     private final RepositorySystem system;
     private final DefaultRepositorySystemSession session;
 
