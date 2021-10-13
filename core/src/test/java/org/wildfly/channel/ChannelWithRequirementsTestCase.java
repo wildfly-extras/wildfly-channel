@@ -24,6 +24,7 @@ package org.wildfly.channel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
@@ -32,7 +33,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelWithRequirementsTestCase {
@@ -48,19 +48,23 @@ public class ChannelWithRequirementsTestCase {
 
         assertEquals(1, channel.getChannelRequirements().size());
 
-        ChannelSession<MavenVersionsResolver> session = new ChannelSession<>(Collections.singletonList(channel), new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
+        channel.initResolver(new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
             @Override
             public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-                return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
+                return new MavenVersionsResolver() {
                     @Override
                     public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                         return Collections.singleton("1.2.0.Final");
                     }
+
+                    @Override
+                    public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                        return Optional.empty();
+                    }
                 };
             }
         });
-
-        Optional < ChannelSession.Result <MavenVersionsResolver>> result = session.getLatestVersion("org.example", "foo-bar", null, null);
+        Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion2("org.example", "foo-bar", null, null, null);
         assertTrue(result.isPresent());
         assertEquals("1.2.0.Final", result.get().version);
     }

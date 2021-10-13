@@ -28,11 +28,13 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -41,11 +43,12 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.version.VersionMatcher;
 
 /**
  * Java representation of a Channel.
  */
-public class Channel {
+public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
     /**
      * Identifier of the channel.
      * This is an optional field.
@@ -95,6 +98,9 @@ public class Channel {
      * Streams of components that are provided by this channel.
      */
     private Collection<Stream> streams = emptySet();
+
+    private T resolver;
+    private MavenVersionsResolver.Factory<T> factory;
 
     @JsonInclude(NON_NULL)
     public String getId() {
@@ -151,36 +157,101 @@ public class Channel {
         this.streams.add(stream);
     }
 
+    void initResolver(MavenVersionsResolver.Factory<T> factory) {
+        this.factory = factory;
+        resolver = factory.create(repositories, resolveWithLocalCache);
 
-    <T extends MavenVersionsResolver> Optional<ChannelSession.Result<T>> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenVersionsResolver.Factory<T> factory) {
+    }
+
+    @Override
+    public void close() {
+        this.resolver.close();
+        this.resolver = null;
+        this.factory = null;
+    }
+
+    static class ResolveLatestVersionResult {
+        final String version;
+        final Channel channel;
+
+        ResolveLatestVersionResult(String version, Channel channel) {
+            this.version = version;
+            this.channel = channel;
+        }
+    }
+
+
+    public Optional<ResolveLatestVersionResult> resolveLatestVersion2(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
-        requireNonNull(factory);
+        requireNonNull(resolver);
 
-        // first we looked into the required channels
+        Map<String, Channel> foundVersions = new HashMap<>();
         List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
-        ChannelSession<T> sessionForRequiredChannel = new ChannelSession<>(requiredChannels, factory);
-        Optional<ChannelSession.Result<T>> resultFromRequiredChannel = sessionForRequiredChannel.getLatestVersion(groupId, artifactId, extension, classifier);
+        for (Channel requiredChannel : requiredChannels) {
+            requiredChannel.initResolver(factory);
+            Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion2(groupId, artifactId, extension, classifier, baseVersion);
+            if (found.isPresent()) {
+                foundVersions.put(found.get().version, found.get().channel);
+            }
+            requiredChannel.close();
+        }
+        Optional<String> foundVersionInRequiredChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
+        Optional<ResolveLatestVersionResult> resultFromRequiredChannels = Optional.empty();
+        if (foundVersionInRequiredChannels.isPresent()) {
+            resultFromRequiredChannels = Optional.of(new ResolveLatestVersionResult(foundVersionInRequiredChannels.get(), foundVersions.get(foundVersionInRequiredChannels.get())));
+        }
 
         // first we find if there is a stream for that given (groupId, artifactId).
         Optional<Stream> foundStream = findStreamFor(groupId, artifactId);
         if (!foundStream.isPresent()) {
             // we return any result from the required channel
-            return resultFromRequiredChannel;
+            return resultFromRequiredChannels;
         }
 
-        T resolver = factory.create(repositories, resolveWithLocalCache);
         // there is a stream, let's now check its version
         Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
         Optional<String> foundVersion = foundStream.get().getVersionComparator().matches(versions);
         // if a version is found in this channel, it always wins against any stream in its required channel
         if (foundVersion.isPresent()) {
-            return Optional.of(new ChannelSession.Result<>(foundVersion.get(), resolver));
+            return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
         } else {
             // we return any result from the required channel
-            return resultFromRequiredChannel;
+            return resultFromRequiredChannels;
         }
     }
+
+
+    static class ResolveArtifactResult {
+        final File file;
+        final Channel channel;
+
+        ResolveArtifactResult(File file, Channel channel) {
+            this.file = file;
+            this.channel = channel;
+        }
+    }
+    public Optional<ResolveArtifactResult> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(version);
+
+        // first we looked into the required channels
+        List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
+        for (Channel requiredChannel : requiredChannels) {
+            Optional<File> found = requiredChannel.resolveArtifact(groupId, artifactId, extension, classifier, version);
+            if (found.isPresent()) {
+                return Optional.of(new ResolveArtifactResult(found.get(), requiredChannel));
+            }
+        }
+
+        Optional<File> found = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
+        if (found.isPresent()) {
+            return Optional.of(new ResolveArtifactResult(found.get(), this));
+        }
+        return Optional.empty();
+    }
+
 
     Optional<Stream> findStreamFor(String groupId, String artifactId) {
         // first exact match:
@@ -215,4 +286,5 @@ public class Channel {
     String toYaml() throws IOException {
         return ChannelMapper.toYaml(this);
     }
+
 }

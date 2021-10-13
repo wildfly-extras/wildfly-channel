@@ -25,16 +25,17 @@ import static java.util.Collections.emptySet;
 import static org.wildfly.channel.version.VersionMatcherTestCase.getTestMavenRepositoryURI;
 import static org.wildfly.channel.version.VersionMatcherTestCase.mavenRepositoryFromYaml;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class SimpleResolverFactory implements MavenVersionsResolver.Factory<MavenVersionsResolver> {
@@ -48,8 +49,7 @@ public class SimpleResolverFactory implements MavenVersionsResolver.Factory<Mave
 
     @Override
     public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-        return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
-
+        return new MavenVersionsResolver() {
             @Override
             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                 try {
@@ -69,9 +69,12 @@ public class SimpleResolverFactory implements MavenVersionsResolver.Factory<Mave
                 } catch (URISyntaxException e) {
                     return emptySet();
                 }
+            }
 
+            @Override
+            public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                return Optional.empty();
             }
         };
-
     }
 }

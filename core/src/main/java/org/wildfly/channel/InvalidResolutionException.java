@@ -19,32 +19,10 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel.spi;
+package org.wildfly.channel;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import org.wildfly.channel.MavenRepository;
-
-public abstract class AbstractMavenVersionsResolver implements MavenVersionsResolver {
-
-    private List<MavenRepository> mavenRepositories;
-    private boolean resolveWithLocalCache;
-
-    public AbstractMavenVersionsResolver(List<MavenRepository> mavenRepositories, boolean resolveWithLocalCache) {
-        Objects.requireNonNull(mavenRepositories);
-        this.mavenRepositories = new ArrayList<>(mavenRepositories);
-        this.resolveWithLocalCache = resolveWithLocalCache;
-    }
-
-    @Override
-    public boolean isResolveLocalCache() {
-        return resolveWithLocalCache;
-    }
-
-    @Override
-    public List<MavenRepository> getMavenRepositories() {
-        return mavenRepositories;
+public class InvalidResolutionException extends RuntimeException {
+    InvalidResolutionException(String message) {
+        super(message);
     }
 }

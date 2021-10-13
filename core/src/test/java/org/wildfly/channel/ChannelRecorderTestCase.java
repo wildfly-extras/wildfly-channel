@@ -25,14 +25,15 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelRecorderTestCase {
@@ -68,7 +69,7 @@ public class ChannelRecorderTestCase {
                 new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
                     @Override
                     public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-                        return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
+                        return new MavenVersionsResolver() {
                             @Override
                             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                                 if ("repo-channel1".equals(mavenRepositories.get(0).getId())) {
@@ -81,15 +82,20 @@ public class ChannelRecorderTestCase {
                                     return singleton("2.2.0.Final");
                                 }
                             }
+
+                            @Override
+                            public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                                return Optional.of(new File("/tmp"));
+                            }
                         };
                     }
                 });
 
-        session.getLatestVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+        session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
         // no match for org.wildfly.core:wildfly.core.cli
-        session.getLatestVersion("org.wildfly.core", "wildfly.core.cli", null, null);
-        session.getLatestVersion("io.undertow", "undertow-core", null, null);
-        session.getLatestVersion("io.undertow", "undertow-servlet", null, null);
+        session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "24.0.0.Final");
+        session.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "2.1.2.Final");
+        session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "2.1.2.Final");
 
         List<Channel> recordedChannels = session.getRecordedChannels();
         for (Channel recordedChannel : recordedChannels) {
@@ -105,10 +111,13 @@ public class ChannelRecorderTestCase {
         assertEquals("https://repo1.maven.org/maven2/", repositories.get(0).getUrl().toString());
 
         Collection<Stream> streams = channel.getStreams();
-        assertEquals(3, streams.size());
+        assertEquals(4, streams.size());
 
         assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("org.wildfly") &&
                 s.getArtifactId().equals("wildfly-ee-galleon-pack") &&
+                s.getVersion().equals("24.0.0.Final")));
+        assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("org.wildfly.core") &&
+                s.getArtifactId().equals("wildfly.core.cli") &&
                 s.getVersion().equals("24.0.0.Final")));
         assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("io.undertow") &&
                 s.getArtifactId().equals("undertow-core") &&

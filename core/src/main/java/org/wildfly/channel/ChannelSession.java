@@ -21,79 +21,80 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.Optional.empty;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.io.File;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelSession<T extends MavenVersionsResolver> implements AutoCloseable {
     private List<Channel> channels;
-    private MavenVersionsResolver.Factory<T> factory;
     private final ChannelRecorder recorder = new ChannelRecorder();
 
     public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory<T> factory) {
-        Objects.requireNonNull(channels);
-        Objects.requireNonNull(factory);
+        requireNonNull(channels);
+        requireNonNull(factory);
         this.channels = channels;
-        this.factory = factory;
+        for (Channel channel : channels) {
+            channel.initResolver(factory);
+        }
     }
 
-    public Optional<Result<T>> getLatestVersion(String groupId, String artifactId, String extension, String classifier) {
-        Objects.requireNonNull(groupId);
-        Objects.requireNonNull(artifactId);
+    public Optional<MavenArtifact> resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
 
         // find all latest versions from the different channels;
-        Set<Result<T>> found = new HashSet<>();
+        Map<String, Channel> found = new HashMap<>();
         for (Channel channel : channels) {
-            Optional<Result<T>> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, factory);
+            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion2(groupId, artifactId, extension, classifier, baseVersion);
             if (result.isPresent()) {
-                found.add(result.get());
+                found.put(result.get().version, result.get().channel);
             }
         }
+
+        if (found.isEmpty()) {
+            if (baseVersion == null) {
+                return empty();
+            } else {
+                // resolve against the base version
+                for (Channel channel : channels) {
+                    Optional<Channel.ResolveArtifactResult> artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, baseVersion);
+                    if (artifact.isPresent()) {
+                        recorder.recordStream(groupId, artifactId, baseVersion, channel);
+                    }
+                    return Optional.of(new MavenArtifact(groupId, artifactId, extension, classifier, baseVersion, artifact.get().file));
+                }
+                return empty();
+            }
+        }
+
         // compare all latest version from the channels to find the latest overall
-        Optional<Result<T>> result = found.stream()
-                .sorted((lvr1, lvr2) -> COMPARATOR.reversed().compare(lvr1.version, lvr2.version))
+        Optional<String> result = found.keySet().stream()
+                .sorted(COMPARATOR.reversed())
                 .findFirst();
         if (result.isPresent()) {
-            recorder.recordStream(groupId, artifactId, result.get().version,
-                    result.get().getResolver().getMavenRepositories(),
-                    result.get().getResolver().isResolveLocalCache());
+            Channel channel = found.get(result.get());
+            Optional<Channel.ResolveArtifactResult> artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, result.get());
+            if (artifact.isPresent()) {
+                recorder.recordStream(groupId, artifactId, result.get(), channel);
+            }
+            return Optional.of(new MavenArtifact(groupId, artifactId, extension, classifier, result.get(), artifact.get().file));
         }
-        return result;
+
+        return empty();
     }
 
     @Override
-    public void close() throws Exception {
-        factory.close();
-    }
-
-    public static class Result<T> {
-        String version;
-        T resolver;
-
-        Result(String version, T resolver) {
-            this.version = version;
-            this.resolver = resolver;
-        }
-
-        /**
-         * The latest version.
-         */
-        public String getVersion() {
-            return version;
-        }
-
-        /**
-         * The MavenVersionResolver that found the latest version.
-         */
-        public T getResolver() {
-            return resolver;
+    public void close()  {
+        for (Channel channel : channels) {
+            channel.close();
         }
     }
 

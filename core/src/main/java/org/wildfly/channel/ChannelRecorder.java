@@ -29,25 +29,24 @@ public class ChannelRecorder {
 
     private final List<Channel> recordedChannels = new ArrayList<>();
 
-    public void recordStream(String groupId, String artifactId, String version, List<MavenRepository> mavenRepositories, boolean resolveWithLocalCache) {
-
-        Channel channel = findOrCreateChannel(mavenRepositories, resolveWithLocalCache);
-        channel.addStream(new Stream(groupId, artifactId, version, null));
+    public void recordStream(String groupId, String artifactId, String version, Channel channel) {
+        Channel found = findOrCreateChannel(channel);
+        found.addStream(new Stream(groupId, artifactId, version, null));
     }
 
-    private Channel findOrCreateChannel(List<MavenRepository> mavenRepositories, boolean resolveWithLocalCache) {
-        Optional<Channel> found = recordedChannels.stream().filter(c -> c.isResolveWithLocalCache() == resolveWithLocalCache
-                && c.getRepositories().equals(mavenRepositories))
+    private Channel findOrCreateChannel(Channel channel) {
+        Optional<Channel> found = recordedChannels.stream().filter(c -> c.isResolveWithLocalCache() == channel.isResolveWithLocalCache()
+                && c.getRepositories().equals(channel.getRepositories()))
                 .findFirst();
         if (found.isPresent()) {
             return found.get();
         }
 
-        Channel channel = new Channel();
-        channel.setResolveWithLocalCache(resolveWithLocalCache);
-        channel.setRepositories(mavenRepositories);
-        recordedChannels.add(channel);
-        return channel;
+        Channel newChannel = new Channel();
+        newChannel.setResolveWithLocalCache(channel.isResolveWithLocalCache());
+        newChannel.setRepositories(channel.getRepositories());
+        recordedChannels.add(newChannel);
+        return newChannel;
     }
 
     public List<Channel> getRecordedChannels() {

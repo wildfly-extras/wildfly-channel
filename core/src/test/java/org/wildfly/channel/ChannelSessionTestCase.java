@@ -25,14 +25,13 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelSessionTestCase {
@@ -65,7 +64,7 @@ public class ChannelSessionTestCase {
                 new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
                     @Override
                     public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-                        return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
+                        return new MavenVersionsResolver() {
                             @Override
                             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                                 if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {
@@ -74,12 +73,17 @@ public class ChannelSessionTestCase {
                                     return singleton("25.0.0.Final");
                                 }
                             }
+
+                            @Override
+                            public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                                return Optional.of(new File("/tmp"));
+                            }
                         };
                     }
                 });
 
-        Optional<ChannelSession.Result<MavenVersionsResolver>> found = session.getLatestVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null);
-        assertTrue(found.isPresent());
-        assertEquals("25.0.0.Final", found.get().getVersion());
+        Optional<MavenArtifact> artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
+        assertTrue(artifact.isPresent());
+        assertEquals("25.0.0.Final", artifact.get().getVersion());
     }
 }

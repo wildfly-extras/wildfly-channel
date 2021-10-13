@@ -36,6 +36,7 @@ import javax.ws.rs.core.MediaType;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelSession;
+import org.wildfly.channel.MavenArtifact;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 @Path("/latest")
@@ -46,27 +47,23 @@ public class LatestVersion {
     @Produces(MediaType.TEXT_PLAIN)
     public String getLatestVersion(@FormParam("channels") String yamlChannels,
                                    @FormParam("groupId") String groupId,
-                                   @FormParam("artifactId") String artifactId) {
+                                   @FormParam("artifactId") String artifactId,
+                                   @FormParam("extension") String extension,
+                                   @FormParam("baseVersion") String baseVersion) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
         try {
-
             // must be provided by client of this library
             MavenVersionsResolver.Factory<SimpleMavenVersionsResolver> factory = new SimpleMavenVersionResolverFactory();
 
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
             ChannelSession<SimpleMavenVersionsResolver> session = new ChannelSession<>(channels, factory);
 
-            Optional<ChannelSession.Result<SimpleMavenVersionsResolver>> result = session.getLatestVersion(groupId, artifactId, null, null);
-            if (result.isPresent()) {
-                String gav =  groupId + ":" + artifactId + ":" + result.get().getVersion();
-
-                // here, we could have a MavenVersionResolver that does the actual resolution of the file corresponding to the gav
-                SimpleMavenVersionsResolver resolver = result.get().getResolver();
-                resolver.install(gav);
-
-                return gav;
+            Optional<MavenArtifact> artifact = session.resolveMavenArtifact(groupId, artifactId, extension, null, baseVersion);
+            if (artifact.isPresent()) {
+                return String.format("%s:%s:%s:%s", artifact.get().getGroupId(), artifact.get().getArtifactId(), artifact.get().getExtension(),
+                        artifact.get().getVersion());
             } else {
                 return "N/A";
             }

@@ -24,7 +24,9 @@ package org.wildfly.channel.app;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import java.io.File;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,17 +39,22 @@ import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
+import org.eclipse.aether.resolution.VersionRequest;
+import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
+import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class SimpleMavenVersionsResolver extends AbstractMavenVersionsResolver {
+public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
     private final RepositorySystem system;
     private final DefaultRepositorySystemSession session;
@@ -55,7 +62,6 @@ public class SimpleMavenVersionsResolver extends AbstractMavenVersionsResolver {
     private final List<RemoteRepository> remoteRepositories;
 
     SimpleMavenVersionsResolver(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-        super(mavenRepositories, resolveLocalCache);
         remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
         system = newRepositorySystem();
         session = newRepositorySystemSession(system, resolveLocalCache);
@@ -80,6 +86,22 @@ public class SimpleMavenVersionsResolver extends AbstractMavenVersionsResolver {
             return versions;
         } catch (VersionRangeResolutionException e) {
             return emptySet();
+        }
+    }
+
+    @Override
+    public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+        Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, version);
+
+        ArtifactRequest request = new ArtifactRequest();
+        request.setArtifact(artifact);
+        request.setRepositories(remoteRepositories);
+        try {
+            ArtifactResult result = system.resolveArtifact(session, request);
+            return Optional.of(result.getArtifact().getFile());
+        } catch (ArtifactResolutionException e) {
+            e.printStackTrace();
+            return Optional.empty();
         }
     }
 

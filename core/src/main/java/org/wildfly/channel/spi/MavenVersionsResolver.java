@@ -22,11 +22,12 @@
 package org.wildfly.channel.spi;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
-import org.wildfly.channel.Channel;
 import org.wildfly.channel.MavenRepository;
 
 /**
@@ -34,7 +35,7 @@ import org.wildfly.channel.MavenRepository;
  *
  * A client of this library is responsible for implementation {@link MavenVersionsResolver} to query Maven for all the versions for a given Artifact.
  */
-public interface MavenVersionsResolver {
+public interface MavenVersionsResolver extends Closeable {
    /**
     * Returns all the versions provided by Maven for the given artifact.
     *
@@ -47,9 +48,11 @@ public interface MavenVersionsResolver {
     */
    Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
 
-   boolean isResolveLocalCache();
+   Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version);
 
-   List<MavenRepository> getMavenRepositories();
+   default void close() {
+   }
+
 
    /**
     * Factory API to build MavenVersionResolver.
@@ -67,7 +70,6 @@ public interface MavenVersionsResolver {
       T create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
 
       default void close() throws IOException {
-
       }
    }
 }
