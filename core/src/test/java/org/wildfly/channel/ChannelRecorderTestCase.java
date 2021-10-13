@@ -63,7 +63,7 @@ public class ChannelRecorderTestCase {
         Assertions.assertNotNull(channels);
         assertEquals(2, channels.size());
 
-        ChannelSession session = new ChannelSession(channels,
+        ChannelSession<MavenVersionsResolver> session = new ChannelSession<>(channels,
                 // dummy maven resolver that returns the version based on the id of the maven repositories
                 new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
                     @Override

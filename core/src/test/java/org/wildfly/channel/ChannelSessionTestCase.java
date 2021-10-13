@@ -25,6 +25,7 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -59,7 +60,7 @@ public class ChannelSessionTestCase {
         Assertions.assertNotNull(channels);
         Assertions.assertEquals(2, channels.size());
 
-        ChannelSession session = new ChannelSession(channels,
+        ChannelSession<MavenVersionsResolver> session = new ChannelSession<>(channels,
                 // dummy maven resolver that returns the version based on the id of the maven repositories
                 new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
                     @Override
@@ -77,7 +78,7 @@ public class ChannelSessionTestCase {
                     }
                 });
 
-        Optional<ChannelSession.Result> found = session.getLatestVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+        Optional<ChannelSession.Result<MavenVersionsResolver>> found = session.getLatestVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null);
         assertTrue(found.isPresent());
         assertEquals("25.0.0.Final", found.get().getVersion());
     }

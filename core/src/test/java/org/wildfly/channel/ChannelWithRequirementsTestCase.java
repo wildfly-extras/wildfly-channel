@@ -48,9 +48,9 @@ public class ChannelWithRequirementsTestCase {
 
         assertEquals(1, channel.getChannelRequirements().size());
 
-        ChannelSession<MavenVersionsResolver> session = new ChannelSession(Collections.singletonList(channel), new MavenVersionsResolver.Factory() {
+        ChannelSession<MavenVersionsResolver> session = new ChannelSession<>(Collections.singletonList(channel), new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
             @Override
-            public MavenVersionsResolver create(List mavenRepositories, boolean resolveLocalCache) {
+            public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
                 return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
                     @Override
                     public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {

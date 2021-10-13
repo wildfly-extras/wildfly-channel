@@ -159,7 +159,7 @@ public class Channel {
 
         // first we looked into the required channels
         List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
-        ChannelSession sessionForRequiredChannel = new ChannelSession(requiredChannels, factory);
+        ChannelSession<T> sessionForRequiredChannel = new ChannelSession<>(requiredChannels, factory);
         Optional<ChannelSession.Result<T>> resultFromRequiredChannel = sessionForRequiredChannel.getLatestVersion(groupId, artifactId, extension, classifier);
 
         // first we find if there is a stream for that given (groupId, artifactId).

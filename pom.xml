@@ -22,9 +22,12 @@
     </scm>
 
     <properties>
+        <version.maven.compiler.plugin>3.8.1</version.maven.compiler.plugin>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <version.com.fasterxml.jackson>2.13.0</version.com.fasterxml.jackson>
+        <version.com.networknt.json-schema-validator>1.0.61</version.com.networknt.json-schema-validator>
         <version.junit5>5.8.1</version.junit5>
     </properties>
 
@@ -41,6 +44,11 @@
                 <version>${version.com.fasterxml.jackson}</version>
             </dependency>
             <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${version.com.networknt.json-schema-validator}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
                 <version>${version.junit5}</version>
@@ -54,16 +62,18 @@
         <module>core</module>
         <module>app</module>
     </modules>
+
     <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                </configuration>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${version.maven.compiler.plugin}</version>
+                    <configuration>
+                        <parameters>${maven.compiler.parameters}</parameters>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

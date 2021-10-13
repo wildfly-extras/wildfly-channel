@@ -53,7 +53,7 @@ public class LatestVersion {
         try {
 
             // must be provided by client of this library
-            MavenVersionsResolver.Factory factory = new SimpleMavenVersionResolverFactory();
+            MavenVersionsResolver.Factory<SimpleMavenVersionsResolver> factory = new SimpleMavenVersionResolverFactory();
 
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
             ChannelSession<SimpleMavenVersionsResolver> session = new ChannelSession<>(channels, factory);
