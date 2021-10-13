@@ -21,9 +21,13 @@
  */
 package org.wildfly.channel;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
 import java.net.URL;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -34,6 +38,7 @@ public class MavenRepository {
      * Identifier of the Maven repository.
      * This is an optional field.
      */
+    @JsonInclude(NON_NULL)
     private String id;
 
     /**
@@ -61,5 +66,18 @@ public class MavenRepository {
                 "id='" + id + '\'' +
                 ", url=" + url +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MavenRepository that = (MavenRepository) o;
+        return url.equals(that.url);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(url);
     }
 }

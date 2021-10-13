@@ -23,7 +23,7 @@ package org.wildfly.channel;
 
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
-import java.io.Closeable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +35,7 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 public class ChannelSession<T extends MavenVersionsResolver> implements AutoCloseable {
     private List<Channel> channels;
     private MavenVersionsResolver.Factory<T> factory;
+    private final ChannelRecorder recorder = new ChannelRecorder();
 
     public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory<T> factory) {
         Objects.requireNonNull(channels);
@@ -56,9 +57,15 @@ public class ChannelSession<T extends MavenVersionsResolver> implements AutoClos
             }
         }
         // compare all latest version from the channels to find the latest overall
-        return found.stream()
+        Optional<Result<T>> result = found.stream()
                 .sorted((lvr1, lvr2) -> COMPARATOR.reversed().compare(lvr1.version, lvr2.version))
                 .findFirst();
+        if (result.isPresent()) {
+            recorder.recordStream(groupId, artifactId, result.get().version,
+                    result.get().getResolver().getMavenRepositories(),
+                    result.get().getResolver().isResolveLocalCache());
+        }
+        return result;
     }
 
     @Override
@@ -88,5 +95,9 @@ public class ChannelSession<T extends MavenVersionsResolver> implements AutoClos
         public T getResolver() {
             return resolver;
         }
+    }
+
+    public List<Channel> getRecordedChannels() {
+        return recorder.getRecordedChannels();
     }
 }

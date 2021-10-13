@@ -21,12 +21,15 @@
  */
 package org.wildfly.channel;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.*;
 import static java.util.Arrays.asList;
 
 import java.util.List;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.version.FixedVersionMatcher;
 import org.wildfly.channel.version.VersionMatcher;
@@ -77,10 +80,10 @@ public class Stream {
         this.version = version;
         this.versionPattern = versionPattern;
         validate();
-        initVersionComparator();
+        initVersionMatcher();
     }
 
-    private void initVersionComparator() {
+    private void initVersionMatcher() {
         if (version != null) {
             List<String> versions = asList(version.split("[\\s,]+"));
             versionMatcher = new FixedVersionMatcher(versions);
@@ -116,14 +119,17 @@ public class Stream {
         return artifactId;
     }
 
+    @JsonInclude(NON_NULL)
     public String getVersion() {
         return version;
     }
 
+    @JsonInclude(NON_NULL)
     public Pattern getVersionPattern() {
         return versionPattern;
     }
 
+    @JsonIgnore
     public VersionMatcher getVersionComparator() {
         return versionMatcher;
     }

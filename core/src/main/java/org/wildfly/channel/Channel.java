@@ -21,16 +21,24 @@
  */
 package org.wildfly.channel;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
@@ -88,37 +96,61 @@ public class Channel {
      */
     private Collection<Stream> streams = emptySet();
 
+    @JsonInclude(NON_NULL)
     public String getId() {
         return id;
     }
 
+    @JsonInclude(NON_NULL)
     public String getName() {
         return name;
     }
 
+    @JsonInclude(NON_NULL)
     public String getDescription() {
         return description;
     }
 
+    @JsonInclude(NON_NULL)
     public Vendor getVendor() {
         return vendor;
     }
 
+    @JsonInclude(NON_EMPTY)
     public List<ChannelRequirement> getChannelRequirements() {
         return channelRequirements;
     }
 
+    void setResolveWithLocalCache(boolean resolveWithLocalCache) {
+        this.resolveWithLocalCache = resolveWithLocalCache;
+    }
+
+    @JsonInclude(NON_DEFAULT)
     public boolean isResolveWithLocalCache() {
         return resolveWithLocalCache;
     }
 
+    @JsonInclude(NON_EMPTY)
     public List<MavenRepository> getRepositories() {
         return repositories;
     }
 
+    void setRepositories(List<MavenRepository> repositories) {
+        Objects.requireNonNull(repositories);
+        this.repositories = repositories;
+    }
+
+    @JsonInclude(NON_EMPTY)
     public Collection<Stream> getStreams() {
         return streams;
     }
+
+    void addStream(Stream stream) {
+        Objects.requireNonNull(stream);
+        this.streams = new ArrayList<>(streams);
+        this.streams.add(stream);
+    }
+
 
     <T extends MavenVersionsResolver> Optional<ChannelSession.Result<T>> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, MavenVersionsResolver.Factory<T> factory) {
         requireNonNull(groupId);
@@ -164,5 +196,23 @@ public class Channel {
         // finally check if there is a stream for *:*
         stream = streams.stream().filter(s -> s.getGroupId().equals("*") && s.getArtifactId().equals("*")).findFirst();
         return stream;
+    }
+
+    @Override
+    public String toString() {
+        return "Channel{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", vendor=" + vendor +
+                ", resolveWithLocalCache=" + resolveWithLocalCache +
+                ", channelRequirements=" + channelRequirements +
+                ", repositories=" + repositories +
+                ", streams=" + streams +
+                '}';
+    }
+
+    String toYaml() throws IOException {
+        return ChannelMapper.toYaml(this);
     }
 }

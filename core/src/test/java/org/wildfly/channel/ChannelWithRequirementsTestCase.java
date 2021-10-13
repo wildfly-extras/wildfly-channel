@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelWithRequirementsTestCase {
@@ -49,8 +50,8 @@ public class ChannelWithRequirementsTestCase {
 
         ChannelSession<MavenVersionsResolver> session = new ChannelSession(Collections.singletonList(channel), new MavenVersionsResolver.Factory() {
             @Override
-            public MavenVersionsResolver create(List list, boolean resolveLocalCache) {
-                return new MavenVersionsResolver() {
+            public MavenVersionsResolver create(List mavenRepositories, boolean resolveLocalCache) {
+                return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
                     @Override
                     public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
                         return Collections.singleton("1.2.0.Final");

@@ -25,7 +25,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,9 +45,9 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 
-public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
+public class SimpleMavenVersionsResolver extends AbstractMavenVersionsResolver {
     private static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
     private final RepositorySystem system;
     private final DefaultRepositorySystemSession session;
@@ -56,7 +55,7 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     private final List<RemoteRepository> remoteRepositories;
 
     SimpleMavenVersionsResolver(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-        Objects.requireNonNull(mavenRepositories);
+        super(mavenRepositories, resolveLocalCache);
         remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
         system = newRepositorySystem();
         session = newRepositorySystemSession(system, resolveLocalCache);

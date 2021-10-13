@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.spi.AbstractMavenVersionsResolver;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class SimpleResolverFactory implements MavenVersionsResolver.Factory<MavenVersionsResolver> {
@@ -47,7 +48,7 @@ public class SimpleResolverFactory implements MavenVersionsResolver.Factory<Mave
 
     @Override
     public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-        return new MavenVersionsResolver() {
+        return new AbstractMavenVersionsResolver(mavenRepositories, resolveLocalCache) {
 
             @Override
             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {

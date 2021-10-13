@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.wildfly.channel.Channel;
 import org.wildfly.channel.MavenRepository;
 
 /**
@@ -45,6 +46,10 @@ public interface MavenVersionsResolver {
     * @return the set of versions.
     */
    Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
+
+   boolean isResolveLocalCache();
+
+   List<MavenRepository> getMavenRepositories();
 
    /**
     * Factory API to build MavenVersionResolver.

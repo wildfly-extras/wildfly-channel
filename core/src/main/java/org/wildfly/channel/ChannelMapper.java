@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +50,12 @@ public class ChannelMapper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY);
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(OBJECT_MAPPER).build();
     private static final JsonSchema SCHEMA = SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE));
+
+    static String toYaml(Channel channel) throws IOException {
+        StringWriter w = new StringWriter();
+        OBJECT_MAPPER.writeValue(w, channel);
+        return w.toString();
+    }
 
     public static Channel from(URL channelURL) throws InvalidChannelException {
         requireNonNull(channelURL);
