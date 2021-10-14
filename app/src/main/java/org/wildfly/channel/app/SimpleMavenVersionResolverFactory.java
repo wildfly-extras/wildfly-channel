@@ -28,10 +28,10 @@ import java.util.List;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class SimpleMavenVersionResolverFactory implements MavenVersionsResolver.Factory<SimpleMavenVersionsResolver> {
+public class SimpleMavenVersionResolverFactory implements MavenVersionsResolver.Factory{
 
     @Override
-    public SimpleMavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
+    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
         requireNonNull(mavenRepositories);
 
         return new SimpleMavenVersionsResolver(mavenRepositories, resolveLocalCache);

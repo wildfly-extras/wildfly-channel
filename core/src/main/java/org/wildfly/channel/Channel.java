@@ -47,7 +47,7 @@ import org.wildfly.channel.version.VersionMatcher;
 /**
  * Java representation of a Channel.
  */
-public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
+public class Channel implements AutoCloseable {
     /**
      * Identifier of the channel.
      * This is an optional field.
@@ -98,8 +98,8 @@ public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
      */
     private Collection<Stream> streams = emptySet();
 
-    private T resolver;
-    private MavenVersionsResolver.Factory<T> factory;
+    private MavenVersionsResolver resolver;
+    private MavenVersionsResolver.Factory factory;
 
     @JsonInclude(NON_NULL)
     public String getId() {
@@ -156,7 +156,7 @@ public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
         this.streams.add(stream);
     }
 
-    void initResolver(MavenVersionsResolver.Factory<T> factory) {
+    void initResolver(MavenVersionsResolver.Factory factory) {
         this.factory = factory;
         resolver = factory.create(repositories, resolveWithLocalCache);
 
@@ -238,9 +238,9 @@ public class Channel<T extends MavenVersionsResolver> implements AutoCloseable {
         // first we looked into the required channels
         List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
         for (Channel requiredChannel : requiredChannels) {
-            Optional<File> found = requiredChannel.resolveArtifact(groupId, artifactId, extension, classifier, version);
+            Optional<ResolveArtifactResult> found = requiredChannel.resolveArtifact(groupId, artifactId, extension, classifier, version);
             if (found.isPresent()) {
-                return Optional.of(new ResolveArtifactResult(found.get(), requiredChannel));
+                return Optional.of(new ResolveArtifactResult(found.get().file, requiredChannel));
             }
         }
 

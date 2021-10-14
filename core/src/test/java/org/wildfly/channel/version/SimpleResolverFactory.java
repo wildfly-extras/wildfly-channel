@@ -38,7 +38,7 @@ import java.util.Set;
 import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class SimpleResolverFactory implements MavenVersionsResolver.Factory<MavenVersionsResolver> {
+public class SimpleResolverFactory implements MavenVersionsResolver.Factory {
 
     MavenRepository localCache;
 

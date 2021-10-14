@@ -48,7 +48,7 @@ public class ChannelWithRequirementsTestCase {
 
         assertEquals(1, channel.getChannelRequirements().size());
 
-        channel.initResolver(new MavenVersionsResolver.Factory<MavenVersionsResolver>() {
+        channel.initResolver(new MavenVersionsResolver.Factory() {
             @Override
             public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
                 return new MavenVersionsResolver() {

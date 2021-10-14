@@ -25,8 +25,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -47,8 +45,6 @@ import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
-import org.eclipse.aether.resolution.VersionRequest;
-import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
@@ -58,7 +54,6 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     static String LOCAL_MAVEN_REPO = System.getProperty("user.home") + "/.m2/repository";
-    static Path LOCAL_MAVEN_REPO_PATH = Paths.get(new File(LOCAL_MAVEN_REPO).toURI());
 
     private final RepositorySystem system;
     private final DefaultRepositorySystemSession session;
@@ -138,9 +133,5 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
 
     private static RemoteRepository newRemoteRepository(MavenRepository mavenRepository) {
         return new RemoteRepository.Builder(mavenRepository.getId(), "default", mavenRepository.getUrl().toExternalForm()).build();
-    }
-
-    public void install(String gav) {
-        System.out.println(String.format("install %s from %s", gav, remoteRepositories));
     }
 }

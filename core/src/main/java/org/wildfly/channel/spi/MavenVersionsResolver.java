@@ -62,12 +62,12 @@ public interface MavenVersionsResolver extends Closeable {
     * The {@link #create(List, boolean)} method will be called once for every channel that will be checked for the latest version
     * of a given Maven artifact.
     */
-   interface Factory<T extends MavenVersionsResolver> extends Closeable {
+   interface Factory extends Closeable {
 
       /**
        * @param resolveLocalCache Whether the Maven resolver must look into its local cache for versions
        */
-      T create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
+      MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
 
       default void close() throws IOException {
       }

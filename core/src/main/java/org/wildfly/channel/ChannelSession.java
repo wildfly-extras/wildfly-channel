@@ -32,11 +32,11 @@ import java.util.Optional;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
-public class ChannelSession<T extends MavenVersionsResolver> implements AutoCloseable {
+public class ChannelSession implements AutoCloseable {
     private List<Channel> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
 
-    public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory<T> factory) {
+    public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory factory) {
         requireNonNull(channels);
         requireNonNull(factory);
         this.channels = channels;

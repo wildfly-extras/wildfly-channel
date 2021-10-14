@@ -57,10 +57,10 @@ public class LatestVersion {
 
         try {
             // must be provided by client of this library
-            MavenVersionsResolver.Factory<SimpleMavenVersionsResolver> factory = new SimpleMavenVersionResolverFactory();
+            MavenVersionsResolver.Factory factory = new SimpleMavenVersionResolverFactory();
 
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
-            ChannelSession<SimpleMavenVersionsResolver> session = new ChannelSession<>(channels, factory);
+            ChannelSession session = new ChannelSession(channels, factory);
 
             Optional<MavenArtifact> artifact = session.resolveMavenArtifact(groupId, artifactId, extension, null, baseVersion);
             if (artifact.isPresent()) {
