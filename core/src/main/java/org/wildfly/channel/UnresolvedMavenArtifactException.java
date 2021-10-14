@@ -29,4 +29,8 @@ public class UnresolvedMavenArtifactException extends Exception {
     public UnresolvedMavenArtifactException() {
         super();
     }
+
+    public UnresolvedMavenArtifactException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
