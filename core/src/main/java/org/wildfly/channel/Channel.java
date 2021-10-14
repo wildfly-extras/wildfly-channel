@@ -264,6 +264,7 @@ public class Channel implements AutoCloseable {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(version);
+        requireNonNull(resolver);
 
         // first we looked into the required channels
         List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
