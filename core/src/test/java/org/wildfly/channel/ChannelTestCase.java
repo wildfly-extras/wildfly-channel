@@ -71,12 +71,10 @@ public class ChannelTestCase {
         assertEquals(false, channel.isResolveWithLocalCache());
 
         Collection<ChannelRequirement> requires = channel.getChannelRequirements();
-        assertEquals(1, requires.size());
-        ChannelRequirement requirement = requires.iterator().next();
-        assertEquals(new URL("file:///tmp/my-other-channel"), requirement.getURL());
+        assertEquals(0, requires.size());
 
         Collection<MavenRepository> repositories = channel.getRepositories();
-        assertEquals(1, requires.size());
+        assertEquals(1, repositories.size());
         MavenRepository repository = repositories.iterator().next();
         assertEquals("maven-central", repository.getId());
         assertEquals(new URL("https://repo1.maven.org/maven2/"), repository.getUrl());

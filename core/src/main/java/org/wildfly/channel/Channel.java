@@ -39,8 +39,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -79,29 +81,53 @@ public class Channel implements AutoCloseable {
      * This is an optional field.
      * It is false by default.
      */
-    @JsonProperty("resolveWithLocalCache")
     private boolean resolveWithLocalCache;
 
     /**
      * Other channels that are required by the channel.
      * This is an optional field.
      */
-    @JsonProperty("requires")
-    private List<ChannelRequirement> channelRequirements = emptyList();
+    private List<ChannelRequirement> channelRequirements;
+
+    /**
+     * Required channels
+     */
+    private List<Channel> requiredChannels;
 
     /**
      * Maven repositories that contains all artifacts from this channel.
      * This is an optional field.
      */
-    private List<MavenRepository> repositories = emptyList();
+    private List<MavenRepository> repositories;
 
     /**
      * Streams of components that are provided by this channel.
      */
-    private Collection<Stream> streams = emptySet();
+    private Collection<Stream> streams;
 
     private MavenVersionsResolver resolver;
     private MavenVersionsResolver.Factory factory;
+
+    public Channel(@JsonProperty(value = "id") String id,
+                   @JsonProperty(value = "name") String name,
+                   @JsonProperty(value = "description") String description,
+                   @JsonProperty(value = "vendor") Vendor vendor,
+                   @JsonProperty(value = "resolveWithLocalCache") boolean resolveWithLocalCache,
+                   @JsonProperty(value = "requires")
+                   @JsonInclude(NON_EMPTY)
+                           List<ChannelRequirement> channelRequirements,
+                   @JsonProperty(value = "repositories") List<MavenRepository> repositories,
+                   @JsonProperty(value = "streams") Collection<Stream> streams) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.vendor = vendor;
+        this.resolveWithLocalCache = resolveWithLocalCache;
+        this.channelRequirements = (channelRequirements != null) ? channelRequirements : emptyList();
+        this.repositories = (repositories != null) ? repositories : emptyList();
+        this.streams = (streams != null) ? streams : emptyList();
+        this.requiredChannels = this.channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
+    }
 
     @JsonInclude(NON_NULL)
     public String getId() {
@@ -128,10 +154,6 @@ public class Channel implements AutoCloseable {
         return channelRequirements;
     }
 
-    void setResolveWithLocalCache(boolean resolveWithLocalCache) {
-        this.resolveWithLocalCache = resolveWithLocalCache;
-    }
-
     @JsonInclude(NON_DEFAULT)
     public boolean isResolveWithLocalCache() {
         return resolveWithLocalCache;
@@ -140,11 +162,6 @@ public class Channel implements AutoCloseable {
     @JsonInclude(NON_EMPTY)
     public List<MavenRepository> getRepositories() {
         return repositories;
-    }
-
-    void setRepositories(List<MavenRepository> repositories) {
-        Objects.requireNonNull(repositories);
-        this.repositories = repositories;
     }
 
     @JsonInclude(NON_EMPTY)
@@ -167,6 +184,9 @@ public class Channel implements AutoCloseable {
     @Override
     public void close() {
         this.resolver.close();
+        for (Channel requiredChannel : requiredChannels) {
+            requiredChannel.close();
+        }
         this.resolver = null;
         this.factory = null;
     }
@@ -194,14 +214,12 @@ public class Channel implements AutoCloseable {
         if (!foundStream.isPresent()) {
             // we return the latest value from the required channels
             Map<String, Channel> foundVersions = new HashMap<>();
-            List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
             for (Channel requiredChannel : requiredChannels) {
                 requiredChannel.initResolver(factory);
                 Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
                 if (found.isPresent()) {
                     foundVersions.put(found.get().version, found.get().channel);
                 }
-                requiredChannel.close();
             }
             Optional<String> foundVersionInRequiredChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
             if (foundVersionInRequiredChannels.isPresent()) {

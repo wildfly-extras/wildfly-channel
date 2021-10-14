@@ -22,6 +22,7 @@
 package org.wildfly.channel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,9 +43,14 @@ public class ChannelRecorder {
             return found.get();
         }
 
-        Channel newChannel = new Channel();
-        newChannel.setResolveWithLocalCache(channel.isResolveWithLocalCache());
-        newChannel.setRepositories(channel.getRepositories());
+        Channel newChannel = new Channel(null,
+                null,
+                null,
+                null,
+                channel.isResolveWithLocalCache(),
+                Collections.emptyList(),
+                channel.getRepositories(),
+                Collections.emptyList());
         recordedChannels.add(newChannel);
         return newChannel;
     }
