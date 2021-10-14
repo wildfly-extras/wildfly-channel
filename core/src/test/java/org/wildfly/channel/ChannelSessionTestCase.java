@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
@@ -84,7 +83,7 @@ public class ChannelSessionTestCase {
                 });
 
 
-        MavenArtifact artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
+        MavenArtifact artifact = session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
         assertNotNull(artifact);
         assertEquals("25.0.0.Final", artifact.getVersion());
     }

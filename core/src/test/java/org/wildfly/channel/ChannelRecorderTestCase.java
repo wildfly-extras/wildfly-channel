@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
@@ -91,15 +90,14 @@ public class ChannelRecorderTestCase {
                     }
                 });
 
-        session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
-        session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "24.0.0.Final");
-        session.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "2.1.2.Final");
-        session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "2.1.2.Final");
+        session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
+        session.resolveLatestMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "24.0.0.Final");
+        session.resolveLatestMavenArtifact("io.undertow", "undertow-core", null, null, null);
+        session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null, null);
 
         List<Channel> recordedChannels = session.getRecordedChannels();
         System.out.println(ChannelMapper.toYaml(recordedChannels));
         assertEquals(1, recordedChannels.size());
-
 
         Channel channel = recordedChannels.get(0);
 

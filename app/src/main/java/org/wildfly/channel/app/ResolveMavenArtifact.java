@@ -26,7 +26,6 @@ import static java.util.Objects.requireNonNull;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
@@ -42,8 +41,8 @@ import org.wildfly.channel.MavenArtifact;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
-@Path("/latest")
-public class LatestVersion {
+@Path("/resolve")
+public class ResolveMavenArtifact {
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -52,7 +51,8 @@ public class LatestVersion {
                                    @FormParam("groupId") String groupId,
                                    @FormParam("artifactId") String artifactId,
                                    @FormParam("extension") String extension,
-                                   @FormParam("baseVersion") String baseVersion) {
+                                   @FormParam("version") String version,
+                                   @FormParam("latest") List<String> latest) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
@@ -63,11 +63,17 @@ public class LatestVersion {
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
             ChannelSession session = new ChannelSession(channels, factory);
 
+            boolean resolveLatest = latest.contains("on");
             try {
-                MavenArtifact artifact = session.resolveMavenArtifact(groupId, artifactId, extension, null, baseVersion);
+                MavenArtifact artifact;
+                if (resolveLatest) {
+                    artifact = session.resolveLatestMavenArtifact(groupId, artifactId, extension, null, version);
+                } else {
+                    requireNonNull(version);
+                    artifact = session.resolveExactMavenArtifact(groupId, artifactId, extension, null, version);
+                }
                 java.nio.file.Path localRepo = Paths.get(new File("target/local-repo").toURI());
                 java.nio.file.Path artifactPath = localRepo.relativize(Paths.get(artifact.getFile().toURI()));
-
                 return String.format("GAV: %s:%s:%s:%s\nto File: \n%s", artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(),
                         artifact.getVersion(), artifactPath);
             } catch (UnresolvedMavenArtifactException e) {

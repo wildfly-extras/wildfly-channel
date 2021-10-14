@@ -59,14 +59,18 @@
                 <label for="extension">extension</label>
                 <input class="u-full-width" placeholder="zip" id="extension" name="extension">
             </div>
-            <div class="three columns">
-                <label for="extension">version</label>
-                <input class="u-full-width" id="baseVersion" name="baseVersion">
+            <div class="two columns">
+                <label for="version">version</label>
+                <input class="u-full-width" id="version" placeholder="latest" name="version">
+            </div>
+            <div class="one columns">
+                <label for="latest">Latest?</label>
+                <input class="u-full-width" type="checkbox" id="latest" name="latest">
             </div>
         </div>
         <div class="row">
             <div class="two columns">
-                <input class="button-primary" type="submit" id="get-latest-value" value="Resolve">
+                <input class="button-primary" type="submit" id="resolve-button" value="Resolve">
             </div>
             <div class="ten columns">
                 <pre id="pre-version" hidden><code><p id="latest-version"></p></code></pre>
@@ -105,7 +109,7 @@ $(document).ready(function(){
     });
   });
 
- $("#get-latest-value").click(function(event){
+ $("#resolve-button").click(function(event){
     event.preventDefault();
     process();
     $("#pre-version").show();
@@ -113,7 +117,7 @@ $(document).ready(function(){
     console.log("get latest version");
     $.ajax({
       type: "post",
-      url: "/latest",
+      url: "/resolve",
       data: $("#channel-form").serialize(),
       dataType: "text",
       success: function(response) {

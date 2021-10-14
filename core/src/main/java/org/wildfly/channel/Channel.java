@@ -180,7 +180,7 @@ public class Channel implements AutoCloseable {
     }
 
 
-    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
+    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(resolver);
@@ -189,7 +189,7 @@ public class Channel implements AutoCloseable {
         List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
         for (Channel requiredChannel : requiredChannels) {
             requiredChannel.initResolver(factory);
-            Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
+            Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
             if (found.isPresent()) {
                 foundVersions.put(found.get().version, found.get().channel);
             }
