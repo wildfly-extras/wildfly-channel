@@ -25,7 +25,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +52,7 @@ public class ChannelSession<T extends MavenVersionsResolver> implements AutoClos
         // find all latest versions from the different channels;
         Map<String, Channel> found = new HashMap<>();
         for (Channel channel : channels) {
-            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion2(groupId, artifactId, extension, classifier, baseVersion);
+            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
             if (result.isPresent()) {
                 found.put(result.get().version, result.get().channel);
             }
