@@ -23,6 +23,7 @@ package org.wildfly.channel;
 
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -37,7 +38,7 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 public class ChannelSessionTestCase {
 
     @Test
-    public void testSession() {
+    public void testSession() throws UnresolvedMavenArtifactException {
         List<Channel> channels = ChannelMapper.channelsFromString("---\n" +
                 "id: wildfly-24\n" +
                 "repositories:\n" +
@@ -75,15 +76,16 @@ public class ChannelSessionTestCase {
                             }
 
                             @Override
-                            public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
-                                return Optional.of(new File("/tmp"));
+                            public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                                return new File("/tmp");
                             }
                         };
                     }
                 });
 
-        Optional<MavenArtifact> artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
-        assertTrue(artifact.isPresent());
-        assertEquals("25.0.0.Final", artifact.get().getVersion());
+
+        MavenArtifact artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
+        assertNotNull(artifact);
+        assertEquals("25.0.0.Final", artifact.getVersion());
     }
 }

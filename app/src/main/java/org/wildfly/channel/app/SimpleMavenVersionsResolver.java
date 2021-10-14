@@ -26,7 +26,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -50,6 +49,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
@@ -89,7 +89,7 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     }
 
     @Override
-    public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+    public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
         Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, version);
 
         ArtifactRequest request = new ArtifactRequest();
@@ -97,10 +97,11 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
         request.setRepositories(remoteRepositories);
         try {
             ArtifactResult result = system.resolveArtifact(session, request);
-            return Optional.of(result.getArtifact().getFile());
+            return result.getArtifact().getFile();
         } catch (ArtifactResolutionException e) {
-            e.printStackTrace();
-            return Optional.empty();
+            UnresolvedMavenArtifactException umae = new UnresolvedMavenArtifactException();
+            umae.initCause(e);
+            throw umae;
         }
     }
 

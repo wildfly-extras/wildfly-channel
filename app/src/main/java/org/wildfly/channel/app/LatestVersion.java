@@ -39,6 +39,7 @@ import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelSession;
 import org.wildfly.channel.MavenArtifact;
+import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 @Path("/latest")
@@ -62,15 +63,15 @@ public class LatestVersion {
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
             ChannelSession session = new ChannelSession(channels, factory);
 
-            Optional<MavenArtifact> artifact = session.resolveMavenArtifact(groupId, artifactId, extension, null, baseVersion);
-            if (artifact.isPresent()) {
+            try {
+                MavenArtifact artifact = session.resolveMavenArtifact(groupId, artifactId, extension, null, baseVersion);
                 java.nio.file.Path localRepo = Paths.get(new File("target/local-repo").toURI());
-                java.nio.file.Path artifactPath = localRepo.relativize(Paths.get(artifact.get().getFile().toURI()));
+                java.nio.file.Path artifactPath = localRepo.relativize(Paths.get(artifact.getFile().toURI()));
 
-                return String.format("GAV: %s:%s:%s:%s\nto File: \n%s", artifact.get().getGroupId(), artifact.get().getArtifactId(), artifact.get().getExtension(),
-                        artifact.get().getVersion(), artifactPath);
-            } else {
-                return "N/A";
+                return String.format("GAV: %s:%s:%s:%s\nto File: \n%s", artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(),
+                        artifact.getVersion(), artifactPath);
+            } catch (UnresolvedMavenArtifactException e) {
+                return "Unresolved: " + e.getMessage();
             }
         } catch (Throwable t) {
             return "Err: " + t.getMessage();

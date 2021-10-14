@@ -58,8 +58,8 @@ public class ChannelWithRequirementsTestCase {
                     }
 
                     @Override
-                    public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
-                        return Optional.empty();
+                    public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                        return new File("/tmp");
                     }
                 };
             }

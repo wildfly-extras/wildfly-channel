@@ -38,7 +38,7 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelRecorderTestCase {
     @Test
-    public void testChannelRecorder() throws IOException {
+    public void testChannelRecorder() throws IOException, UnresolvedMavenArtifactException {
 
         List<Channel> channels = ChannelMapper.channelsFromString("---\n" +
                 "id: channel1\n" +
@@ -84,15 +84,14 @@ public class ChannelRecorderTestCase {
                             }
 
                             @Override
-                            public Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
-                                return Optional.of(new File("/tmp"));
+                            public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                                return new File("/tmp");
                             }
                         };
                     }
                 });
 
         session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
-        // no match for org.wildfly.core:wildfly.core.cli
         session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "24.0.0.Final");
         session.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "2.1.2.Final");
         session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "2.1.2.Final");

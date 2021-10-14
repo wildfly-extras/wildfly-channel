@@ -180,7 +180,7 @@ public class Channel implements AutoCloseable {
     }
 
 
-    public Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
+    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(resolver);
@@ -222,33 +222,31 @@ public class Channel implements AutoCloseable {
 
 
     static class ResolveArtifactResult {
-        final File file;
-        final Channel channel;
+        File file;
+        Channel channel;
 
         ResolveArtifactResult(File file, Channel channel) {
             this.file = file;
             this.channel = channel;
         }
     }
-    public Optional<ResolveArtifactResult> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+
+    ResolveArtifactResult resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(version);
 
         // first we looked into the required channels
         List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
+        ResolveArtifactResult resultFromChannelRequirements = null;
         for (Channel requiredChannel : requiredChannels) {
-            Optional<ResolveArtifactResult> found = requiredChannel.resolveArtifact(groupId, artifactId, extension, classifier, version);
-            if (found.isPresent()) {
-                return Optional.of(new ResolveArtifactResult(found.get().file, requiredChannel));
+            try {
+                return requiredChannel.resolveArtifact(groupId, artifactId, extension, classifier, version);
+            } catch (UnresolvedMavenArtifactException e) {
             }
         }
 
-        Optional<File> found = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
-        if (found.isPresent()) {
-            return Optional.of(new ResolveArtifactResult(found.get(), this));
-        }
-        return Optional.empty();
+        return new ResolveArtifactResult(resolver.resolveArtifact(groupId, artifactId, extension, classifier, version), this);
     }
 
 

@@ -25,10 +25,10 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.wildfly.channel.MavenRepository;
+import org.wildfly.channel.UnresolvedMavenArtifactException;
 
 /**
  * SPI Interface implemented by tooling doing the Maven request to get all the versions for the given artifact.
@@ -48,7 +48,7 @@ public interface MavenVersionsResolver extends Closeable {
     */
    Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
 
-   Optional<File> resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version);
+   File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException;
 
    default void close() {
    }
