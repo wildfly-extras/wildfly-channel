@@ -24,8 +24,10 @@ package org.wildfly.channel;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -118,8 +120,11 @@ public class ChannelMapper {
     }
 
     public static String getSchema() throws IOException {
-        try (InputStream stream = ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE)) {
-            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        try (InputStream inputStream = ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE)) {
+            return new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
         }
     }
 
