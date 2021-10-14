@@ -24,12 +24,14 @@ package org.wildfly.channel;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -185,39 +187,48 @@ public class Channel implements AutoCloseable {
         requireNonNull(artifactId);
         requireNonNull(resolver);
 
-        Map<String, Channel> foundVersions = new HashMap<>();
-        List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
-        for (Channel requiredChannel : requiredChannels) {
-            requiredChannel.initResolver(factory);
-            Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
-            if (found.isPresent()) {
-                foundVersions.put(found.get().version, found.get().channel);
-            }
-            requiredChannel.close();
-        }
-        Optional<String> foundVersionInRequiredChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
-        Optional<ResolveLatestVersionResult> resultFromRequiredChannels = Optional.empty();
-        if (foundVersionInRequiredChannels.isPresent()) {
-            resultFromRequiredChannels = Optional.of(new ResolveLatestVersionResult(foundVersionInRequiredChannels.get(), foundVersions.get(foundVersionInRequiredChannels.get())));
-        }
-
         // first we find if there is a stream for that given (groupId, artifactId).
         Optional<Stream> foundStream = findStreamFor(groupId, artifactId);
+
+        // no stream for this artifact, let's look into the required channel
         if (!foundStream.isPresent()) {
-            // we return any result from the required channel
-            return resultFromRequiredChannels;
+            // we return the latest value from the required channels
+            Map<String, Channel> foundVersions = new HashMap<>();
+            List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
+            for (Channel requiredChannel : requiredChannels) {
+                requiredChannel.initResolver(factory);
+                Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+                if (found.isPresent()) {
+                    foundVersions.put(found.get().version, found.get().channel);
+                }
+                requiredChannel.close();
+            }
+            Optional<String> foundVersionInRequiredChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
+            if (foundVersionInRequiredChannels.isPresent()) {
+                return Optional.of(new ResolveLatestVersionResult(foundVersionInRequiredChannels.get(), foundVersions.get(foundVersionInRequiredChannels.get())));
+            }
+            return Optional.empty();
         }
 
+        Stream stream = foundStream.get();
         // there is a stream, let's now check its version
-        Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
-        Optional<String> foundVersion = foundStream.get().getVersionComparator().matches(versions);
-        // if a version is found in this channel, it always wins against any stream in its required channel
-        if (foundVersion.isPresent()) {
-            return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
+        if (stream.getVersion() != null) {
+            Optional<String> latestVersionFromStream = Arrays.stream(stream.getVersion().split("[\\s,]+"))
+                    .sorted(VersionMatcher.COMPARATOR.reversed())
+                    .findFirst();
+            if (latestVersionFromStream.isPresent()) {
+                return Optional.of(new ResolveLatestVersionResult(latestVersionFromStream.get(), this));
+            }
         } else {
-            // we return any result from the required channel
-            return resultFromRequiredChannels;
+            // if there is a version pattern, we resolve all versions from Maven to find the latest one
+            Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
+            Optional<String> foundVersion = foundStream.get().getVersionComparator().matches(versions);
+            // if a version is found in this channel, it always wins against any stream in its required channel
+            if (foundVersion.isPresent()) {
+                return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
+            }
         }
+        return Optional.empty();
     }
 
 
