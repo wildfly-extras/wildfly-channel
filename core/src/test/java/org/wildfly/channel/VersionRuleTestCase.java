@@ -21,6 +21,9 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.replaceAll;
 import static java.util.regex.Pattern.compile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,10 +36,13 @@ import static org.wildfly.channel.VersionRule.VersionStream.QUALIFIER;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -54,25 +60,25 @@ public class VersionRuleTestCase {
     public void testMappingWithValidStreamValue() throws IOException {
         VersionRule rule = from("stream: major");
         assertEquals(MAJOR, rule.getStream());
-        assertNull(rule.getQualifierPattern());
+        assertTrue(rule.getQualifiers().isEmpty());
 
         rule = from("stream: minor");
         assertEquals(MINOR, rule.getStream());
-        assertNull(rule.getQualifierPattern());
+        assertTrue(rule.getQualifiers().isEmpty());
 
         rule = from("stream: micro");
         assertEquals(MICRO, rule.getStream());
-        assertNull(rule.getQualifierPattern());
+        assertTrue(rule.getQualifiers().isEmpty());
 
         rule = from("stream: qualifier");
         assertEquals(QUALIFIER, rule.getStream());
-        assertNull(rule.getQualifierPattern());
+        assertTrue(rule.getQualifiers().isEmpty());
     }
 
     @Test
     public void testMappingWithMissingStream() {
         Assertions.assertThrows(Exception.class, () -> {
-            from("qualifierPattern: \\.*");
+            from("# just a comment");
         });
     }
 
@@ -86,15 +92,18 @@ public class VersionRuleTestCase {
     @Test
     public void testMappingWithQualifierPattern() throws IOException {
         VersionRule rule = from("stream: major\n"+
-                "qualifierPattern: Final-jbossorg-\\d+");
+                "qualifiers:\n" +
+                "  - Final\n" +
+                "  - Final-jbossorg-\\d+");
         assertEquals(MAJOR, rule.getStream());
-        assertNotNull(rule.getQualifierPattern());
-        assertEquals("Final-jbossorg-\\d+", rule.getQualifierPattern().pattern());
+        assertEquals(2, rule.getQualifiers().size());
+        assertEquals("Final", rule.getQualifiers().get(0).pattern());
+        assertEquals("Final-jbossorg-\\d+", rule.getQualifiers().get(1).pattern());
     }
 
     @Test
     public void testVersionRule() {
-        Set<String> samples = new HashSet<>(Arrays.asList(
+        Set<String> samples = new HashSet<>(asList(
                 "1.2.0.Final",
                 "1.2.1.Final",
                 "1.2.3.Final",
@@ -108,24 +117,26 @@ public class VersionRuleTestCase {
                 "2.0.0.SP1",
                 "2.0.1.Final"
         ));
-        assertMatches("2.0.1.Final", "1.0.0.Final", MAJOR, null, samples);
-        assertMatches("2.0.0.SP1", "1.0.0.Final", MAJOR, compile("SP1"), samples);
+        assertMatches("2.0.1.Final", "1.0.0.Final", MAJOR, emptyList(), samples);
+        assertMatches("2.0.0.SP1", "1.0.0.Final", MAJOR, asList("SP1"), samples);
 
-        assertMatches("1.4.1.Final", "1.0.0.Final", MINOR, null, samples);
-        assertMatches("1.2.3.Final-jbossorg-00001", "1.0.0.Final", MINOR, compile("Final-jbossorg-\\d+"), samples);
+        assertMatches("1.4.1.Final", "1.0.0.Final", MINOR, emptyList(), samples);
+        assertMatches("1.2.3.Final-jbossorg-00001", "1.0.0.Final", MINOR, asList("Final-jbossorg-\\d+"), samples);
 
-        assertMatches(null, "1.0.0.Final", MICRO, null, samples);
-        assertMatches("1.2.3.SP1", "1.2.0.Final", MICRO, null, samples);
-        assertMatches("1.2.3.Final-jbossorg-00001", "1.2.0.Final", MICRO, compile("Final.*"), samples);
+        assertMatches(null, "1.0.0.Final", MICRO, emptyList(), samples);
+        assertMatches("1.2.3.SP1", "1.2.0.Final", MICRO, emptyList(), samples);
+        assertMatches("1.2.3.Final-jbossorg-00001", "1.2.0.Final", MICRO, asList("Final.*"), samples);
 
-        assertMatches("1.2.3.SP1", "1.2.3.Final", QUALIFIER, null, samples);
-        assertMatches("1.2.3.Final", "1.2.3.Final", QUALIFIER, compile("Final"), samples);
-        assertMatches("1.2.3.Final-jbossorg-00001", "1.2.3.Final", QUALIFIER, compile("Final.*"), samples);
+        assertMatches("1.2.3.SP1", "1.2.3.Final", QUALIFIER, emptyList(), samples);
+        assertMatches("1.2.3.Final", "1.2.3.Final", QUALIFIER, asList("Final"), samples);
+        assertMatches("1.2.3.Final-jbossorg-00001", "1.2.3.Final", QUALIFIER, asList("Final-jbossorg-\\d+"), samples);
+        assertMatches("1.2.3.Final-jbossorg-00001", "1.2.3.Final", QUALIFIER, asList("Final", "Final-jbossorg-\\d+"), samples);
 
     }
 
-    private void assertMatches(String expectedVersion, String baseVersion, VersionRule.VersionStream versionStream, Pattern qualifierPattern, Set<String> samples) {
-        VersionRule rule = new VersionRule(versionStream, qualifierPattern);
+    private void assertMatches(String expectedVersion, String baseVersion, VersionRule.VersionStream versionStream, List<String> qualifiers, Set<String> samples) {
+        List<Pattern> patterns = qualifiers.stream().map(Pattern::compile).collect(Collectors.toList());
+        VersionRule rule = new VersionRule(versionStream, patterns);
 
         Optional<String> found = rule.matches(baseVersion, samples);
         if (expectedVersion == null && !found.isPresent()) {

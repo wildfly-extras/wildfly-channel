@@ -21,9 +21,11 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
-import java.util.Objects;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -31,38 +33,54 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.wildfly.channel.version.VersionMatcher;
 import org.wildfly.channel.version.VersionPatternMatcher;
 
 public class VersionRule {
 
-    private VersionStream stream;
-    private Pattern qualifierPattern;
+    private final List<Pattern> qualifiers;
+    private final VersionStream stream;
+
+    private static final Pattern ANY_QUALIFIER = Pattern.compile(".*");
 
     @JsonCreator
     public VersionRule(@JsonProperty(value = "stream", required = true) VersionStream stream,
-                       @JsonProperty(value = "qualifierPattern") Pattern qualifierPattern) {
+                       @JsonProperty(value = "qualifierPattern") List<Pattern> qualifiers) {
         this.stream = stream;
-        this.qualifierPattern = qualifierPattern;
+        this.qualifiers = qualifiers != null ? qualifiers : emptyList();
     }
 
     public VersionStream getStream() {
         return stream;
     }
 
-    public Pattern getQualifierPattern() {
-        return qualifierPattern;
+    public List<Pattern> getQualifiers() {
+        return qualifiers;
     }
 
-    public Optional<String> matches(String baseVersion, Set<String> samples) {
+    Optional<String> matches(String baseVersion, Set<String> samples) {
         requireNonNull(baseVersion);
         requireNonNull(samples);
 
-        Pattern pattern = buildPattern(baseVersion, stream, qualifierPattern);
-        VersionPatternMatcher matcher = new VersionPatternMatcher(pattern);
-        return matcher.matches(samples);
+        if (qualifiers.isEmpty()) {
+            Pattern pattern = buildPattern(baseVersion, ANY_QUALIFIER);
+            VersionPatternMatcher matcher = new VersionPatternMatcher(pattern);
+            return matcher.matches(samples);
+        }
+
+        Set<String> matches = new HashSet<>();
+        for (Pattern qualifier : qualifiers) {
+            Pattern pattern = buildPattern(baseVersion, qualifier);
+            VersionPatternMatcher matcher = new VersionPatternMatcher(pattern);
+            Optional<String> match = matcher.matches(samples);
+            if (match.isPresent()) {
+                matches.add(match.get());
+            }
+        }
+        return matches.stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
     }
 
-    private Pattern buildPattern(String baseVersion, VersionStream stream, Pattern qualifierPattern) {
+    private Pattern buildPattern(String baseVersion, Pattern qualifierPattern) {
         String prefix = "";
         switch (stream) {
             case MAJOR:
@@ -90,8 +108,8 @@ public class VersionRule {
     @Override
     public String toString() {
         return "VersionRule{" +
-                "stream=" + stream +
-                ", qualifierPattern=" + qualifierPattern +
+                "qualifiers=" + qualifiers +
+                ", stream=" + stream +
                 '}';
     }
 

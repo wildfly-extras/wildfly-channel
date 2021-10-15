@@ -113,9 +113,14 @@
                   "qualifier"
                 ]
               },
-              "qualifierPattern": {
-                "description": "QualifierPattern to determine the latest version according to this rule. This is a regular expression",
-                "type": "string"
+              "qualifiers": {
+                "description": "qualifiers to determine the latest version according to this rule. At least one of the qualifier must be matched",
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "description": "Java regular expression",
+                  "type": "string"
+                }
               }
             },
             "required": ["stream"]

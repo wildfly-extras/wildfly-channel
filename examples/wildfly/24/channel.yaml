@@ -22,3 +22,8 @@ streams:
   - groupId: org.wildfly
     artifactId: wildfly-preview-feature-pack
     versionPattern: '24\.\d+\.\d+.Final'
+  - # consume micro updates of any component
+    groupId: '*'
+    artifactId: '*'
+    versionRule:
+      stream: micro
