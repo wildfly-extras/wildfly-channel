@@ -15,7 +15,7 @@ repositories:
 streams:
   - groupId: org.wildfly
     artifactId: wildfly-datasources-galleon-pack
-    version:  2.0.3.Final
+    version:  '2.0.3.Final'
   - groupId: com.microsoft.sqlserver
     artifactId: mssql-jdbc
     versionPattern: '9\.4\.\d+\.jre8' # from 9.4.0.jre8
