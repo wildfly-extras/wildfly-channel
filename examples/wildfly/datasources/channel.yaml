@@ -16,18 +16,23 @@ streams:
   - groupId: org.wildfly
     artifactId: wildfly-datasources-galleon-pack
     version:  '2.0.3.Final'
-  - groupId: com.microsoft.sqlserver
+  - # JDBC Driver for Microsoft SQL Server (with JRE 8)
+    groupId: com.microsoft.sqlserver
     artifactId: mssql-jdbc
     versionPattern: '9\.4\.\d+\.jre8' # from 9.4.0.jre8
-  - groupId: org.mariadb.jdbc
+  - # JDBC Driver for MariaDB
+    groupId: org.mariadb.jdbc
     artifactId: mariadb-java-client
     versionPattern: '2\.7\.\d+' # from 2.7.4
-  - groupId: mysql
+  - # JDBC Driver for MySQL
+    groupId: mysql
     artifactId: mysql-connector-java
     versionPattern: '8\.0\.\d+' # from 8.0.26
-  - groupId: org.postgresql
+  - # JDBC Driver for PostgreSQL
+    groupId: org.postgresql
     artifactId: postgresql
     versionPattern: '42\.2\.\d+' # from 42.2.24
-  - groupId: com.oracle.ojdbc
+  - # JDBC Driver for Oracle
+    groupId: com.oracle.ojdbc
     artifactId: ojdbc8
     versionPattern: '19\.3.\.*' # from 19.3.0.0
