@@ -10,15 +10,11 @@ repositories:
     url: https://repo1.maven.org/maven2/
 streams:
   - groupId: org.wildfly
-    artifactId: '*'
+    artifactId: wildfly-ee-galleon-pack
     versionPattern: '24\.\d+\.\d+.Final'
-  - groupId: org.wildfly.core
-    artifactId: '*'
-    version: 16.0.1.Final
-  - groupId: org.wildfly.security
-    artifactId: '*'
-    version: 1.16.1.Final
-  - groupId: io.netty
-    artifactId: netty-all
-    version: 4.1.66.Final
-    #versionPattern: '4\.1\..*.Final'
+  - groupId: org.wildfly
+    artifactId: wildfly-galleon-pack
+    versionPattern: '24\.\d+\.\d+.Final'
+  - groupId: org.wildfly
+    artifactId: wildfly-preview-feature-pack
+    versionPattern: '24\.\d+\.\d+.Final'
