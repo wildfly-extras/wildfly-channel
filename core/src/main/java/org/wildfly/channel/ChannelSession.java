@@ -69,7 +69,7 @@ public class ChannelSession implements AutoCloseable {
         // find all latest versions from the different channels;
         Map<String, Channel> found = new HashMap<>();
         for (Channel channel : channels) {
-            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
             if (result.isPresent()) {
                 found.put(result.get().version, result.get().channel);
             }

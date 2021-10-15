@@ -56,7 +56,7 @@ public class Stream {
      * This must be either a single version (e.g. "1.0.0.Final") or a list of comma-separated versions
      * (e.g. "1.0.0.Final, 1.0.1.Final, 1.1.0.Final")
      *
-     * Either this field or the versionPattern field must be set.
+     * Only one of {@code version}, {@code versionPattern} or {@code versionRule} must be set.
      */
     private final String version;
 
@@ -64,9 +64,16 @@ public class Stream {
      * VersionPattern of the stream.
      * This is a regular expression that matches any version from this stream (e.g. "2\.2\..*").
      *
-     * Either this field or the versionPattern field must be set.
+     * Only one of {@code version}, {@code versionPattern} or {@code versionRule} must be set.
      */
     private final Pattern versionPattern;
+
+    /**
+     * VersionRule of the stream
+     *
+     * Only one of {@code version}, {@code versionPattern} or {@code versionRule} must be set.
+     */
+    private final VersionRule versionRule;
 
     private VersionMatcher versionMatcher;
 
@@ -74,11 +81,13 @@ public class Stream {
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
-           @JsonProperty("versionPattern") Pattern versionPattern) {
+           @JsonProperty("versionPattern") Pattern versionPattern,
+           @JsonProperty("versionRule") VersionRule versionRule) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.versionPattern = versionPattern;
+        this.versionRule = versionRule;
         validate();
         initVersionMatcher();
     }
@@ -87,7 +96,7 @@ public class Stream {
         if (version != null) {
             List<String> versions = asList(version.split("[\\s,]+"));
             versionMatcher = new FixedVersionMatcher(versions);
-        } else {
+        } else if (versionPattern != null) {
             // let's instead find a version matching the pattern
             versionMatcher = new VersionPatternMatcher(versionPattern);
         }
@@ -101,13 +110,13 @@ public class Stream {
             }
         }
 
-        if (version != null && versionPattern != null) {
-            throw  new IllegalArgumentException(
-                    String.format("Invalid stream. only one of version or versionPattern field must be set"));
-        }
-        if (version == null && versionPattern == null) {
-            throw  new IllegalArgumentException(
-                    String.format("Invalid stream. Either one of version or versionPattern field must be set"));
+        if ((version != null && versionPattern != null && versionRule != null) ||
+                (version == null && versionPattern == null && versionRule == null) ||
+                (version != null && (versionPattern!= null || versionRule != null)) ||
+                (versionPattern != null && (version != null || versionRule != null)) ||
+                (versionRule != null && (version!= null || versionPattern != null))) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid stream. only one of version, versionPattern or versionRule field must be set"));
         }
     }
 
@@ -127,6 +136,11 @@ public class Stream {
     @JsonInclude(NON_NULL)
     public Pattern getVersionPattern() {
         return versionPattern;
+    }
+
+    @JsonInclude(NON_NULL)
+    public VersionRule getVersionRule() {
+        return versionRule;
     }
 
     @JsonIgnore

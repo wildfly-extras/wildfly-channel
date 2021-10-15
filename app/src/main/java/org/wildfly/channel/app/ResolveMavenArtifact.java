@@ -63,6 +63,10 @@ public class ResolveMavenArtifact {
             List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
             ChannelSession session = new ChannelSession(channels, factory);
 
+            if (version.isEmpty()) {
+                version = null;
+            }
+
             boolean resolveLatest = latest.contains("on");
             try {
                 MavenArtifact artifact;
@@ -77,9 +81,11 @@ public class ResolveMavenArtifact {
                 return String.format("GAV: %s:%s:%s:%s\nto File: \n%s", artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(),
                         artifact.getVersion(), artifactPath);
             } catch (UnresolvedMavenArtifactException e) {
+                e.printStackTrace();
                 return "Unresolved: " + e.getMessage();
             }
         } catch (Throwable t) {
+            t.printStackTrace();
             return "Err: " + t.getMessage();
         }
 

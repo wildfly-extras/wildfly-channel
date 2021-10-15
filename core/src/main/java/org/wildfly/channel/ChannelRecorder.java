@@ -32,7 +32,7 @@ public class ChannelRecorder {
 
     public void recordStream(String groupId, String artifactId, String version, Channel channel) {
         Channel found = findOrCreateChannel(channel);
-        found.addStream(new Stream(groupId, artifactId, version, null));
+        found.addStream(new Stream(groupId, artifactId, version, null, null));
     }
 
     private Channel findOrCreateChannel(Channel channel) {

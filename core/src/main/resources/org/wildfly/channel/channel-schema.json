@@ -92,12 +92,33 @@
             "type": "string"
           },
           "version" : {
-            "description": "Version of the stream. This must be either a single version or a list of comma-separated versions. Either this field or the versionPattern field must be set.",
+            "description": "Version of the stream. This must be either a single version or a list of comma-separated versions. Only one of version, versionPattern or versionRule must be set.",
             "type": "string"
           },
           "versionPattern" : {
-            "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Either this field or the version field must be set.",
+            "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Only one of version, versionPattern or versionRule must be set.",
             "type": "string"
+          },
+          "versionRule" : {
+            "description": "VersionRule of the stream. This requires a base version to determine which is the latest version that applies to the rule.This is a regular expression that matches any version from this stream. Only one of version, versionPattern or versionRule must be set.",
+            "type": "object",
+            "properties": {
+              "stream": {
+                "description": "Specifies the stream of the base version to use to determine the latest version",
+                "type": "string",
+                "enum": [
+                  "major",
+                  "minor",
+                  "micro",
+                  "qualifier"
+                ]
+              },
+              "qualifierPattern": {
+                "description": "QualifierPattern to determine the latest version according to this rule. This is a regular expression",
+                "type": "string"
+              }
+            },
+            "required": ["stream"]
           }
         },
         "required": ["groupId", "artifactId"],
@@ -107,6 +128,9 @@
           },
           {
             "required": ["versionPattern"]
+          },
+          {
+            "required": ["versionRule"]
           }
         ]
       }

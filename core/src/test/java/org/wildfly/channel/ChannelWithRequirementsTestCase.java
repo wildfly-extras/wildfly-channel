@@ -64,7 +64,7 @@ public class ChannelWithRequirementsTestCase {
                 };
             }
         });
-        Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion("org.example", "foo-bar", null, null);
+        Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion("org.example", "foo-bar", null, null, null);
         assertTrue(result.isPresent());
         assertEquals("1.2.0.Final", result.get().version);
     }

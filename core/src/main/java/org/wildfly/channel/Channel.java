@@ -24,9 +24,7 @@ package org.wildfly.channel;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
@@ -39,10 +37,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -202,7 +198,7 @@ public class Channel implements AutoCloseable {
     }
 
 
-    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier) {
+    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(resolver);
@@ -216,7 +212,7 @@ public class Channel implements AutoCloseable {
             Map<String, Channel> foundVersions = new HashMap<>();
             for (Channel requiredChannel : requiredChannels) {
                 requiredChannel.initResolver(factory);
-                Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+                Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
                 if (found.isPresent()) {
                     foundVersions.put(found.get().version, found.get().channel);
                 }
@@ -229,22 +225,29 @@ public class Channel implements AutoCloseable {
         }
 
         Stream stream = foundStream.get();
+        Optional<String> foundVersion = Optional.empty();
         // there is a stream, let's now check its version
         if (stream.getVersion() != null) {
-            Optional<String> latestVersionFromStream = Arrays.stream(stream.getVersion().split("[\\s,]+"))
+            foundVersion = Arrays.stream(stream.getVersion().split("[\\s,]+"))
                     .sorted(VersionMatcher.COMPARATOR.reversed())
                     .findFirst();
-            if (latestVersionFromStream.isPresent()) {
-                return Optional.of(new ResolveLatestVersionResult(latestVersionFromStream.get(), this));
-            }
-        } else {
+        } else if (stream.getVersionPattern() != null){
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
             Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
-            Optional<String> foundVersion = foundStream.get().getVersionComparator().matches(versions);
-            // if a version is found in this channel, it always wins against any stream in its required channel
-            if (foundVersion.isPresent()) {
-                return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
+            foundVersion = foundStream.get().getVersionComparator().matches(versions);
+        } else {
+            requireNonNull(stream.getVersionRule() != null);
+            if (baseVersion == null) {
+                throw new InvalidResolutionException(String.format("Can not resolve the latest version for stream %s:%s which requires a base version to check its version rule",
+                        stream.getGroupId(), stream.getArtifactId()));
             }
+            // if there is a version rule, we resolve all versions from Maven to find the latest one that complies
+            // to the rule
+            Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
+            foundVersion = foundStream.get().getVersionRule().matches(baseVersion, versions);
+        }
+        if (foundVersion.isPresent()) {
+            return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
         }
         return Optional.empty();
     }
