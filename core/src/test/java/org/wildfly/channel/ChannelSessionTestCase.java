@@ -38,7 +38,7 @@ public class ChannelSessionTestCase {
 
     @Test
     public void testSession() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.channelsFromString("---\n" +
+        List<Channel> channels = ChannelMapper.fromString("---\n" +
                 "id: wildfly-24\n" +
                 "repositories:\n" +
                 "  - id: repo-wildfly-24\n" +

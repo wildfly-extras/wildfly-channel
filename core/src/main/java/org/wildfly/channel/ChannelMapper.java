@@ -47,6 +47,11 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 
+/**
+ * Mapper class to transform YAML content (from URL or String) to Channel objects (and vice versa).
+ *
+ * YAML input is validated against a schema.
+ */
 public class ChannelMapper {
 
     private static String SCHEMA_FILE = "org/wildfly/channel/channel-schema.json";
@@ -71,7 +76,6 @@ public class ChannelMapper {
     public static Channel from(URL channelURL) throws InvalidChannelException {
         requireNonNull(channelURL);
 
-
         try {
             // QoL improvement
             if (channelURL.toString().endsWith("/")) {
@@ -89,22 +93,9 @@ public class ChannelMapper {
         }
     }
 
-    public static Channel fromString(String yamlContent) throws InvalidChannelException {
+    public static List<Channel> fromString(String yamlContent) throws InvalidChannelException {
         requireNonNull(yamlContent);
 
-        try {
-            List<String> messages = validateString(yamlContent);
-            if (!messages.isEmpty()) {
-                throw new InvalidChannelException("Invalid channel", messages);
-            }
-            Channel channel = OBJECT_MAPPER.readValue(yamlContent, Channel.class);
-            return channel;
-        } catch (IOException e) {
-            throw wrapException(e);
-        }
-    }
-
-    public static List<Channel> channelsFromString(String yamlContent) throws InvalidChannelException {
         try {
             List<String> messages = validateString(yamlContent);
             if (!messages.isEmpty()) {

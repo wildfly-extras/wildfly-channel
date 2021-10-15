@@ -33,7 +33,7 @@ public class ChannelMapperTestCase {
     public void test() throws IOException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL file = tccl.getResource("channels/multiple-channels.yaml");
-        List<Channel> channels = ChannelMapper.channelsFromString("---\n" +
+        List<Channel> channels = ChannelMapper.fromString("---\n" +
                 "id: channel-1\n" +
                 "\n" +
                 "---\n" +

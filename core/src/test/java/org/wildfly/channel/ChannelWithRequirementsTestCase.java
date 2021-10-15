@@ -44,7 +44,7 @@ public class ChannelWithRequirementsTestCase {
         Channel channel = ChannelMapper.fromString("id: my-channel\n" +
                 "name: My Channel\n" +
                 "requires:\n" +
-                "  - url: " + requiredChannel.toURI());
+                "  - url: " + requiredChannel.toURI()).get(0);
 
         assertEquals(1, channel.getChannelRequirements().size());
 

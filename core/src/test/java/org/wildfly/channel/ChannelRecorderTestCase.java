@@ -39,7 +39,7 @@ public class ChannelRecorderTestCase {
     @Test
     public void testChannelRecorder() throws IOException, UnresolvedMavenArtifactException {
 
-        List<Channel> channels = ChannelMapper.channelsFromString("---\n" +
+        List<Channel> channels = ChannelMapper.fromString("---\n" +
                 "id: channel1\n" +
                 "repositories:\n" +
                 "  - id: repo-channel1\n" +

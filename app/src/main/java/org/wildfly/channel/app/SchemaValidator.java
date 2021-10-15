@@ -44,7 +44,7 @@ public class SchemaValidator {
     @Path("/validate")
     public String validate(@FormParam("channels") String yamlChannels) throws IOException {
         try {
-            ChannelMapper.channelsFromString(yamlChannels);
+            ChannelMapper.fromString(yamlChannels);
         } catch (InvalidChannelException e) {
             return e.getValidationMessages().stream().collect(Collectors.joining("\n"));
         } catch (Throwable t) {

@@ -60,7 +60,7 @@ public class ResolveMavenArtifact {
             // must be provided by client of this library
             MavenVersionsResolver.Factory factory = new SimpleMavenVersionResolverFactory();
 
-            List<Channel> channels = ChannelMapper.channelsFromString(yamlChannels);
+            List<Channel> channels = ChannelMapper.fromString(yamlChannels);
             ChannelSession session = new ChannelSession(channels, factory);
 
             if (version.isEmpty()) {
