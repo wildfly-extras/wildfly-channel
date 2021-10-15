@@ -8,6 +8,10 @@ vendor:
 repositories:
   - id: maven-central
     url: https://repo1.maven.org/maven2/
+  - id: nexus
+    url: https://repository.jboss.org/nexus/content/groups/public-jboss
+  - id: maven-redhat-ga
+    url: https://maven.repository.redhat.com/ga
 streams:
   - groupId: org.wildfly
     artifactId: wildfly-ee-galleon-pack
