@@ -24,7 +24,6 @@ package org.wildfly.channel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.net.URL;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -40,8 +39,8 @@ public class ChannelRequirementTestCase {
 
     @Test
     public void testValidRequires() throws IOException {
-        ChannelRequirement requirement = from("url: file:///tmp/my-other-channel");
-        assertEquals(new URL("file:///tmp/my-other-channel"), requirement.getURL());
+        ChannelRequirement requirement = from("channel: org.foo.channels:my-other-channel");
+        assertEquals("org.foo.channels:my-other-channel", requirement.getChannelCoordinate());
     }
 
     @Test

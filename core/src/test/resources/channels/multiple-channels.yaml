@@ -1,5 +1,4 @@
 ---
-id: channel-1
 name: Channel for WildFly 27
 ---
-id: channel-2
+name: Channel for WildFly 28

@@ -25,7 +25,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 
-import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class SimpleMavenVersionResolverFactory implements MavenVersionsResolver.Factory{

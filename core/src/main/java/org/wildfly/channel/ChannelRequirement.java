@@ -31,23 +31,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class ChannelRequirement {
     /**
-     * URL of the required channel.
+     * Maven coordinates (groupId:artifactId) of the required channel.
      */
-    private URL url;
+    private String channel;
 
     @JsonCreator
-    ChannelRequirement(@JsonProperty(value = "url", required = true) URL url) {
-        this.url = url;
+    ChannelRequirement(@JsonProperty(value = "channel", required = true) String channel) {
+        this.channel = channel;
     }
 
-    public URL getURL() {
-        return url;
+    public String getChannelCoordinate() {
+        return channel;
     }
 
     @Override
     public String toString() {
         return "ChannelRequirement{" +
-                "url=" + url +
+                "channel='" + channel + '\'' +
                 '}';
     }
 }

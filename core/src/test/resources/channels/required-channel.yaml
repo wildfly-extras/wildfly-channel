@@ -1,4 +1,3 @@
-id: my-required-channel
 name: My Required Channel
 streams:
   - groupId: org.example

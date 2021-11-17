@@ -24,20 +24,9 @@ package org.wildfly.channel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.Channel;
-import org.wildfly.channel.ChannelMapper;
-import org.wildfly.channel.MavenRepository;
-import org.wildfly.channel.Stream;
 
 public class StreamResolverTestCase {
 

@@ -39,19 +39,11 @@ public class ChannelSessionTestCase {
     @Test
     public void testSession() throws UnresolvedMavenArtifactException {
         List<Channel> channels = ChannelMapper.fromString("---\n" +
-                "id: wildfly-24\n" +
-                "repositories:\n" +
-                "  - id: repo-wildfly-24\n" +
-                "    url: https://repo1.maven.org/maven2/\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '24\\.\\d+\\.\\d+.Final'\n" +
                 "---\n" +
-                "id: wildfly-25\n" +
-                "repositories:\n" +
-                "  - id: repo-wildfly-25\n" +
-                "    url: https://repo1.maven.org/maven2/\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
@@ -63,19 +55,20 @@ public class ChannelSessionTestCase {
                 // dummy maven resolver that returns the version based on the id of the maven repositories
                 new MavenVersionsResolver.Factory() {
                     @Override
-                    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
+                    public MavenVersionsResolver create() {
                         return new MavenVersionsResolver() {
                             @Override
                             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
-                                if ("repo-wildfly-24".equals(mavenRepositories.get(0).getId())) {
-                                    return singleton("24.0.0.Final");
-                                } else {
                                     return singleton("25.0.0.Final");
-                                }
                             }
 
                             @Override
                             public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
+                                return new File("/tmp");
+                            }
+
+                            @Override
+                            public File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
                                 return new File("/tmp");
                             }
                         };
@@ -83,7 +76,7 @@ public class ChannelSessionTestCase {
                 });
 
 
-        MavenArtifact artifact = session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
+        MavenArtifact artifact = session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
         assertNotNull(artifact);
         assertEquals("25.0.0.Final", artifact.getVersion());
     }

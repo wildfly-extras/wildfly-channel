@@ -25,7 +25,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,18 +36,19 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
+import org.eclipse.aether.resolution.VersionRequest;
+import org.eclipse.aether.resolution.VersionResolutionException;
+import org.eclipse.aether.resolution.VersionResult;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
-import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
@@ -58,25 +58,21 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
     private final RepositorySystem system;
     private final DefaultRepositorySystemSession session;
 
-    private final List<RemoteRepository> remoteRepositories;
-
-    SimpleMavenVersionsResolver(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
-        remoteRepositories = mavenRepositories.stream().map(r -> newRemoteRepository(r)).collect(Collectors.toList());
+    SimpleMavenVersionsResolver() {
         system = newRepositorySystem();
-        session = newRepositorySystemSession(system, resolveLocalCache);
+        session = newRepositorySystemSession(system);
     }
 
     @Override
     public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
-        System.out.println(String.format("Resolving the latest version of %s:%s in repositories: %s",
-                groupId, artifactId, remoteRepositories.stream().map(r -> r.getUrl()).collect(Collectors.joining(","))));
+        System.out.println(String.format("Get all versions of %s:%s",
+                groupId, artifactId));
 
         Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
         VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
         versionRangeRequest.setArtifact(artifact);
-        versionRangeRequest.setRepositories(remoteRepositories);
 
         try {
             VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
@@ -94,7 +90,6 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
 
         ArtifactRequest request = new ArtifactRequest();
         request.setArtifact(artifact);
-        request.setRepositories(remoteRepositories);
         try {
             ArtifactResult result = system.resolveArtifact(session, request);
             return result.getArtifact().getFile();
@@ -104,6 +99,30 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
             throw umae;
         }
     }
+
+    @Override
+    public File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        System.out.println(String.format("Resolving the latest version of %s:%s from Maven Metadata",
+                groupId, artifactId));
+
+        Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
+        VersionRequest versionRequest = new VersionRequest();
+        versionRequest.setArtifact(artifact);
+        try {
+            VersionResult result = system.resolveVersion(session, versionRequest);
+            String version = result.getVersion();
+            System.out.println(String.format("Latest version of %s:%s is %s",
+                    groupId, artifactId, version));
+            return resolveArtifact(groupId, artifactId, extension, classifier, version);
+        } catch (VersionResolutionException e) {
+            UnresolvedMavenArtifactException umae = new UnresolvedMavenArtifactException();
+            umae.initCause(e);
+            throw umae;
+        }
+    }
+
 
     public static RepositorySystem newRepositorySystem() {
         DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
@@ -118,21 +137,13 @@ public class SimpleMavenVersionsResolver implements MavenVersionsResolver {
         return locator.getService(RepositorySystem.class);
     }
 
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, boolean resolveLocalCache) {
+    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
         String location;
-        if (resolveLocalCache) {
-            location = LOCAL_MAVEN_REPO;
-        } else {
-            location = "target/local-repo" ;
-        }
+        location = LOCAL_MAVEN_REPO;
         LocalRepository localRepo = new LocalRepository(location);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
         return session;
-    }
-
-    private static RemoteRepository newRemoteRepository(MavenRepository mavenRepository) {
-        return new RemoteRepository.Builder(mavenRepository.getId(), "default", mavenRepository.getUrl().toExternalForm()).build();
     }
 }

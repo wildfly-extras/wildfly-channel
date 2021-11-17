@@ -24,10 +24,8 @@ package org.wildfly.channel.spi;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
-import org.wildfly.channel.MavenRepository;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 
 /**
@@ -48,6 +46,8 @@ public interface MavenVersionsResolver extends Closeable {
     */
    Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
 
+   File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException;
+
    File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException;
 
    default void close() {
@@ -59,15 +59,12 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * A client of this library is responsible to provide an implementation of the {@link Factory} interface.
     *
-    * The {@link #create(List, boolean)} method will be called once for every channel that will be checked for the latest version
+    * The {@link #create()} method will be called once for every channel that will be checked for the latest version
     * of a given Maven artifact.
     */
    interface Factory extends Closeable {
 
-      /**
-       * @param resolveLocalCache Whether the Maven resolver must look into its local cache for versions
-       */
-      MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache);
+      MavenVersionsResolver create();
 
       default void close() throws IOException {
       }

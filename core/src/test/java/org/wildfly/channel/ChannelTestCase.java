@@ -58,7 +58,6 @@ public class ChannelTestCase {
 
         Channel channel = ChannelMapper.from(file);
 
-        assertEquals("my-channel", channel.getId());
         assertEquals("My Channel", channel.getName());
         assertEquals("This is my channel\n" +
                 "with my stuff", channel.getDescription());
@@ -68,16 +67,8 @@ public class ChannelTestCase {
         assertEquals("My Vendor", vendor.getName());
         assertEquals(Vendor.Support.COMMUNITY, vendor.getSupport());
 
-        assertEquals(false, channel.isResolveWithLocalCache());
-
         Collection<ChannelRequirement> requires = channel.getChannelRequirements();
         assertEquals(0, requires.size());
-
-        Collection<MavenRepository> repositories = channel.getRepositories();
-        assertEquals(1, repositories.size());
-        MavenRepository repository = repositories.iterator().next();
-        assertEquals("maven-central", repository.getId());
-        assertEquals(new URL("https://repo1.maven.org/maven2/"), repository.getUrl());
 
         Collection<Stream> streams = channel.getStreams();
         assertEquals(1, streams.size());

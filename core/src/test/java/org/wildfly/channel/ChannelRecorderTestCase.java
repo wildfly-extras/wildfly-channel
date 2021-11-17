@@ -40,22 +40,17 @@ public class ChannelRecorderTestCase {
     public void testChannelRecorder() throws IOException, UnresolvedMavenArtifactException {
 
         List<Channel> channels = ChannelMapper.fromString("---\n" +
-                "id: channel1\n" +
-                "repositories:\n" +
-                "  - id: repo-channel1\n" +
-                "    url: https://repo1.maven.org/maven2/\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '24\\.\\d+\\.\\d+.Final'\n" +
+                "  - groupId: org.wildfly.core\n" +
+                "    artifactId: '*'\n" +
+                "    versionPattern: '2\\.\\d+\\.\\d+.Final'\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '2\\.\\1\\.\\d+.Final'\n" +
                 "---\n" +
-                "id: channel2\n" +
-                "repositories:\n" +
-                "  - id: repo-channel2\n" +
-                "    url: https://repo1.maven.org/maven2/\n" +
                 "streams:\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
@@ -67,19 +62,20 @@ public class ChannelRecorderTestCase {
                 // dummy maven resolver that returns the version based on the id of the maven repositories
                 new MavenVersionsResolver.Factory() {
                     @Override
-                    public MavenVersionsResolver create(List<MavenRepository> mavenRepositories, boolean resolveLocalCache) {
+                    public MavenVersionsResolver create() {
                         return new MavenVersionsResolver() {
                             @Override
                             public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
-                                if ("repo-channel1".equals(mavenRepositories.get(0).getId())) {
                                     if (groupId.equals("org.wildfly")) {
                                         return singleton("24.0.0.Final");
-                                    } else {
-                                        return singleton("2.1.2.Final");
-                                    }
                                 } else {
                                     return singleton("2.2.0.Final");
                                 }
+                            }
+
+                            @Override
+                            public File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+                                return new File("/tmp");
                             }
 
                             @Override
@@ -90,22 +86,15 @@ public class ChannelRecorderTestCase {
                     }
                 });
 
-        session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, null);
-        session.resolveLatestMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "24.0.0.Final");
-        session.resolveLatestMavenArtifact("io.undertow", "undertow-core", null, null, null);
-        session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null, null);
+        session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+        session.resolveLatestMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null);
+        session.resolveLatestMavenArtifact("io.undertow", "undertow-core", null, null);
+        session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null);
 
-        List<Channel> recordedChannels = session.getRecordedChannels();
-        System.out.println(ChannelMapper.toYaml(recordedChannels));
-        assertEquals(1, recordedChannels.size());
+        Channel recordedChannel = session.getRecordedChannel();
+        System.out.println(ChannelMapper.toYaml(recordedChannel));
 
-        Channel channel = recordedChannels.get(0);
-
-        List<MavenRepository> repositories = channel.getRepositories();
-        assertEquals(1, repositories.size());
-        assertEquals("https://repo1.maven.org/maven2/", repositories.get(0).getUrl().toString());
-
-        Collection<Stream> streams = channel.getStreams();
+        Collection<Stream> streams = recordedChannel.getStreams();
         assertEquals(4, streams.size());
 
         assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("org.wildfly") &&
@@ -113,7 +102,7 @@ public class ChannelRecorderTestCase {
                 s.getVersion().equals("24.0.0.Final")));
         assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("org.wildfly.core") &&
                 s.getArtifactId().equals("wildfly.core.cli") &&
-                s.getVersion().equals("24.0.0.Final")));
+                s.getVersion().equals("2.2.0.Final")));
         assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("io.undertow") &&
                 s.getArtifactId().equals("undertow-core") &&
                 s.getVersion().equals("2.2.0.Final")));

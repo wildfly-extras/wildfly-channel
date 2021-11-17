@@ -49,7 +49,7 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(factory);
         this.channels = channels;
         for (Channel channel : channels) {
-            channel.initResolver(factory);
+            channel.init(factory);
         }
     }
 
@@ -89,27 +89,23 @@ public class ChannelSession implements AutoCloseable {
      * @param artifactId - required
      * @param extension - can be null
      * @param classifier - can be null
-     * @param baseVersion - can be null. If a stream matching the groupId:artifactId is defined using a versionRule, this field is reauired.
      * @return the latest version of a Maven Artifact (with a file corresponding to the artifact).
      * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
      */
-    public MavenArtifact resolveLatestMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+    public MavenArtifact resolveLatestMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
         // find all latest versions from the different channels;
         Map<String, Channel> found = new HashMap<>();
         for (Channel channel : channels) {
-            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
+            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
             if (result.isPresent()) {
                 found.put(result.get().version, result.get().channel);
             }
         }
 
         if (found.isEmpty()) {
-            if (baseVersion != null) {
-                return resolveExactMavenArtifact(groupId, artifactId, extension, classifier, baseVersion);
-            }
             throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
         }
 
@@ -132,17 +128,14 @@ public class ChannelSession implements AutoCloseable {
     }
 
     /**
-     * Returns a synthetic list of Channels where each resolved artifacts (either with exact or latest version)
+     * Returns a synthetic Channel where each resolved artifacts (either with exact or latest version)
      * is defined in a {@code Stream} with a {@code version} field.
      *
-     * This list of channels can be used to reproduce the same resolution in another ChannelSession.
+     * This channel can be used to reproduce the same resolution in another ChannelSession.
      *
-     * However if a single channel had set its resolveWithLocalCache to {@code true}, it is not guaranteed
-     * that the same exact resolution will occur.
-     *
-     * @return a synthetic list of Channels.
+     * @return a synthetic Channel.
      */
-    public List<Channel> getRecordedChannels() {
-        return recorder.getRecordedChannels();
+    public Channel getRecordedChannel() {
+        return recorder.getRecordedChannel();
     }
 }

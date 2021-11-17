@@ -21,41 +21,19 @@
  */
 package org.wildfly.channel;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 public class ChannelRecorder {
 
-    private final List<Channel> recordedChannels = new ArrayList<>();
+    private final Channel recordedChannel = new Channel(null,
+            null,
+            null,
+            null,
+            Collections.emptyList());
 
     public void recordStream(String groupId, String artifactId, String version, Channel channel) {
-        Channel found = findOrCreateChannel(channel);
-        found.addStream(new Stream(groupId, artifactId, version, null));
+        recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
     }
 
-    private Channel findOrCreateChannel(Channel channel) {
-        Optional<Channel> found = recordedChannels.stream().filter(c -> c.isResolveWithLocalCache() == channel.isResolveWithLocalCache()
-                && c.getRepositories().equals(channel.getRepositories()))
-                .findFirst();
-        if (found.isPresent()) {
-            return found.get();
-        }
-
-        Channel newChannel = new Channel(null,
-                null,
-                null,
-                null,
-                channel.isResolveWithLocalCache(),
-                Collections.emptyList(),
-                channel.getRepositories(),
-                Collections.emptyList());
-        recordedChannels.add(newChannel);
-        return newChannel;
-    }
-
-    public List<Channel> getRecordedChannels() {
-        return recordedChannels;
-    }
+    public Channel getRecordedChannel() { return recordedChannel; }
 }
