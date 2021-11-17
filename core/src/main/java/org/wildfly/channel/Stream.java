@@ -68,26 +68,17 @@ public class Stream {
      */
     private final Pattern versionPattern;
 
-    /**
-     * VersionRule of the stream
-     *
-     * Only one of {@code version}, {@code versionPattern} or {@code versionRule} must be set.
-     */
-    private final VersionRule versionRule;
-
     private VersionMatcher versionMatcher;
 
     @JsonCreator
     Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
-           @JsonProperty("versionPattern") Pattern versionPattern,
-           @JsonProperty("versionRule") VersionRule versionRule) {
+           @JsonProperty("versionPattern") Pattern versionPattern) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.versionPattern = versionPattern;
-        this.versionRule = versionRule;
         validate();
         initVersionMatcher();
     }
@@ -110,13 +101,10 @@ public class Stream {
             }
         }
 
-        if ((version != null && versionPattern != null && versionRule != null) ||
-                (version == null && versionPattern == null && versionRule == null) ||
-                (version != null && (versionPattern!= null || versionRule != null)) ||
-                (versionPattern != null && (version != null || versionRule != null)) ||
-                (versionRule != null && (version!= null || versionPattern != null))) {
+        if ((version != null && versionPattern != null) ||
+                (version == null && versionPattern == null )) {
             throw new IllegalArgumentException(
-                    String.format("Invalid stream. only one of version, versionPattern or versionRule field must be set"));
+                    String.format("Invalid stream. only one of version, versionPattern field must be set"));
         }
     }
 
@@ -136,11 +124,6 @@ public class Stream {
     @JsonInclude(NON_NULL)
     public Pattern getVersionPattern() {
         return versionPattern;
-    }
-
-    @JsonInclude(NON_NULL)
-    public VersionRule getVersionRule() {
-        return versionRule;
     }
 
     @JsonIgnore

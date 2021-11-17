@@ -231,21 +231,12 @@ public class Channel implements AutoCloseable {
             foundVersion = Arrays.stream(stream.getVersion().split("[\\s,]+"))
                     .sorted(VersionMatcher.COMPARATOR.reversed())
                     .findFirst();
-        } else if (stream.getVersionPattern() != null){
+        } else if (stream.getVersionPattern() != null) {
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
             Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
             foundVersion = foundStream.get().getVersionComparator().matches(versions);
-        } else {
-            requireNonNull(stream.getVersionRule() != null);
-            if (baseVersion == null) {
-                throw new InvalidResolutionException(String.format("Can not resolve the latest version for stream %s:%s which requires a base version to check its version rule",
-                        stream.getGroupId(), stream.getArtifactId()));
-            }
-            // if there is a version rule, we resolve all versions from Maven to find the latest one that complies
-            // to the rule
-            Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
-            foundVersion = foundStream.get().getVersionRule().matches(baseVersion, versions);
         }
+
         if (foundVersion.isPresent()) {
             return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
         }
