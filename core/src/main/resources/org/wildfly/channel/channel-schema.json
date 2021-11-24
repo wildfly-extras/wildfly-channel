@@ -8,7 +8,7 @@
       "type": "string"
     },
     "description": {
-      "description": "Description of the channel. This is a one-line human-readable description of the channel",
+      "description": "Description of the channel. This is a multi-lines human-readable description of the channel",
       "type": "string"
     },
     "vendor": {
@@ -20,7 +20,7 @@
           "type": "string"
         },
         "support": {
-          "description": "Support  Level provided by the vendor",
+          "description": "Support level provided by the vendor",
           "type": "string",
           "enum": [
             "supported",
@@ -39,7 +39,7 @@
         "minItems": 1,
         "properties": {
           "channel": {
-            "description": "Maven coordinates (groupId:artifactId) of the channel",
+            "description": "Maven coordinates (groupId:artifactId or groupId:artifactId:version) of the channel",
             "type": "string"
           }
         },
@@ -62,11 +62,11 @@
             "type": "string"
           },
           "version" : {
-            "description": "Version of the stream. This must be either a single version or a list of comma-separated versions. Only one of version, versionPattern or versionRule must be set.",
+            "description": "Version of the stream. This must be either a single version or a list of comma-separated versions. Only one of version, versionPattern must be set.",
             "type": "string"
           },
           "versionPattern" : {
-            "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Only one of version, versionPattern or versionRule must be set.",
+            "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Only one of version, versionPattern must be set.",
             "type": "string"
           }
         },
