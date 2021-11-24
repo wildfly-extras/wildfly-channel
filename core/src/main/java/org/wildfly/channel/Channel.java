@@ -135,16 +135,24 @@ public class Channel implements AutoCloseable {
         this.factory = factory;
         resolver = factory.create();
 
+        if (!channelRequirements.isEmpty()) {
+            requiredChannels = new ArrayList<>();
+        }
         for (ChannelRequirement channelRequirement : channelRequirements) {
             String coordinate = channelRequirement.getChannelCoordinate();
             String[] s = coordinate.split(":");
             String groupId = s[0];
             String artifactId = s[1];
-            String version = s[2];
             try {
-                File file = resolver.resolveLatestVersionFromMavenMetadata(groupId, artifactId, null, "yaml");
-                System.out.println(file);
+                final File file;
+                if (s.length == 3) {
+                    String version = s[2];
+                    file = resolver.resolveArtifact(groupId, artifactId, "yaml", "channel", version);
+                } else {
+                    file = resolver.resolveLatestVersionFromMavenMetadata(groupId, artifactId, "yaml", "channel");
+                }
                 Channel requiredChannel = ChannelMapper.from(file.toURI().toURL());
+                requiredChannel.init(factory);
                 requiredChannels.add(requiredChannel);
             } catch (UnresolvedMavenArtifactException | MalformedURLException e) {
                 e.printStackTrace();
