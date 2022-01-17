@@ -57,10 +57,7 @@ public interface VersionMatcher {
         while (i1 < lim1 && i2 < lim2) {
             final char c1 = v1.charAt(i1);
             final char c2 = v2.charAt(i2);
-            if (c1 == c2) {
-                i1++;
-                i2++;
-            } else if (Character.isDigit(c1) || Character.isDigit(c2)) {
+            if (Character.isDigit(c1) || Character.isDigit(c2)) {
                 int ei1 = i1, ei2 = i2;
                 while (ei1 < lim1 && Character.isDigit(v1.charAt(ei1))) ei1++;
                 while (ei2 < lim2 && Character.isDigit(v2.charAt(ei2))) ei2++;
@@ -72,6 +69,9 @@ public interface VersionMatcher {
                 i2 = ei2;
                 if (i1 != i2)
                     return i2 - i1;
+            } else if (c1 == c2) {
+                i1++;
+                i2++;
             } else {
                 return c1 - c2;
             }

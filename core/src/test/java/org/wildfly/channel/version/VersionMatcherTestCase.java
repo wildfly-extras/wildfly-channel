@@ -206,4 +206,10 @@ public class VersionMatcherTestCase {
         assertEquals( "2.0.0.Final", foundVersion.get());
     }
 
+    @Test
+    public void version10isLargerThen1() {
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.0", "10.0") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.1", "1.10") < 0);
+    }
+
 }
