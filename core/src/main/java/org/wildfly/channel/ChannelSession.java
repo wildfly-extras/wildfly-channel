@@ -24,10 +24,14 @@ package org.wildfly.channel;
 import static java.util.Objects.requireNonNull;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
@@ -69,6 +73,8 @@ public class ChannelSession implements AutoCloseable {
         // find all latest versions from the different channels;
         Map<String, Channel> found = new HashMap<>();
         for (Channel channel : channels) {
+            final CompletableFuture<Void> cf = new CompletableFuture<>();
+
             Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
             if (result.isPresent()) {
                 found.put(result.get().version, result.get().channel);

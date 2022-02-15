@@ -178,6 +178,9 @@ public class Channel implements AutoCloseable {
     void initResolver(MavenVersionsResolver.Factory factory) {
         this.factory = factory;
         resolver = factory.create(repositories, resolveWithLocalCache);
+        for (Channel requiredChannel : requiredChannels) {
+            requiredChannel.initResolver(factory);
+        }
 
     }
 
@@ -215,7 +218,6 @@ public class Channel implements AutoCloseable {
             // we return the latest value from the required channels
             Map<String, Channel> foundVersions = new HashMap<>();
             for (Channel requiredChannel : requiredChannels) {
-                requiredChannel.initResolver(factory);
                 Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
                 if (found.isPresent()) {
                     foundVersions.put(found.get().version, found.get().channel);
@@ -267,7 +269,6 @@ public class Channel implements AutoCloseable {
         requireNonNull(resolver);
 
         // first we looked into the required channels
-        List<Channel> requiredChannels = channelRequirements.stream().map(cr -> ChannelMapper.from(cr.getURL())).collect(Collectors.toList());
         ResolveArtifactResult resultFromChannelRequirements = null;
         for (Channel requiredChannel : requiredChannels) {
             try {
