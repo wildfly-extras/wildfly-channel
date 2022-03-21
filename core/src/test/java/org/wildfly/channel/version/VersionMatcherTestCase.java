@@ -212,4 +212,13 @@ public class VersionMatcherTestCase {
         assertTrue(VersionMatcher.COMPARATOR.compare("1.1", "1.10") < 0);
     }
 
+    @Test
+    public void versionCompareTest() {
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-00001", "1.4.1.SP1-redhat-00002") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-1", "1.4.1.SP1-redhat-00002") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-00001", "1.4.1.SP1-redhat-2") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-00002", "1.4.1.SP2-redhat-00001") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("2.16.0.amq-720004-redhat-1", "2.16.0.redhat-1") < 0);
+        //202109080827 - this will blow up
+    }
 }
