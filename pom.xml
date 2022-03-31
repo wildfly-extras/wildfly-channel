@@ -26,7 +26,8 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <version.com.fasterxml.jackson>2.13.0</version.com.fasterxml.jackson>
+        <version.com.fasterxml.jackson>2.13.2</version.com.fasterxml.jackson>
+        <version.com.fasterxml.jackson.databind>2.13.2.1</version.com.fasterxml.jackson.databind>
         <version.com.networknt.json-schema-validator>1.0.61</version.com.networknt.json-schema-validator>
         <version.junit5>5.8.1</version.junit5>
     </properties>
@@ -41,7 +42,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>${version.com.fasterxml.jackson}</version>
+                <version>${version.com.fasterxml.jackson.databind}</version>
             </dependency>
             <dependency>
                 <groupId>com.networknt</groupId>
