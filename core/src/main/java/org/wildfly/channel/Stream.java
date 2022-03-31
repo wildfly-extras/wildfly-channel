@@ -21,8 +21,9 @@
  */
 package org.wildfly.channel;
 
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.*;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static java.util.Arrays.asList;
+import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -56,7 +57,7 @@ public class Stream {
      * This must be either a single version (e.g. "1.0.0.Final") or a list of comma-separated versions
      * (e.g. "1.0.0.Final, 1.0.1.Final, 1.1.0.Final")
      *
-     * Only one of {@code version}, {@code versionPattern} or {@code versionRule} must be set.
+     * Only one of {@code version}, {@code versionPattern} must be set.
      */
     private final String version;
 
@@ -64,7 +65,7 @@ public class Stream {
      * VersionPattern of the stream.
      * This is a regular expression that matches any version from this stream (e.g. "2\.2\..*").
      *
-     * Only one of {@code version}, {@code versionPattern} or {@code versionRule} must be set.
+     * Only one of {@code version}, {@code versionPattern} must be set.
      */
     private final Pattern versionPattern;
 
@@ -87,7 +88,8 @@ public class Stream {
         if (version != null) {
             List<String> versions = asList(version.split("[\\s,]+"));
             versionMatcher = new FixedVersionMatcher(versions);
-        } else if (versionPattern != null) {
+        } else {
+            requireNonNull(versionPattern);
             // let's instead find a version matching the pattern
             versionMatcher = new VersionPatternMatcher(versionPattern);
         }
@@ -104,7 +106,7 @@ public class Stream {
         if ((version != null && versionPattern != null) ||
                 (version == null && versionPattern == null )) {
             throw new IllegalArgumentException(
-                    String.format("Invalid stream. only one of version, versionPattern field must be set"));
+                    String.format("Invalid stream. Only one of version, versionPattern field must be set"));
         }
     }
 

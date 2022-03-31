@@ -53,6 +53,9 @@ public class StreamTestCase {
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
         assertEquals("26.0.0.Final", stream.getVersion());
+        assertNull(stream.getVersionPattern());
+
+        System.out.println("stream = " + stream);
     }
 
     @Test
@@ -114,6 +117,16 @@ public class StreamTestCase {
         assertThrows(Exception.class, () -> {
             Stream stream = fromYamlContent("groupId: org.wildfly\n" +
                     "artifactId: wildfly-ee-galleon-pack");
+        });
+    }
+
+    @Test
+    public void tesVersionAndVersionPatternAreBothDefined()  {
+        assertThrows(Exception.class, () -> {
+            Stream stream = fromYamlContent("groupId: org.wildfly\n" +
+                    "artifactId: wildfly-ee-galleon-pack\n" +
+                    "version: 26.0.0.Final\n" +
+                    "versionPattern: \"2\\\\.2\\\\..*\"");
         });
     }
 }
