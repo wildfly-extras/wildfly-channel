@@ -22,7 +22,9 @@
 package org.wildfly.channel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.wildfly.channel.Vendor.Support.COMMUNITY;
+import static org.wildfly.channel.Vendor.Support.SUPPORTED;
+import static org.wildfly.channel.Vendor.Support.TECH_PREVIEW;
 
 import java.io.IOException;
 
@@ -43,7 +45,9 @@ public class VendorTestCase {
         Vendor vendor = from("name: My Vendor\n" +
                 "support: community");
         assertEquals("My Vendor", vendor.getName());
-        assertEquals(Vendor.Support.COMMUNITY, vendor.getSupport());
+        assertEquals(COMMUNITY, vendor.getSupport());
+
+        System.out.println("vendor = " + vendor);
     }
 
     @Test
@@ -59,4 +63,28 @@ public class VendorTestCase {
             from("name: My Vendor");
         });
     }
+
+    @Test
+    public void testValidSupportValues() throws IOException {
+        Vendor vendor = from("name: My Vendor\n" +
+                "support: community");
+        assertEquals(COMMUNITY, vendor.getSupport());
+
+         vendor = from("name: My Vendor\n" +
+                "support: tech-preview");
+        assertEquals(TECH_PREVIEW, vendor.getSupport());
+
+         vendor = from("name: My Vendor\n" +
+                "support: supported");
+        assertEquals(SUPPORTED, vendor.getSupport());
+    }
+
+    @Test
+    public void testInvalidSupport() {
+        Assertions.assertThrows(Exception.class, () -> {
+            Vendor vendor = from("name: My Vendor\n" +
+                    "support: experimental-is-not-a-valid-value");
+        });
+    }
+
 }
