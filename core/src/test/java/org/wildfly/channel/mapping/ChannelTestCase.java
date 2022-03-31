@@ -23,10 +23,12 @@ package org.wildfly.channel.mapping;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -81,5 +83,33 @@ public class ChannelTestCase {
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
         assertEquals("26.0.0.Final", stream.getVersion());
+    }
+
+    @Test
+    public void channelWithoutStreams() {
+        List<Channel> channels = ChannelMapper.fromString("name: My Channel\n" +
+                "description: |-\n" +
+                "  This is my channel\n" +
+                "  with no stream");
+        assertEquals(1, channels.size());
+        Channel channel = channels.get(0);
+
+        assertTrue(channel.getStreams().isEmpty());
+    }
+
+    @Test
+    public void channelWithRequires() {
+        List<Channel> channels = ChannelMapper.fromString("name: My Channel\n" +
+                "description: |-\n" +
+                "  This is my channel\n" +
+                "  with no stream\n" +
+                "requires:\n" +
+                "  - channel: org.foo.channels:my-required-channel");
+        assertEquals(1, channels.size());
+        Channel channel = channels.get(0);
+
+        assertEquals(1, channel.getChannelRequirements().size());
+        ChannelRequirement requirement = channel.getChannelRequirements().get(0);
+        assertEquals("org.foo.channels:my-required-channel", requirement.getChannelCoordinate());
     }
 }

@@ -46,7 +46,7 @@ public class StreamResolverTestCase {
                 "  - groupId: io.undertow\n" +
                 "    artifactId: undertow-servlet\n" +
                 "    version: 3.0.Final";
-                Channel channel = ChannelMapper.fromString(yamlContent).get(0);
+        Channel channel = ChannelMapper.fromString(yamlContent).get(0);
 
         Optional<Stream> stream = channel.findStreamFor("io.undertow", "undertow-core");
         assertTrue(stream.isPresent());
