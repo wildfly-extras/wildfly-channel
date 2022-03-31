@@ -27,7 +27,7 @@
         <version.com.fasterxml.jackson>2.13.2</version.com.fasterxml.jackson>
         <version.com.fasterxml.jackson.databind>2.13.2.1</version.com.fasterxml.jackson.databind>
         <version.com.networknt.json-schema-validator>1.0.61</version.com.networknt.json-schema-validator>
-        <version.junit5>5.8.1</version.junit5>
+        <version.junit5>5.8.2</version.junit5>
     </properties>
 
     <dependencyManagement>
