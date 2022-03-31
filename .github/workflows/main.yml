@@ -38,5 +38,5 @@ jobs:
     - name: reporter
       uses: PavanMudigonda/jacoco-reporter@v2.4
       with:
-        coverage_results_path: coverage/target/site/jacoco-aggregate/jacoco.xml
+        coverage_results_path: ${{ github.workspace }}/coverage/target/site/jacoco-aggregate/jacoco.xml
    
