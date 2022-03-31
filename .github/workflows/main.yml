@@ -2,9 +2,21 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+    paths-ignore:
+      - '.gitignore'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'README*'
   pull_request:
-    branches: [ main ]
+    paths-ignore:
+      - '.gitignore'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - 'NOTICE'
+      - 'README*'
 
 jobs:
   build:
