@@ -89,15 +89,13 @@ public class Channel implements AutoCloseable {
                    @JsonProperty(value = "description") String description,
                    @JsonProperty(value = "vendor") Vendor vendor,
                    @JsonProperty(value = "requires")
-                   @JsonInclude(NON_EMPTY)
-                           List<ChannelRequirement> channelRequirements,
+                   @JsonInclude(NON_EMPTY) List<ChannelRequirement> channelRequirements,
                    @JsonProperty(value = "streams") Collection<Stream> streams) {
         this.name = name;
         this.description = description;
         this.vendor = vendor;
         this.channelRequirements = (channelRequirements != null) ? channelRequirements : emptyList();
         this.streams = (streams != null) ? streams : emptyList();
-        this.channelRequirements = (channelRequirements != null) ? channelRequirements : emptyList();
     }
 
     @JsonInclude(NON_NULL)

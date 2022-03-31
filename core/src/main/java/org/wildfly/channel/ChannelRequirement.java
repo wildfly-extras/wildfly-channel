@@ -21,8 +21,6 @@
  */
 package org.wildfly.channel;
 
-import java.net.URL;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -31,7 +29,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class ChannelRequirement {
     /**
-     * Maven coordinates (groupId:artifactId) of the required channel.
+     * Maven coordinate of the required channel.
+
+     * Coordinates can correspond to a GA ("groupId:artifactId") or a GAV  ("groupId:artifactId:version")
      */
     private final String channel;
 

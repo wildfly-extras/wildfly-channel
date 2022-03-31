@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.wildfly.channel;
+package org.wildfly.channel.mapping;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.wildfly.channel.ChannelRequirement;
 
 public class ChannelRequirementTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
@@ -41,6 +42,8 @@ public class ChannelRequirementTestCase {
     public void testValidRequires() throws IOException {
         ChannelRequirement requirement = from("channel: org.foo.channels:my-other-channel");
         assertEquals("org.foo.channels:my-other-channel", requirement.getChannelCoordinate());
+
+        System.out.println("requirement = " + requirement);
     }
 
     @Test
