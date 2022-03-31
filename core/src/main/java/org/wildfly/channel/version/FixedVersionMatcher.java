@@ -23,27 +23,23 @@ package org.wildfly.channel.version;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public class FixedVersionMatcher implements VersionMatcher {
 
-    private final List<String> versions;
+    private final String version;
 
-    public FixedVersionMatcher(List<String> versions) {
-        requireNonNull(versions);
-        this.versions = new ArrayList<>(versions);
+    public FixedVersionMatcher(String version) {
+        requireNonNull(version);
+        this.version = version;
     }
 
     @Override
     public Optional<String> matches(Set<String> samples) {
         requireNonNull(samples);
-        for (String version : versions) {
-            if (samples.contains(version)) {
-                return Optional.of(version);
-            }
+        if (samples.contains(version)) {
+            return Optional.of(version);
         }
         return Optional.empty();
     }

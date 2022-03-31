@@ -86,8 +86,7 @@ public class Stream {
 
     private void initVersionMatcher() {
         if (version != null) {
-            List<String> versions = asList(version.split("[\\s,]+"));
-            versionMatcher = new FixedVersionMatcher(versions);
+            versionMatcher = new FixedVersionMatcher(version);
         } else {
             requireNonNull(versionPattern);
             // let's instead find a version matching the pattern
