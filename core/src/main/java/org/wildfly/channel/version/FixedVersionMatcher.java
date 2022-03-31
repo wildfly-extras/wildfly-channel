@@ -35,7 +35,6 @@ public class FixedVersionMatcher implements VersionMatcher {
     public FixedVersionMatcher(List<String> versions) {
         requireNonNull(versions);
         this.versions = new ArrayList<>(versions);
-        this.versions.sort(COMPARATOR.reversed());
     }
 
     @Override

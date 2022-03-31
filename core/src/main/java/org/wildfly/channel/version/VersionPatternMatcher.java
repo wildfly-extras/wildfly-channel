@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 public class VersionPatternMatcher implements VersionMatcher {
-    private Pattern pattern;
+    private final Pattern pattern;
 
     public VersionPatternMatcher(Pattern pattern) {
         this.pattern = pattern;

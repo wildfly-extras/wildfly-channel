@@ -37,7 +37,7 @@ public class MavenArtifact {
     String artifactId;
     String extension;
     String classifier;
-    private String version;
+    private final String version;
     File file;
 
     public String getGroupId() {

@@ -35,7 +35,7 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
  * A ChannelSession is used to install and resolve Maven Artifacts inside a single scope.
  */
 public class ChannelSession implements AutoCloseable {
-    private List<Channel> channels;
+    private final List<Channel> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
 
     /**

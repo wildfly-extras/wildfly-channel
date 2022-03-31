@@ -33,7 +33,7 @@ public class ChannelRequirement {
     /**
      * Maven coordinates (groupId:artifactId) of the required channel.
      */
-    private String channel;
+    private final String channel;
 
     @JsonCreator
     ChannelRequirement(@JsonProperty(value = "channel", required = true) String channel) {

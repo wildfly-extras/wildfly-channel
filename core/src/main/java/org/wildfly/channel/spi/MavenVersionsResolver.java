@@ -23,7 +23,6 @@ package org.wildfly.channel.spi;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.Set;
 
 import org.wildfly.channel.UnresolvedMavenArtifactException;
@@ -66,7 +65,7 @@ public interface MavenVersionsResolver extends Closeable {
 
       MavenVersionsResolver create();
 
-      default void close() throws IOException {
+      default void close() {
       }
    }
 }

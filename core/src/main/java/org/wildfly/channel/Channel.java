@@ -52,19 +52,19 @@ public class Channel implements AutoCloseable {
      * Name of the channel (as an one-line human readable description of the channel).
      * This is an optional field.
      */
-    private String name;
+    private final String name;
 
     /**
      * Description of the channel. It can use multiple lines.
      * This is an optional field.
      */
-    private String description;
+    private final String description;
 
     /**
      * Vendor of the channel.
      * This is an optional field.
      */
-    private Vendor vendor;
+    private final Vendor vendor;
 
     /**
      * Other channels that are required by the channel.

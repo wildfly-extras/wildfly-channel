@@ -54,7 +54,7 @@ import com.networknt.schema.ValidationMessage;
  */
 public class ChannelMapper {
 
-    private static String SCHEMA_FILE = "org/wildfly/channel/channel-schema.json";
+    private static final String SCHEMA_FILE = "org/wildfly/channel/channel-schema.json";
     private static final YAMLFactory YAML_FACTORY = new YAMLFactory();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY);
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(OBJECT_MAPPER).build();

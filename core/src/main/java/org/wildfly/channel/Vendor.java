@@ -60,7 +60,7 @@ public class Vendor {
         @JsonProperty("tech-preview")
         TECH_PREVIEW,
         @JsonProperty("community")
-        COMMUNITY;
+        COMMUNITY
     }
 
     @Override
