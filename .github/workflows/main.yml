@@ -35,8 +35,32 @@ jobs:
         cache: maven
     - name: coverage
       run: mvn -B verify --file pom.xml -Pcoverage
-    - name: reporter
+    - name: upload Report
+      uses: 'actions/upload-artifact@v2'
+      with:
+        name: jacoco.xml
+        path: coverage/target/site/jacoco-aggregate/jacoco.xml 
+    - name: Jacoco Report to PR
+      id: jacoco
+      uses: madrapps/jacoco-report@v1.1
+      with:
+        path: coverage/target/site/jacoco-aggregate/jacoco.xml 
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 40
+        min-coverage-changed-files: 60
+        debug-mode: false
+    - name: JaCoCo Code Coverage Report
+      id: jacoco_reporter
       uses: PavanMudigonda/jacoco-reporter@v2.4
       with:
-        coverage_results_path: ${{ github.workspace }}/coverage/target/site/jacoco-aggregate/jacoco.xml
-   
+        coverage_results_path: coverage/target/site/jacoco-aggregate/jacoco.xml 
+        coverage_report_name: Coverage
+        coverage_report_title: JaCoCo
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        skip_check_run: false
+        minimum_coverage: 80
+        fail_below_threshold: true
+    - name: Get the Coverage info
+      run: |
+        echo "Total coverage ${{ steps.jacoco.outputs.coverage-overall }}"
+        echo "Changed Files coverage ${{ steps.jacoco.outputs.coverage-changed-files }}"     
