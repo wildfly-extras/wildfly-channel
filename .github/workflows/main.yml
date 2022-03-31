@@ -35,8 +35,8 @@ jobs:
         cache: maven
     - name: coverage
       run: mvn -B verify --file pom.xml -Pcoverage
-    - name: report
-      uses: Madrapps/jacoco-report@v1.2
+    - name: reporter
+      uses: PavanMudigonda/jacoco-reporter@v2.4
       with:
-        paths: coverage/target/site/jacoco-aggregate/jacoco.xml
-        token: ${{ secrets.GITHUB_TOKEN }}
+        coverage_results_path: coverage/target/site/jacoco-aggregate/jacoco.xml
+   
