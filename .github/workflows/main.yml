@@ -44,7 +44,7 @@ jobs:
       id: jacoco
       uses: madrapps/jacoco-report@v1.1
       with:
-        path: coverage/target/site/jacoco-aggregate/jacoco.xml 
+        path: ${{ github.workspace }}/coverage/target/site/jacoco-aggregate/jacoco.xml 
         token: ${{ secrets.GITHUB_TOKEN }}
         min-coverage-overall: 40
         min-coverage-changed-files: 60
@@ -53,7 +53,7 @@ jobs:
       id: jacoco_reporter
       uses: PavanMudigonda/jacoco-reporter@v2.4
       with:
-        coverage_results_path: coverage/target/site/jacoco-aggregate/jacoco.xml 
+        coverage_results_path: ${{ github.workspace }}/coverage/target/site/jacoco-aggregate/jacoco.xml 
         coverage_report_name: Coverage
         coverage_report_title: JaCoCo
         github_token: ${{ secrets.GITHUB_TOKEN }}
