@@ -137,14 +137,12 @@ public class Channel implements AutoCloseable {
             requiredChannels = new ArrayList<>();
         }
         for (ChannelRequirement channelRequirement : channelRequirements) {
-            String coordinate = channelRequirement.getChannelCoordinate();
-            String[] s = coordinate.split(":");
-            String groupId = s[0];
-            String artifactId = s[1];
+            String groupId = channelRequirement.getGroupId();
+            String artifactId = channelRequirement.getArtifactId();
+            String version = channelRequirement.getVersion();
             try {
                 final File file;
-                if (s.length == 3) {
-                    String version = s[2];
+                if (version != null) {
                     file = resolver.resolveArtifact(groupId, artifactId, "yaml", "channel", version);
                 } else {
                     file = resolver.resolveLatestVersionFromMavenMetadata(groupId, artifactId, "yaml", "channel");

@@ -25,29 +25,41 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Java representation of a Channel requirement.
+ * Java representation of a Channel requirement identified by Maven coordinates.
  */
 public class ChannelRequirement {
-    /**
-     * Maven coordinate of the required channel.
 
-     * Coordinates can correspond to a GA ("groupId:artifactId") or a GAV  ("groupId:artifactId:version")
-     */
-    private final String channel;
+    private final String groupId;
+    private final String artifactId;
+    private final String version;
 
     @JsonCreator
-    ChannelRequirement(@JsonProperty(value = "channel", required = true) String channel) {
-        this.channel = channel;
+    ChannelRequirement(@JsonProperty(value = "groupId", required = true) String groupId,
+                       @JsonProperty(value = "artifactId", required = true) String artifactId,
+                       @JsonProperty(value = "version") String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
     }
 
-    public String getChannelCoordinate() {
-        return channel;
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public String getVersion() {
+        return version;
     }
 
     @Override
     public String toString() {
         return "ChannelRequirement{" +
-                "channel='" + channel + '\'' +
+                "groupId='" + groupId + '\'' +
+                ", artifactId='" + artifactId + '\'' +
+                ", version='" + version + '\'' +
                 '}';
     }
 }

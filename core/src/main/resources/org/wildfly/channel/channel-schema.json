@@ -38,12 +38,20 @@
         "type": "object",
         "minItems": 1,
         "properties": {
-          "channel": {
-            "description": "Maven coordinates (groupId:artifactId or groupId:artifactId:version) of the channel",
+          "groupId": {
+            "description": "GroupID Maven coordinate of the channel",
+            "type": "string"
+          },
+          "artifactId": {
+            "description": "ArtifactID Maven coordinate of the channel",
+            "type": "string"
+          },
+          "version": {
+            "description": "Version Maven coordinate of the channel",
             "type": "string"
           }
         },
-        "required": ["channel"]
+        "required": ["groupId", "artifactId"]
       }
     },
     "streams":{

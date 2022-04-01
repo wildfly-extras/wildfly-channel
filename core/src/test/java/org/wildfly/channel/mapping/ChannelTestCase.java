@@ -104,12 +104,14 @@ public class ChannelTestCase {
                 "  This is my channel\n" +
                 "  with no stream\n" +
                 "requires:\n" +
-                "  - channel: org.foo.channels:my-required-channel");
+                "  - groupId: org.foo.channels\n" +
+                "    artifactId: my-required-channel");
         assertEquals(1, channels.size());
         Channel channel = channels.get(0);
 
         assertEquals(1, channel.getChannelRequirements().size());
         ChannelRequirement requirement = channel.getChannelRequirements().get(0);
-        assertEquals("org.foo.channels:my-required-channel", requirement.getChannelCoordinate());
+        assertEquals("org.foo.channels", requirement.getGroupId());
+        assertEquals("my-required-channel", requirement.getArtifactId());
     }
 }

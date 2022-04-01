@@ -22,6 +22,7 @@
 package org.wildfly.channel.mapping;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 
@@ -40,16 +41,39 @@ public class ChannelRequirementTestCase {
 
     @Test
     public void testValidRequires() throws IOException {
-        ChannelRequirement requirement = from("channel: org.foo.channels:my-other-channel");
-        assertEquals("org.foo.channels:my-other-channel", requirement.getChannelCoordinate());
+        ChannelRequirement requirement = from("groupId: org.foo.channels\n" +
+                "artifactId: my-other-channel");
+
+        assertEquals("org.foo.channels", requirement.getGroupId());
+        assertEquals("my-other-channel", requirement.getArtifactId());
+        assertNull(requirement.getVersion());
 
         System.out.println("requirement = " + requirement);
     }
 
     @Test
-    public void testURLIsMandatory() {
+    public void testValidRequiresWithVersion() throws IOException {
+        ChannelRequirement requirement = from("groupId: org.foo.channels\n" +
+                "artifactId: my-other-channel\n" +
+                "version: 1.2.3.Final");
+
+        assertEquals("org.foo.channels", requirement.getGroupId());
+        assertEquals("my-other-channel", requirement.getArtifactId());
+        assertEquals("1.2.3.Final", requirement.getVersion());
+
+        System.out.println("requirement = " + requirement);
+    }
+
+    @Test
+    public void testInvalidRequires() {
         Assertions.assertThrows(Exception.class, () -> {
-            from("# empty requirement");
+            // missing artifactID
+            from("groupId: org.foo.channels");
+        });
+
+        Assertions.assertThrows(Exception.class, () -> {
+            // missing groupId
+            from("artifactId: my-other-channel");
         });
     }
 }
