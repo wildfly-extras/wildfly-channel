@@ -31,7 +31,7 @@ public class ChannelRecorder {
             null,
             Collections.emptyList());
 
-    public void recordStream(String groupId, String artifactId, String version, Channel channel) {
+    public void recordStream(String groupId, String artifactId, String version) {
         recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
     }
 

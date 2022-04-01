@@ -64,7 +64,7 @@ public class ChannelSession implements AutoCloseable {
      * @return A resolved Maven Artifact (with a file corresponding to the artifact).
      * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
      */
-    public MavenArtifact resolveExactMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
+    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(version);
@@ -73,7 +73,7 @@ public class ChannelSession implements AutoCloseable {
         for (Channel channel : channels) {
             try {
                 Channel.ResolveArtifactResult artifactResult = channel.resolveArtifact(groupId, artifactId, extension, classifier, version);
-                recorder.recordStream(groupId, artifactId, version, channel);
+                recorder.recordStream(groupId, artifactId, version);
                 return new MavenArtifact(groupId, artifactId, extension, classifier, version, artifactResult.file);
             } catch (UnresolvedMavenArtifactException e) {
                 // ignore if a channel can not resolve the maven artifact
@@ -116,7 +116,7 @@ public class ChannelSession implements AutoCloseable {
         Channel channel = found.get(latestVersion);
 
         Channel.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
-        recorder.recordStream(groupId, artifactId, latestVersion, channel);
+        recorder.recordStream(groupId, artifactId, latestVersion);
         return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
     }
 

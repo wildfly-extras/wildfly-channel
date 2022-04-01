@@ -21,10 +21,25 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 
 public class MavenArtifact {
+
+    private final String groupId;
+    private final String artifactId;
+    private final String extension;
+    private final String classifier;
+    private final String version;
+    private final File file;
+
     public MavenArtifact(String groupId, String artifactId, String extension, String classifier, String version, File file) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(version);
+        requireNonNull(file);
+
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.extension = extension;
@@ -33,12 +48,6 @@ public class MavenArtifact {
         this.file = file;
     }
 
-    String groupId;
-    String artifactId;
-    String extension;
-    String classifier;
-    private final String version;
-    File file;
 
     public String getGroupId() {
         return groupId;
@@ -62,5 +71,17 @@ public class MavenArtifact {
 
     public File getFile() {
         return file;
+    }
+
+    @Override
+    public String toString() {
+        return "MavenArtifact{" +
+                "groupId='" + groupId + '\'' +
+                ", artifactId='" + artifactId + '\'' +
+                ", extension='" + extension + '\'' +
+                ", classifier='" + classifier + '\'' +
+                ", version='" + version + '\'' +
+                ", file=" + file +
+                '}';
     }
 }
