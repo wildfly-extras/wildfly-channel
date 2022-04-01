@@ -83,7 +83,6 @@ public class Channel implements AutoCloseable {
     private Collection<Stream> streams;
 
     private MavenVersionsResolver resolver;
-    private MavenVersionsResolver.Factory factory;
 
     public Channel(@JsonProperty(value = "name") String name,
                    @JsonProperty(value = "description") String description,
@@ -130,7 +129,6 @@ public class Channel implements AutoCloseable {
     }
 
     void init(MavenVersionsResolver.Factory factory) {
-        this.factory = factory;
         resolver = factory.create();
 
         if (!channelRequirements.isEmpty()) {
@@ -158,12 +156,11 @@ public class Channel implements AutoCloseable {
 
     @Override
     public void close() {
-        this.resolver.close();
         for (Channel requiredChannel : requiredChannels) {
             requiredChannel.close();
         }
+        this.resolver.close();
         this.resolver = null;
-        this.factory = null;
     }
 
     static class ResolveLatestVersionResult {
@@ -190,7 +187,6 @@ public class Channel implements AutoCloseable {
             // we return the latest value from the required channels
             Map<String, Channel> foundVersions = new HashMap<>();
             for (Channel requiredChannel : requiredChannels) {
-                requiredChannel.init(factory);
                 Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
                 if (found.isPresent()) {
                     foundVersions.put(found.get().version, found.get().channel);

@@ -23,17 +23,17 @@ package org.wildfly.channel;
 
 import java.util.Collections;
 
-public class ChannelRecorder {
+class ChannelRecorder {
 
-    private final Channel recordedChannel = new Channel(null,
+    final Channel recordedChannel = new Channel(null,
             null,
             null,
             null,
             Collections.emptyList());
 
-    public void recordStream(String groupId, String artifactId, String version) {
+    void recordStream(String groupId, String artifactId, String version) {
         recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
     }
 
-    public Channel getRecordedChannel() { return recordedChannel; }
+    Channel getRecordedChannel() { return recordedChannel; }
 }
