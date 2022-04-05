@@ -105,6 +105,21 @@ public class VersionPatternMatcherTestCase {
         assertEquals("1.10", match.get());
     }
 
+    @Test
+    public void version10isLargerThen1() {
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.0", "10.0") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.1", "1.10") < 0);
+    }
+
+    @Test
+    public void versionCompareTest() {
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-00001", "1.4.1.SP1-redhat-00002") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-1", "1.4.1.SP1-redhat-00002") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-00001", "1.4.1.SP1-redhat-2") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("1.4.1.SP1-redhat-00002", "1.4.1.SP2-redhat-00001") < 0);
+        assertTrue(VersionMatcher.COMPARATOR.compare("2.16.0.amq-720004-redhat-1", "2.16.0.redhat-1") < 0);
+    }
+
     public Optional<String> matches(String pattern, Set<String> samples) {
         VersionPatternMatcher comparator = new VersionPatternMatcher(Pattern.compile(pattern));
         return comparator.matches(samples);
