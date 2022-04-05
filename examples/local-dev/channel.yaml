@@ -1,7 +1,0 @@
-id: local-dev
-resolveWithLocalCache: true
-streams:
-  - # use the latest version for all artifacts
-    groupId: '*'
-    artifactId: '*'
-    versionPattern: '.*'

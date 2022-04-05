@@ -1,9 +1,0 @@
-id: undertow-2
-name: Continuous Channel for Undertow 2.x
-repositories:
-  - id: maven-central
-    url: https://repo1.maven.org/maven2/
-streams:
-  - groupId: io.undertow
-    artifactId: '*'
-    versionPattern: '2\.\d+\.\d+\.Final'
