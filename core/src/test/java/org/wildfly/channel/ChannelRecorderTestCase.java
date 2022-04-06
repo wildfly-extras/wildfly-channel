@@ -23,12 +23,18 @@ package org.wildfly.channel;
 
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
@@ -46,7 +52,7 @@ public class ChannelRecorderTestCase {
                 "    versionPattern: '24\\.\\d+\\.\\d+.Final'\n" +
                 "  - groupId: org.wildfly.core\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '2\\.\\d+\\.\\d+.Final'\n" +
+                "    versionPattern: '18\\.\\d+\\.\\d+.Final'\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '2\\.\\1\\.\\d+.Final'\n" +
@@ -58,56 +64,48 @@ public class ChannelRecorderTestCase {
         Assertions.assertNotNull(channels);
         assertEquals(2, channels.size());
 
-        ChannelSession session = new ChannelSession(channels,
-                // dummy maven resolver that returns the version based on the id of the maven repositories
-                new MavenVersionsResolver.Factory() {
-                    @Override
-                    public MavenVersionsResolver create() {
-                        return new MavenVersionsResolver() {
-                            @Override
-                            public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
-                                    if (groupId.equals("org.wildfly")) {
-                                        return singleton("24.0.0.Final");
-                                } else {
-                                    return singleton("2.2.0.Final");
-                                }
-                            }
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
-                            @Override
-                            public File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-                                return new File("/tmp");
-                            }
+        when(factory.create())
+                .thenReturn(resolver);
+        when(resolver.getAllVersions(eq("org.wildfly"), anyString(), eq(null), eq(null)))
+                .thenReturn(singleton("24.0.0.Final"));
+        when(resolver.getAllVersions(eq("org.wildfly.core"), anyString(), eq(null), eq(null)))
+                .thenReturn(singleton("18.0.0.Final"));
+        when(resolver.getAllVersions(eq("io.undertow"), anyString(), eq(null), eq(null)))
+                .thenReturn(Set.of("2.1.0.Final", "2.2.0.Final"));
+        when(resolver.resolveArtifact(anyString(), anyString(), eq(null), eq(null), anyString()))
+                .thenReturn(mock(File.class));
 
-                            @Override
-                            public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) {
-                                return new File("/tmp");
-                            }
-                        };
-                    }
-                });
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+            session.resolveLatestMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null);
+            session.resolveLatestMavenArtifact("io.undertow", "undertow-core", null, null);
+            session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null);
 
-        session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
-        session.resolveLatestMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null);
-        session.resolveLatestMavenArtifact("io.undertow", "undertow-core", null, null);
-        session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null);
+            Channel recordedChannel = session.getRecordedChannel();
+            System.out.println(ChannelMapper.toYaml(recordedChannel));
 
-        Channel recordedChannel = session.getRecordedChannel();
-        System.out.println(ChannelMapper.toYaml(recordedChannel));
+            Collection<Stream> streams = recordedChannel.getStreams();
+            assertEquals(4, streams.size());
 
-        Collection<Stream> streams = recordedChannel.getStreams();
-        assertEquals(4, streams.size());
+            assertStreamExistsFor(streams, "org.wildfly", "wildfly-ee-galleon-pack", "24.0.0.Final");
+            assertStreamExistsFor(streams, "org.wildfly.core", "wildfly.core.cli", "18.0.0.Final");
+            assertStreamExistsFor(streams, "io.undertow", "undertow-core", "2.2.0.Final");
+            assertStreamExistsFor(streams, "io.undertow", "undertow-servlet", "2.2.0.Final");
+        }
+    }
 
-        assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("org.wildfly") &&
-                s.getArtifactId().equals("wildfly-ee-galleon-pack") &&
-                s.getVersion().equals("24.0.0.Final")));
-        assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("org.wildfly.core") &&
-                s.getArtifactId().equals("wildfly.core.cli") &&
-                s.getVersion().equals("2.2.0.Final")));
-        assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("io.undertow") &&
-                s.getArtifactId().equals("undertow-core") &&
-                s.getVersion().equals("2.2.0.Final")));
-        assertTrue(streams.stream().anyMatch(s -> s.getGroupId().equals("io.undertow") &&
-                s.getArtifactId().equals("undertow-servlet") &&
-                s.getVersion().equals("2.2.0.Final")));
+    private static void assertStreamExistsFor(Collection<Stream> streams, String groupId, String artifactId, String version) {
+        Optional<Stream> stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) &&
+                s.getArtifactId().equals(artifactId) &&
+                s.getVersion().equals(version)).findFirst();
+        assertTrue(stream.isPresent());
+        assertEquals(groupId, stream.get().getGroupId());
+        assertEquals(artifactId, stream.get().getArtifactId());
+        assertEquals(version, stream.get().getVersion());
+        assertNull(stream.get().getVersionPattern());
+
     }
 }
