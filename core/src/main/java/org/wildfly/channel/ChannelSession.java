@@ -93,31 +93,27 @@ public class ChannelSession implements AutoCloseable {
      * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
      */
     public MavenArtifact resolveLatestMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        requireNonNull(groupId);
-        requireNonNull(artifactId);
-
-        // find all latest versions from the different channels;
-        Map<String, Channel> found = new HashMap<>();
-        for (Channel channel : channels) {
-            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
-            if (result.isPresent()) {
-                found.put(result.get().version, result.get().channel);
-            }
-        }
-
-        if (found.isEmpty()) {
-            throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
-        }
-
-        // compare all latest version from the channels to find the latest overall
-        String latestVersion = found.keySet().stream()
-                .sorted(COMPARATOR.reversed())
-                .findFirst().get();
-        Channel channel = found.get(latestVersion);
+        Channel.ResolveLatestVersionResult latestVersionResult = getChannelWithLatestVersion(groupId, artifactId, extension, classifier);
+        String latestVersion = latestVersionResult.version;
+        Channel channel = latestVersionResult.channel;
 
         Channel.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
         recorder.recordStream(groupId, artifactId, latestVersion);
         return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
+    }
+
+    /**
+     * Find the latest version of the Maven artifact in the session's channel. The artifact file will not be resolved.
+     *
+     * @param groupId
+     * @param artifactId
+     * @param extension
+     * @param classifier
+     * @return the latest version if a Maven artifact
+     * @throws UnresolvedMavenArtifactException if the latest version cannot be established
+     */
+    public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+        return getChannelWithLatestVersion(groupId, artifactId, extension, classifier).version;
     }
 
     @Override
@@ -137,5 +133,28 @@ public class ChannelSession implements AutoCloseable {
      */
     public Channel getRecordedChannel() {
         return recorder.getRecordedChannel();
+    }
+
+    private Channel.ResolveLatestVersionResult getChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+
+        // find all latest versions from the different channels;
+        Map<String, Channel.ResolveLatestVersionResult> found = new HashMap<>();
+        for (Channel channel : channels) {
+            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+            if (result.isPresent()) {
+                found.put(result.get().version, result.get());
+            }
+        }
+
+        if (found.isEmpty()) {
+            throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
+        }
+
+        String latestVersion = found.keySet().stream()
+           .sorted(COMPARATOR.reversed())
+           .findFirst().get();
+        return found.get(latestVersion);
     }
 }
