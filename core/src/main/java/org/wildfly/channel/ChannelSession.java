@@ -105,10 +105,10 @@ public class ChannelSession implements AutoCloseable {
     /**
      * Find the latest version of the Maven artifact in the session's channel. The artifact file will not be resolved.
      *
-     * @param groupId
-     * @param artifactId
-     * @param extension
-     * @param classifier
+     * @param groupId - required
+     * @param artifactId - required
+     * @param extension - can be null
+     * @param classifier - can be null
      * @return the latest version if a Maven artifact
      * @throws UnresolvedMavenArtifactException if the latest version cannot be established
      */

@@ -203,9 +203,7 @@ public class Channel implements AutoCloseable {
         Optional<String> foundVersion = Optional.empty();
         // there is a stream, let's now check its version
         if (stream.getVersion() != null) {
-            foundVersion = Arrays.stream(stream.getVersion().split("[\\s,]+"))
-                    .sorted(VersionMatcher.COMPARATOR.reversed())
-                    .findFirst();
+            foundVersion = Optional.of(stream.getVersion());
         } else if (stream.getVersionPattern() != null) {
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
             Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
