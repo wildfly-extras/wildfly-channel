@@ -54,7 +54,12 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>4.4.0</version>
+                <scope>test</scope>
+            </dependency>
             <!-- internal dependencies -->
             <dependency>
                 <groupId>org.wildfly.channel</groupId>
