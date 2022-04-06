@@ -53,7 +53,7 @@ public class Vendor {
         return support;
     }
 
-    @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     public enum Support {
         @JsonProperty("supported")
         SUPPORTED,
