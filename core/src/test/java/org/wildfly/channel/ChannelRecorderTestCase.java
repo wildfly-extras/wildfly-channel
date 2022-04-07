@@ -83,6 +83,8 @@ public class ChannelRecorderTestCase {
             session.resolveLatestMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null);
             session.resolveLatestMavenArtifact("io.undertow", "undertow-core", null, null);
             session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null);
+            // This should not be recorded, size should remain 4.
+            session.resolveLatestMavenArtifact("io.undertow", "undertow-servlet", null, null);
 
             Channel recordedChannel = session.getRecordedChannel();
             System.out.println(ChannelMapper.toYaml(recordedChannel));

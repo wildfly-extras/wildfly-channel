@@ -71,13 +71,9 @@ public class ChannelSession implements AutoCloseable {
 
         // try to resolve the exact Maven GAV across all channels
         for (Channel channel : channels) {
-            try {
-                Channel.ResolveArtifactResult artifactResult = channel.resolveArtifact(groupId, artifactId, extension, classifier, version);
-                recorder.recordStream(groupId, artifactId, version);
-                return new MavenArtifact(groupId, artifactId, extension, classifier, version, artifactResult.file);
-            } catch (UnresolvedMavenArtifactException e) {
-                // ignore if a channel can not resolve the maven artifact
-            }
+            Channel.ResolveArtifactResult artifactResult = channel.resolveArtifact(groupId, artifactId, extension, classifier, version);
+            recorder.recordStream(groupId, artifactId, version);
+            return new MavenArtifact(groupId, artifactId, extension, classifier, version, artifactResult.file);
         }
         throw new UnresolvedMavenArtifactException(String.format("Can not resolve Maven artifact : %s:%s:%s:%s:%s", groupId, artifactId, extension, classifier, version));
     }
