@@ -110,15 +110,6 @@ public class ChannelMapper {
         }
     }
 
-    public static String getSchema() throws IOException {
-        try (InputStream inputStream = ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE)) {
-            return new BufferedReader(
-                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))
-                    .lines()
-                    .collect(Collectors.joining("\n"));
-        }
-    }
-
     private static List<String> validate(URL url) throws IOException {
         JsonNode node = OBJECT_MAPPER.readTree(url);
         Set<ValidationMessage> validationMessages = SCHEMA.validate(node);
