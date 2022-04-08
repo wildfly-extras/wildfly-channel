@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -80,7 +81,7 @@ public class Channel implements AutoCloseable {
     /**
      * Streams of components that are provided by this channel.
      */
-    private Collection<Stream> streams;
+    private Set<Stream> streams;
 
     private MavenVersionsResolver resolver;
 
@@ -94,7 +95,10 @@ public class Channel implements AutoCloseable {
         this.description = description;
         this.vendor = vendor;
         this.channelRequirements = (channelRequirements != null) ? channelRequirements : emptyList();
-        this.streams = (streams != null) ? streams : emptyList();
+        this.streams = new TreeSet<>();
+        if (streams != null) {
+            this.streams.addAll(streams);
+        }
     }
 
     @JsonInclude(NON_NULL)
@@ -124,7 +128,6 @@ public class Channel implements AutoCloseable {
 
     void addStream(Stream stream) {
         Objects.requireNonNull(stream);
-        this.streams = new ArrayList<>(streams);
         this.streams.add(stream);
     }
 

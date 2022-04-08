@@ -22,10 +22,8 @@
 package org.wildfly.channel;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
-import java.util.List;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -39,7 +37,7 @@ import org.wildfly.channel.version.VersionPatternMatcher;
 /**
  * Java representation of a Stream.
  */
-public class Stream {
+public class Stream implements Comparable<Stream> {
     /**
      * GroupId of the stream.
      * It must be either a valid groupId (corresponding to a G of a Maven GAV) or {@code *} to represent any groupId.
@@ -141,5 +139,17 @@ public class Stream {
                 ", versionPattern=" + versionPattern +
                 ", versionComparator=" + versionMatcher +
                 '}';
+    }
+
+    /*
+     * Sort streams by groupId and then artifactId
+     */
+    @Override
+    public int compareTo(Stream other) {
+        int groupIdComp = this.groupId.compareTo(other.groupId);
+        if (groupIdComp != 0) {
+            return groupIdComp;
+        }
+        return this.artifactId.compareTo(other.artifactId);
     }
 }
