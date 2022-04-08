@@ -25,6 +25,7 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -90,12 +91,38 @@ public class ChannelRecorderTestCase {
             System.out.println(ChannelMapper.toYaml(recordedChannel));
 
             Collection<Stream> streams = recordedChannel.getStreams();
-            assertEquals(4, streams.size());
 
             assertStreamExistsFor(streams, "org.wildfly", "wildfly-ee-galleon-pack", "24.0.0.Final");
             assertStreamExistsFor(streams, "org.wildfly.core", "wildfly.core.cli", "18.0.0.Final");
             assertStreamExistsFor(streams, "io.undertow", "undertow-core", "2.2.0.Final");
             assertStreamExistsFor(streams, "io.undertow", "undertow-servlet", "2.2.0.Final");
+
+            // Check that streams are sorted
+            assertEquals(4, streams.size());
+            int i = 0;
+            for (Stream stream : streams) {
+                switch (i) {
+                    case 0:
+                        assertEquals("io.undertow", stream.getGroupId());
+                        assertEquals("undertow-core", stream.getArtifactId());
+                        break;
+                    case 1:
+                        assertEquals("io.undertow", stream.getGroupId());
+                        assertEquals("undertow-servlet", stream.getArtifactId());
+                        break;
+                    case 2:
+                        assertEquals("org.wildfly", stream.getGroupId());
+                        assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
+                        break;
+                    case 3:
+                        assertEquals("org.wildfly.core", stream.getGroupId());
+                        assertEquals("wildfly.core.cli", stream.getArtifactId());
+                        break;
+                    default:
+                        fail();
+                }
+                i++;
+            }
         }
     }
 
