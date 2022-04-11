@@ -40,7 +40,7 @@ public class Vendor {
     private final Support support;
 
     @JsonCreator
-    Vendor(@JsonProperty(value = "name", required = true) String name, @JsonProperty(value = "support", required = true) Support support) {
+    public Vendor(@JsonProperty(value = "name", required = true) String name, @JsonProperty(value = "support", required = true) Support support) {
         this.name = name;
         this.support = support;
     }

@@ -29,7 +29,6 @@ import static java.util.Objects.requireNonNull;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -248,7 +247,7 @@ public class Channel implements AutoCloseable {
         return new ResolveArtifactResult(resolver.resolveArtifact(groupId, artifactId, extension, classifier, version), this);
     }
 
-    Optional<Stream> findStreamFor(String groupId, String artifactId) {
+    public Optional<Stream> findStreamFor(String groupId, String artifactId) {
         // first exact match:
         Optional<Stream> stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId)).findFirst();
         if (stream.isPresent()) {

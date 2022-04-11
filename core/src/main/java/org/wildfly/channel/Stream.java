@@ -70,7 +70,7 @@ public class Stream implements Comparable<Stream> {
     private VersionMatcher versionMatcher;
 
     @JsonCreator
-    Stream(@JsonProperty(value = "groupId", required = true) String groupId,
+    public Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
            @JsonProperty("versionPattern") Pattern versionPattern) {
