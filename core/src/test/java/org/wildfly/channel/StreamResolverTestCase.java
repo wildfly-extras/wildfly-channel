@@ -22,6 +22,7 @@
 package org.wildfly.channel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
@@ -34,18 +35,15 @@ public class StreamResolverTestCase {
     public void testFindingStreamMatchingArtifactIdAndGroupId() {
 
         String yamlContent = "streams:\n" +
-                "  - groupId: '*'\n" +
-                "    artifactId: '*'\n" +
-                "    version: 3.0.Final\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
-                "    version: 3.0.Final\n" +
+                "    version: 3.0.0.Final\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: undertow-core\n" +
-                "    version: 3.0.Final\n" +
+                "    version: 3.0.1.Final\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: undertow-servlet\n" +
-                "    version: 3.0.Final";
+                "    version: 3.0.2.Final";
         Channel channel = ChannelMapper.fromString(yamlContent).get(0);
 
         Optional<Stream> stream = channel.findStreamFor("io.undertow", "undertow-core");
@@ -64,9 +62,7 @@ public class StreamResolverTestCase {
         assertEquals("*", stream.get().getArtifactId());
 
         stream = channel.findStreamFor("org.example", "foo");
-        assertTrue(stream.isPresent());
-        assertEquals("*", stream.get().getGroupId());
-        assertEquals("*", stream.get().getArtifactId());
+        assertFalse(stream.isPresent());
 
     }
 }

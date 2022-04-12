@@ -26,6 +26,10 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface VersionMatcher {
+    static Optional<String> getLatestVersion(Set<String> versions) {
+        return versions.stream().sorted(COMPARATOR.reversed()).findFirst();
+    }
+
     Optional<String> matches(Set<String> samples);
 
     /**

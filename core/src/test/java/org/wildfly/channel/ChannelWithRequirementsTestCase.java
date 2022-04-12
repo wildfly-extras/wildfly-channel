@@ -44,9 +44,6 @@ public class ChannelWithRequirementsTestCase {
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         // create a Mock MavenVersionsResolver that will resolve the required channel
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        // create a Mock MavenVersionsResolver that will be used by the required channel
-        MavenVersionsResolver requiredChannelResolver = mock(MavenVersionsResolver.class);
-
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL resolvedRequiredChannelURL = tccl.getResource("channels/required-channel.yaml");
@@ -54,12 +51,16 @@ public class ChannelWithRequirementsTestCase {
         File resolvedArtifactFile = mock(File.class);
 
         when(factory.create())
-                .thenReturn(resolver, requiredChannelResolver);
-        when(resolver.resolveLatestVersionFromMavenMetadata("org.foo", "required-channel", "yaml", "channel"))
+                .thenReturn(resolver);
+        when(resolver.getAllVersions("org.foo", "required-channel", "yaml", "channel"))
+                .thenReturn(Set.of("1", "2", "3"));
+        when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "3"))
                 .thenReturn(resolvedRequiredChannelFile);
-        when(requiredChannelResolver.getAllVersions("org.example", "foo-bar", null, null))
+        when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "1.2.0.Final"))
+                .thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.example", "foo-bar", null, null))
                 .thenReturn(Set.of("1.0.0.Final, 1.1.0.Final", "1.2.0.Final"));
-        when(requiredChannelResolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
+        when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
 
         List<Channel> channels = ChannelMapper.fromString(
@@ -70,7 +71,7 @@ public class ChannelWithRequirementsTestCase {
         assertEquals(1, channels.size());
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            MavenArtifact artifact = session.resolveLatestMavenArtifact("org.example", "foo-bar", null, null);
+            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null);
             assertNotNull(artifact);
 
             assertEquals("org.example", artifact.getGroupId());
@@ -85,10 +86,7 @@ public class ChannelWithRequirementsTestCase {
     @Test
     public void testChannelWhichRequiresAnotherVersionedChannel() throws UnresolvedMavenArtifactException, URISyntaxException {
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
-        // create a Mock MavenVersionsResolver that will resolve the required channel
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        // create a Mock MavenVersionsResolver that will be used by the required channel
-        MavenVersionsResolver requiredChannelResolver = mock(MavenVersionsResolver.class);
 
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
@@ -97,10 +95,10 @@ public class ChannelWithRequirementsTestCase {
         File resolvedArtifactFile = mock(File.class);
 
         when(factory.create())
-                .thenReturn(resolver, requiredChannelResolver);
+                .thenReturn(resolver);
         when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "2.0.0.Final"))
                 .thenReturn(resolvedRequiredChannelFile);
-        when(requiredChannelResolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
+        when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
 
         List<Channel> channels = ChannelMapper.fromString(
@@ -112,7 +110,7 @@ public class ChannelWithRequirementsTestCase {
         assertEquals(1, channels.size());
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            MavenArtifact artifact = session.resolveLatestMavenArtifact("org.example", "foo-bar", null, null);
+            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null);
             assertNotNull(artifact);
 
             assertEquals("org.example", artifact.getGroupId());

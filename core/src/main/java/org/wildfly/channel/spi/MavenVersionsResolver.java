@@ -45,8 +45,6 @@ public interface MavenVersionsResolver extends Closeable {
     */
    Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
 
-   File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException;
-
    File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException;
 
    default void close() {
