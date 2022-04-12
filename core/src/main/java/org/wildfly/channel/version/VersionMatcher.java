@@ -21,12 +21,22 @@
  */
 package org.wildfly.channel.version;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 public interface VersionMatcher {
+    /**
+     * Determine the latest version among the parameters based on the {@link #COMPARATOR}.
+     *
+     * @param versions a Set of versions
+     * @return an Optional of the latest version.
+     */
     static Optional<String> getLatestVersion(Set<String> versions) {
+        requireNonNull(versions);
         return versions.stream().sorted(COMPARATOR.reversed()).findFirst();
     }
 

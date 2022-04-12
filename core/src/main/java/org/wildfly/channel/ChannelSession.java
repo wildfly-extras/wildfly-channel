@@ -87,7 +87,7 @@ public class ChannelSession implements AutoCloseable {
      * @param classifier - can be null
      * @param version - required
      * @return the Maven Artifact (with a file corresponding to the artifact).
-     * @throws UnresolvedMavenArtifactException if the artifact can not be resolved or the artifact itself can not be resolved
+     * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
      */
     public MavenArtifact resolveDirectMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);

@@ -25,6 +25,7 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -33,8 +34,10 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
@@ -149,4 +152,42 @@ public class ChannelSessionTestCase {
 
         verify(resolver, times(2)).close();
     }
+
+    @Test
+    public void testResolveDirectMavenArtifact() throws UnresolvedMavenArtifactException {
+        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: foo\n" +
+                "    version: \"25.0.0.Final\"");
+        assertNotNull(channels);
+        assertEquals(1, channels.size());
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        when(factory.create()).thenReturn(resolver);
+        when(resolver.resolveArtifact("org.bar", "bar", null, null, "1.0.0.Final")).thenReturn(resolvedArtifactFile);
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
+                session.resolveMavenArtifact("org.bar", "bar", null, null);
+            });
+
+            MavenArtifact artifact = session.resolveDirectMavenArtifact("org.bar", "bar", null, null, "1.0.0.Final");
+            assertNotNull(artifact);
+
+            assertEquals("org.bar", artifact.getGroupId());
+            assertEquals("bar", artifact.getArtifactId());
+            assertEquals(resolvedArtifactFile, artifact.getFile());
+
+            Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
+            assertTrue(stream.isPresent());
+            assertEquals("1.0.0.Final", stream.get().getVersion());
+        }
+
+        verify(resolver, times(2)).close();
+    }
+
 }
