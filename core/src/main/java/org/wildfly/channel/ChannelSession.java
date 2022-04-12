@@ -22,12 +22,9 @@
 package org.wildfly.channel;
 
 import static java.util.Objects.requireNonNull;
-import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -67,7 +64,7 @@ public class ChannelSession implements AutoCloseable {
      * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
      */
     public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        Channel.ResolveLatestVersionResult result = findChannel(groupId, artifactId, extension, classifier);
+        Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier);
         String latestVersion = result.version;
         Channel channel = result.channel;
 
@@ -110,7 +107,7 @@ public class ChannelSession implements AutoCloseable {
      * @throws UnresolvedMavenArtifactException if the latest version cannot be established
      */
     public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        return findChannel(groupId, artifactId, extension, classifier).version;
+        return findChannelWithLatestVersion(groupId, artifactId, extension, classifier).version;
     }
 
     @Override
@@ -133,7 +130,7 @@ public class ChannelSession implements AutoCloseable {
         return recorder.getRecordedChannel();
     }
 
-    private Channel.ResolveLatestVersionResult findChannel(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+    private Channel.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
