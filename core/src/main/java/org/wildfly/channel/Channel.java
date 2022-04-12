@@ -146,13 +146,9 @@ public class Channel implements AutoCloseable {
             String version = channelRequirement.getVersion();
             if (version == null) {
                 Set<String> versions = resolver.getAllVersions(groupId, artifactId, EXTENSION, CLASSIFIER);
-                Optional<String> latest = versions.stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
-                if (latest.isPresent()) {
-                    version = latest.get();
-                } else {
-                    throw new RuntimeException(String.format("Can not determine the latest version for Maven artifact %s:%s:%s:%s",
-                            groupId, artifactId, EXTENSION, CLASSIFIER));
-                }
+                Optional<String> latest = VersionMatcher.getLatestVersion(versions);
+                version = latest.orElseThrow(() -> new RuntimeException(String.format("Can not determine the latest version for Maven artifact %s:%s:%s:%s",
+                        groupId, artifactId, EXTENSION, CLASSIFIER)));
             }
             try {
                 final File file;
