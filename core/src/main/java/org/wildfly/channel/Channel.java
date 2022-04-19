@@ -48,6 +48,10 @@ import org.wildfly.channel.version.VersionMatcher;
  * Java representation of a Channel.
  */
 public class Channel implements AutoCloseable {
+
+    private static final String CLASSIFIER="channel";
+    private static final String EXTENSION="yaml";
+
     /**
      * Name of the channel (as an one-line human readable description of the channel).
      * This is an optional field.
@@ -140,18 +144,20 @@ public class Channel implements AutoCloseable {
             String groupId = channelRequirement.getGroupId();
             String artifactId = channelRequirement.getArtifactId();
             String version = channelRequirement.getVersion();
+            if (version == null) {
+                Set<String> versions = resolver.getAllVersions(groupId, artifactId, EXTENSION, CLASSIFIER);
+                Optional<String> latest = VersionMatcher.getLatestVersion(versions);
+                version = latest.orElseThrow(() -> new RuntimeException(String.format("Can not determine the latest version for Maven artifact %s:%s:%s:%s",
+                        groupId, artifactId, EXTENSION, CLASSIFIER)));
+            }
             try {
                 final File file;
-                if (version != null) {
-                    file = resolver.resolveArtifact(groupId, artifactId, "yaml", "channel", version);
-                } else {
-                    file = resolver.resolveLatestVersionFromMavenMetadata(groupId, artifactId, "yaml", "channel");
-                }
+                file = resolver.resolveArtifact(groupId, artifactId, EXTENSION, CLASSIFIER, version);
                 Channel requiredChannel = ChannelMapper.from(file.toURI().toURL());
                 requiredChannel.init(factory);
                 requiredChannels.add(requiredChannel);
             } catch (UnresolvedMavenArtifactException | MalformedURLException e) {
-                e.printStackTrace();
+                throw new RuntimeException(String.format("Unable to resolve required channel %s:%s", groupId, artifactId, version));
             }
         }
     }
@@ -236,11 +242,11 @@ public class Channel implements AutoCloseable {
         requireNonNull(resolver);
 
         // first we looked into the required channels
-        ResolveArtifactResult resultFromChannelRequirements = null;
         for (Channel requiredChannel : requiredChannels) {
             try {
                 return requiredChannel.resolveArtifact(groupId, artifactId, extension, classifier, version);
             } catch (UnresolvedMavenArtifactException e) {
+                // ignore if the required channel are not able to resolve the artifact
             }
         }
 
@@ -255,11 +261,6 @@ public class Channel implements AutoCloseable {
         }
         // check if there is a stream for groupId:*
         stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals("*")).findFirst();
-        if (stream.isPresent()) {
-            return stream;
-        }
-        // finally check if there is a stream for *:*
-        stream = streams.stream().filter(s -> s.getGroupId().equals("*") && s.getArtifactId().equals("*")).findFirst();
         return stream;
     }
 

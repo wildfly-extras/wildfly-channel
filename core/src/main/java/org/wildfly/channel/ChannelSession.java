@@ -22,11 +22,9 @@
 package org.wildfly.channel;
 
 import static java.util.Objects.requireNonNull;
-import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
-import java.util.HashMap;
+import java.io.File;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -37,16 +35,18 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 public class ChannelSession implements AutoCloseable {
     private final List<Channel> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
+    private final MavenVersionsResolver resolver;
 
     /**
      * Create a ChannelSession.
      *
      * @param channels the list of channels to resolve Maven artifact
-     * @param factory Factory to create {@code MavenVersionsResolver} that are performin the actual Maven resolution.
+     * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
      */
     public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory factory) {
         requireNonNull(channels);
         requireNonNull(factory);
+        this.resolver = factory.create();
         this.channels = channels;
         for (Channel channel : channels) {
             channel.init(factory);
@@ -54,48 +54,46 @@ public class ChannelSession implements AutoCloseable {
     }
 
     /**
-     * Resolve a Maven Artifact based on the session's channels.
+     * Resolve the Maven artifact according to the session's channels.
+     *
+     * @param groupId - required
+     * @param artifactId - required
+     * @param extension - can be null
+     * @param classifier - can be null
+     * @return the Maven Artifact (with a file corresponding to the artifact).
+     * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
+     */
+    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+        Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier);
+        String latestVersion = result.version;
+        Channel channel = result.channel;
+
+        Channel.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
+        recorder.recordStream(groupId, artifactId, latestVersion);
+        return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
+    }
+
+    /**
+     * Resolve the Maven artifact with a specific version without checking the channels.
+     *
+     * If the artifact is resolved, a stream for it is added to the {@code getRecordedChannel}.
      *
      * @param groupId - required
      * @param artifactId - required
      * @param extension - can be null
      * @param classifier - can be null
      * @param version - required
-     * @return A resolved Maven Artifact (with a file corresponding to the artifact).
+     * @return the Maven Artifact (with a file corresponding to the artifact).
      * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
      */
-    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
+    public MavenArtifact resolveDirectMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(version);
 
-        // try to resolve the exact Maven GAV across all channels
-        for (Channel channel : channels) {
-            Channel.ResolveArtifactResult artifactResult = channel.resolveArtifact(groupId, artifactId, extension, classifier, version);
-            recorder.recordStream(groupId, artifactId, version);
-            return new MavenArtifact(groupId, artifactId, extension, classifier, version, artifactResult.file);
-        }
-        throw new UnresolvedMavenArtifactException(String.format("Can not resolve Maven artifact : %s:%s:%s:%s:%s", groupId, artifactId, extension, classifier, version));
-    }
-
-    /**
-     * Resolve the latest version of the Maven artifact according to the session's channels.
-     *
-     * @param groupId - required
-     * @param artifactId - required
-     * @param extension - can be null
-     * @param classifier - can be null
-     * @return the latest version of a Maven Artifact (with a file corresponding to the artifact).
-     * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
-     */
-    public MavenArtifact resolveLatestMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        Channel.ResolveLatestVersionResult latestVersionResult = getChannelWithLatestVersion(groupId, artifactId, extension, classifier);
-        String latestVersion = latestVersionResult.version;
-        Channel channel = latestVersionResult.channel;
-
-        Channel.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
-        recorder.recordStream(groupId, artifactId, latestVersion);
-        return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
+        File file = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
+        recorder.recordStream(groupId, artifactId, version);
+        return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
     }
 
     /**
@@ -109,7 +107,7 @@ public class ChannelSession implements AutoCloseable {
      * @throws UnresolvedMavenArtifactException if the latest version cannot be established
      */
     public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        return getChannelWithLatestVersion(groupId, artifactId, extension, classifier).version;
+        return findChannelWithLatestVersion(groupId, artifactId, extension, classifier).version;
     }
 
     @Override
@@ -117,6 +115,7 @@ public class ChannelSession implements AutoCloseable {
         for (Channel channel : channels) {
             channel.close();
         }
+        resolver.close();
     }
 
     /**
@@ -131,26 +130,16 @@ public class ChannelSession implements AutoCloseable {
         return recorder.getRecordedChannel();
     }
 
-    private Channel.ResolveLatestVersionResult getChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+    private Channel.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
-        // find all latest versions from the different channels;
-        Map<String, Channel.ResolveLatestVersionResult> found = new HashMap<>();
         for (Channel channel : channels) {
             Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
             if (result.isPresent()) {
-                found.put(result.get().version, result.get());
+                return result.get();
             }
         }
-
-        if (found.isEmpty()) {
-            throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
-        }
-
-        String latestVersion = found.keySet().stream()
-           .sorted(COMPARATOR.reversed())
-           .findFirst().get();
-        return found.get(latestVersion);
+        throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
     }
 }

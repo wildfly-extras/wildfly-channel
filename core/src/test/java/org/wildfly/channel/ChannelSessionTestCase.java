@@ -25,14 +25,19 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
@@ -58,7 +63,7 @@ public class ChannelSessionTestCase {
             assertEquals("25.0.0.Final", version);
         }
 
-        verify(resolver).close();
+        verify(resolver, times(2)).close();
     }
 
     @Test
@@ -85,7 +90,7 @@ public class ChannelSessionTestCase {
             }
         }
 
-        verify(resolver).close();
+        verify(resolver, times(2)).close();
     }
 
     @Test
@@ -102,27 +107,27 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(singleton("25.0.0.Final"));
-        when(resolver.resolveArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final")).thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(Set.of("25.0.0.Final", "25.0.1.Final"));
+        when(resolver.resolveArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.1.Final")).thenReturn(resolvedArtifactFile);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
-            MavenArtifact artifact = session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+            MavenArtifact artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
             assertNotNull(artifact);
 
             assertEquals("org.wildfly", artifact.getGroupId());
             assertEquals("wildfly-ee-galleon-pack", artifact.getArtifactId());
             assertNull(artifact.getExtension());
             assertNull(artifact.getClassifier());
-            assertEquals("25.0.0.Final", artifact.getVersion());
+            assertEquals("25.0.1.Final", artifact.getVersion());
             assertEquals(resolvedArtifactFile, artifact.getFile());
         }
 
-        verify(resolver).close();
+        verify(resolver, times(2)).close();
     }
 
     @Test
-    public void testResolveLatestMavenArtifactThrowUnresolvedMavenArtifactException() throws UnresolvedMavenArtifactException {
+    public void testResolveLatestMavenArtifactThrowUnresolvedMavenArtifactException() {
         List<Channel> channels = ChannelMapper.fromString("streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
@@ -138,22 +143,22 @@ public class ChannelSessionTestCase {
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             try {
-                session.resolveLatestMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+                session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
                 fail("Must throw a UnresolvedMavenArtifactException");
             } catch (UnresolvedMavenArtifactException e) {
                 // pass
             }
         }
 
-        verify(resolver).close();
+        verify(resolver, times(2)).close();
     }
 
     @Test
-    public void testResolveMavenArtifact() throws UnresolvedMavenArtifactException {
+    public void testResolveDirectMavenArtifact() throws UnresolvedMavenArtifactException {
         List<Channel> channels = ChannelMapper.fromString("streams:\n" +
-                "  - groupId: org.wildfly\n" +
-                "    artifactId: '*'\n" +
-                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
+                "  - groupId: org.foo\n" +
+                "    artifactId: foo\n" +
+                "    version: \"25.0.0.Final\"");
         assertNotNull(channels);
         assertEquals(1, channels.size());
 
@@ -162,48 +167,27 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        when(resolver.resolveArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final")).thenReturn(resolvedArtifactFile);
+        when(resolver.resolveArtifact("org.bar", "bar", null, null, "1.0.0.Final")).thenReturn(resolvedArtifactFile);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            MavenArtifact artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
+
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
+                session.resolveMavenArtifact("org.bar", "bar", null, null);
+            });
+
+            MavenArtifact artifact = session.resolveDirectMavenArtifact("org.bar", "bar", null, null, "1.0.0.Final");
             assertNotNull(artifact);
-            System.out.println("artifact = " + artifact);
 
-            assertEquals("org.wildfly", artifact.getGroupId());
-            assertEquals("wildfly-ee-galleon-pack", artifact.getArtifactId());
-            assertNull(artifact.getExtension());
-            assertNull(artifact.getClassifier());
-            assertEquals("25.0.0.Final", artifact.getVersion());
+            assertEquals("org.bar", artifact.getGroupId());
+            assertEquals("bar", artifact.getArtifactId());
             assertEquals(resolvedArtifactFile, artifact.getFile());
+
+            Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
+            assertTrue(stream.isPresent());
+            assertEquals("1.0.0.Final", stream.get().getVersion());
         }
 
-        verify(resolver).close();
+        verify(resolver, times(2)).close();
     }
 
-    @Test
-    public void testResolveMavenArtifactThrowsUnresolvedMavenArtifactException() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
-                "  - groupId: org.wildfly\n" +
-                "    artifactId: '*'\n" +
-                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
-
-        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
-        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-
-        when(factory.create()).thenReturn(resolver);
-        when(resolver.resolveArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final")).thenThrow(UnresolvedMavenArtifactException.class);
-
-        try (ChannelSession session = new ChannelSession(channels, factory)) {
-            try {
-                session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
-                fail("Must throw a UnresolvedMavenArtifactException");
-            } catch (UnresolvedMavenArtifactException e) {
-                // pass
-            }
-        }
-
-        verify(resolver).close();
-    }
 }

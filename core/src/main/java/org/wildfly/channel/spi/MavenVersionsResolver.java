@@ -45,8 +45,19 @@ public interface MavenVersionsResolver extends Closeable {
     */
    Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier);
 
-   File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException;
-
+   /**
+    * Resolve the maven artifact based on the full coordinates.
+    *
+    * @param groupId Maven GroupId - required
+    * @param artifactId Maven ArtifactId - required
+    * @param extension Maven extension - can be {@code null}
+    * @param classifier Maven classifier - can be {@code null}
+    * @param version Maven version - required
+    *
+    * @return a File representing the resolved Maven artifact.
+    *
+    * @throws UnresolvedMavenArtifactException if th artifact can not be resolved.
+    */
    File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException;
 
    default void close() {
@@ -58,8 +69,7 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * A client of this library is responsible to provide an implementation of the {@link Factory} interface.
     *
-    * The {@link #create()} method will be called once for every channel that will be checked for the latest version
-    * of a given Maven artifact.
+    * The {@link #create()} method will be called once for every channel.
     */
    interface Factory extends Closeable {
 

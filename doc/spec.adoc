@@ -1,0 +1,101 @@
+= WildFly Channels - Specification
+:toc:               left
+
+## WildFly Channels
+
+### Summary
+
+This document describes the overall architecture and concepts related to Channels to provision WildFly.
+
+## Concepts
+
+### Provisioning Concepts
+
+WildFly uses Galleon to provision and update its installation.
+All concepts related to Galleon are defined in https://docs.wildfly.org/galleon/[its documentation]
+
+### Component Version
+
+It is out of scope of this document to define how WildFly and the components it incorporates are versioned.
+However, channels are referencing Maven versions. A channel can specify a pattern of version and pick the “latest” version that matches that pattern. 
+
+The Java library that implements this channel specification will provide a Comparator to sort the versions in a deterministic way.
+
+### Channel Compatibility
+
+Backwards compatibility is only guaranteed inside a single channel. If an installation subscribes to multiple channels, the backwards compatibility of the whole installation is not guaranteed.
+
+## Channel Model
+
+A channel is composed of several fields:
+
+* An optional `name` that is a human-readable one-line description of the channel (`Channel for WildFly 27`)
+* An optional `description` that provides human-readable description of the channel
+* An optional `vendor` that defines who provides the channel and their support level. This field is descriptive only and is not used to enforce any mechanism. This field is composed of:
+* A required `name` to identify the vendor (eg `WildFly Community Project`)
+* A required `support` type that accepts the following values:
+** `supported` - Components provided by this channel are supported by the vendor. Some features provided by this channel can still be considered as tech-preview.
+** `tech-preview` - Feature provided by this channel are Tech Preview by the vendor
+** `community` - Components provided by this channel are a community effort  from the vendor
+* A collection of `requires`. Each element of that list corresponds to another channel that is required to provision components from this channel.
+This field can be used for layered products to enforce their dependencies so that the installation only need to update the top level channel to get updates from all required channels.
+Each element is composed of:
+** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the required channel.
+** Optional `version` to stick to a given channel version (instead of requiring the latest version of that channel). In the absence of this `version`, the latest version of the channel will be determined based on the Maven repository metadata.
+* A collection of `streams` that defines all the components installable from this channel. Each stream is composed of:
+** A required `groupId` that corresponds to Maven GroupId to pull artifacts. Special syntax `\*` can be used to match _any_ groupId.
+It is not valid to specify `*` for the groupId if the artifactId is set to anything else than `*`.
+** A required `artifactId` that corresponds to Maven ArtifactId to pull artifacts. Special syntax `*` can be used to match _any_ artifactId.
+** One of the following fields (which are mutually exclusive) that provides rules to resolve the Maven artifacts to provision. At most one field must be present in the stream definition.
+*** `versionPattern` corresponds to a Pattern through which the available versions are matched (e.g. `2\.2\..*`)
+*** `version` corresponds to a single version (e.g. `2.2.Final`)
+
+A channel does not define the Maven repositories that contain the resolved Maven artifacts from any of its streams.
+It is up to the provisioning tooling to properly configure the required Maven repositories.
+
+A channel does not provide any default streams.
+
+## Channel Schema
+
+A JSON Schema is provided to validate that channels comply with the model described above.
+
+## Channel Representation
+
+A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/channel-schema.json[corresponding JSON schema] to validate its structure.
+
+### Channel Actions and Responsibilities
+
+#### Create a channel
+
+A Channel is a single file that complies with the channel YAML representation.
+Creating a channel corresponds to the creation of such a file.
+
+#### Publish a channel
+A channel must be “published” so that it can be read (or downloaded) by WildFly provisioning tooling. 
+Channels are published as a Maven artifact with the the classifier `channel` and extension/type `yaml`.
+
+#### Update a channel
+
+A channel definition can be updated to add or modify streams, change its requirements, etc.
+A new version of the channel must be published before it can be consumed.
+
+#### Consume a channel
+The main consumers of WildFly Channels are the provisioning tooling provided by the WildFly project.
+
+They consume channels by pulling the channel artifact corresponding to the `groupId`/`artifactId` of a channel. If a `version` is specified, the channel corresponding to that version is pulled. Otherwise, the latest version of the channel is determined based on the Maven metadata from the repository that hosts the channel artifacts.
+
+### Maven Artifact resolution
+
+A Maven artifact can be resolved through a channel.
+Such a resolution will use the Maven repositories configured by the provisioning tool.
+
+The channels will be searched for a stream that matches the `groupId`/`artifactId` of the artifact.
+If the channel `requires` other channels, these will be searched first in their listed order.
+
+The first stream that is found matching the `groupId`/`artifactId` will be used to determine the version of the artifact to pull.
+If no stream that matches the artifact have been found, an error is returned to the caller.
+
+If the stream defines a `version`, the artifact will be resolved based on this version. If that version of the artifact can not be pulled
+from the Maven repositories, an error is returned to the caller.
+If the stream defines a `versionPattern`, the version will be determined by querying the version of the artifacts from the
+Maven repositories and use the latest version that matches the pattern. If no version matches the pattern, an error is returned to the caller.
