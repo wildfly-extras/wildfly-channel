@@ -43,8 +43,7 @@ Each element is composed of:
 ** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the required channel.
 ** Optional `version` to stick to a given channel version (instead of requiring the latest version of that channel). In the absence of this `version`, the latest version of the channel will be determined based on the Maven repository metadata.
 * A collection of `streams` that defines all the components installable from this channel. Each stream is composed of:
-** A required `groupId` that corresponds to Maven GroupId to pull artifacts. Special syntax `\*` can be used to match _any_ groupId.
-It is not valid to specify `*` for the groupId if the artifactId is set to anything else than `*`.
+** A required `groupId` that corresponds to Maven GroupId to pull artifacts (it is not allowed to specify `*` for the groupId).
 ** A required `artifactId` that corresponds to Maven ArtifactId to pull artifacts. Special syntax `*` can be used to match _any_ artifactId.
 ** One of the following fields (which are mutually exclusive) that provides rules to resolve the Maven artifacts to provision. At most one field must be present in the stream definition.
 *** `versionPattern` corresponds to a Pattern through which the available versions are matched (e.g. `2\.2\..*`)
