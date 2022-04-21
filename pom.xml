@@ -28,6 +28,7 @@
         <version.com.fasterxml.jackson.databind>2.13.2.2</version.com.fasterxml.jackson.databind>
         <version.com.networknt.json-schema-validator>1.0.69</version.com.networknt.json-schema-validator>
         <version.junit5>5.8.2</version.junit5>
+        <version.release.plugin>2.5.3</version.release.plugin>
     </properties>
 
     <dependencyManagement>
@@ -73,6 +74,24 @@
         <module>core</module>
     </modules>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${version.release.plugin}</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                    <preparationGoals>verify</preparationGoals>
+                    <pushChanges>false</pushChanges>
+                    <localCheckout>true</localCheckout>
+                    <remoteTagging>false</remoteTagging>
+                    <arguments>-DskipTests ${release.arguments}</arguments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <profiles>
         <profile>
             <id>coverage</id>
