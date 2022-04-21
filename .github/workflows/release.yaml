@@ -25,7 +25,7 @@ jobs:
       - name: maven release ${{steps.metadata.outputs.current-version}}
         run: |
           java -version
-          gpg -d --passphrase="${{ secrets.SECRETS_PASSPHRASE }}" --output maven-settings.xml .github/release/maven-settings.xml.gpg
+          gpg -d --passphrase="${{ secrets.SECRET_PASSPHRASE }}" --output maven-settings.xml .github/release/maven-settings.xml.gpg
           git config --global user.name "WildFly Channel CI"
           git config --global user.email "wildfly-dev@lists.jboss.org"
           git checkout -b release
