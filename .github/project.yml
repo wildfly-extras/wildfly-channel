@@ -1,5 +1,5 @@
 name: WildFly Channels
 release:
-  # let's try again
+  # let's try again and again
   current-version: 1.0.0.Alpha12
   next-version: 1.0.0.Alpha13-SNAPSHOT
