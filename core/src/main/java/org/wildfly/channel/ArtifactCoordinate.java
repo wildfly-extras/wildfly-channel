@@ -21,16 +21,14 @@
  */
 package org.wildfly.channel;
 
-public class UnresolvedMavenArtifactException extends RuntimeException {
-    public UnresolvedMavenArtifactException(String message) {
-        super(message);
-    }
+public interface ArtifactCoordinate {
+    String getGroupId();
 
-    public UnresolvedMavenArtifactException() {
-        super();
-    }
+    String getArtifactId();
 
-    public UnresolvedMavenArtifactException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    String getVersion();
+
+    String getExtension();
+
+    String getClassifier();
 }

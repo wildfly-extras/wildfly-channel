@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 
-public class MavenArtifact {
+public class MavenArtifact implements ArtifactCoordinate {
 
     private final String groupId;
     private final String artifactId;
@@ -47,7 +47,6 @@ public class MavenArtifact {
         this.version = version;
         this.file = file;
     }
-
 
     public String getGroupId() {
         return groupId;
