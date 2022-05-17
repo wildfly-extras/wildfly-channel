@@ -30,7 +30,7 @@
         <version.junit5>5.8.2</version.junit5>
         <version.release.plugin>2.5.3</version.release.plugin>
         <version.aether-api>1.1.0</version.aether-api>
-        <version.maven-aether-provider>3.3.1</version.maven-aether-provider>
+        <version.maven-aether-provider>3.3.9</version.maven-aether-provider>
     </properties>
 
     <dependencyManagement>
