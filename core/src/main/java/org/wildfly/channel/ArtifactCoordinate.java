@@ -16,22 +16,14 @@
  */
 package org.wildfly.channel;
 
-import java.util.Collections;
+public interface ArtifactCoordinate {
+    String getGroupId();
 
-class ChannelRecorder {
+    String getArtifactId();
 
-    final Channel recordedChannel = new Channel(null,
-            null,
-            null,
-            null,
-            Collections.emptyList());
+    String getVersion();
 
-    void recordStream(String groupId, String artifactId, String version) {
-        boolean isRecorded = recordedChannel.getStreams().stream().anyMatch(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId) && s.getVersion().equals(version));
-        if (!isRecorded) {
-            recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
-        }
-    }
+    String getExtension();
 
-    Channel getRecordedChannel() { return recordedChannel; }
+    String getClassifier();
 }

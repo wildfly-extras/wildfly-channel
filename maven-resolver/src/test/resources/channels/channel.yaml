@@ -1,0 +1,11 @@
+name: My Channel
+description: |-
+  This is my channel
+  with my stuff
+vendor:
+  name: My Vendor
+  support: community
+streams:
+  - groupId: org.wildfly
+    artifactId: wildfly-galleon-pack
+    version: 27.0.0.Final

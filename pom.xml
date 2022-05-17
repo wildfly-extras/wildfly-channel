@@ -29,6 +29,8 @@
         <version.com.networknt.json-schema-validator>1.0.69</version.com.networknt.json-schema-validator>
         <version.junit5>5.8.2</version.junit5>
         <version.release.plugin>2.5.3</version.release.plugin>
+        <version.aether-api>1.1.0</version.aether-api>
+        <version.maven-aether-provider>3.3.1</version.maven-aether-provider>
     </properties>
 
     <dependencyManagement>
@@ -49,6 +51,17 @@
                 <version>${version.com.networknt.json-schema-validator}</version>
             </dependency>
             <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-api</artifactId>
+                <version>${version.aether-api}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-aether-provider</artifactId>
+                <version>${version.maven-aether-provider}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
                 <version>${version.junit5}</version>
@@ -59,7 +72,6 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>4.5.1</version>
-                <scope>test</scope>
             </dependency>
             <!-- internal dependencies -->
             <dependency>
@@ -67,11 +79,17 @@
                 <artifactId>channel-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wildfly.channel</groupId>
+                <artifactId>maven-resolver</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <modules>
         <module>core</module>
+        <module>maven-resolver</module>
     </modules>
 
     <build>

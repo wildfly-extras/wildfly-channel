@@ -14,18 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.wildfly.channel.version;
+package org.wildfly.channel.spi;
 
-import java.util.Set;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-public class VersionMatcherTestCase {
-
-    @Test
-    public void testLatestVersion() {
-        Assertions.assertEquals("3", VersionMatcher.getLatestVersion(Set.of("1", "3", "2")).get());
-
-    }
+/**
+ * Marker interface to specify that a server was provisioned and its components resolved using Channels
+ */
+public interface ChannelResolvable {
 }
