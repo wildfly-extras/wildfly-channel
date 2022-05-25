@@ -27,6 +27,16 @@ import java.util.Set;
  *
  * The {@code #COMPARATOR} provides the implementation to compare the versions.
  * The latest one is the "last" determine by this comparator.
+ *
+ * This comparator first compares the epoch of the versions ({@code [epoch:]version)}.
+ * If present, the epoch MUST be an integer.
+ *
+ * This comparator will split the versions (using non-digit characters such as ".") to determine their digits and compare them numerically.
+ * The comparator will determine that "1.0.10" is later than "1.0.2" (because 10 > 2).
+ *
+ * If the versions contains characters, they are sorted in their lexical order.
+ * The comparator will determine that "1.0.0.RC1" is later than "1.0.0.Final" (because "RC1" is after "Final").
+ *
  */
 public interface VersionMatcher {
     /**

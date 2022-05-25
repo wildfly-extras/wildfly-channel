@@ -17,6 +17,7 @@
 package org.wildfly.channel.version;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.wildfly.channel.version.VersionMatcher.getLatestVersion;
 
 import java.util.Set;
@@ -89,6 +90,71 @@ public class VersionMatcherTestCase {
     public void test11() {
         assertLatestVersion("2.1.9.redhat-002",
                 "2.1.9.redhat-1", "2.1.9.redhat-002");
+    }
+
+    @Test
+    public void test12() {
+        assertLatestVersion("1.0.0.Final",
+                "1.0.0", "1.0.0.Final");
+    }
+
+    @Test
+    public void test13() {
+        assertLatestVersion("1.0.0.Final",
+                "1.0.0.Alpha", "1.0.0.Final");
+    }
+
+    @Test
+    public void test14() {
+        // 1.0.0.Redhat-1 is the latest, because "r" is after "G"
+        assertLatestVersion("1.0.0.Redhat-1",
+                "1.0.0.Redhat-1", "1.0.0.GA-redhat-1");
+    }
+
+    @Test
+    public void test15() {
+        assertLatestVersion("1.0.10",
+                "1.0.2", "1.0.10");
+    }
+
+    @Test
+    public void test16() {
+        // 1.0.0.RC1 is the latest because "R" is after "G"
+        assertLatestVersion("1.0.0.RC1",
+                "1.0.0.GA", "1.0.0.RC1");
+    }
+
+    @Test
+    public void test17() {
+        assertLatestVersion("1.0.0.GA",
+                "1.0.0.GA", "1.0.0.CR1");
+    }
+
+    @Test
+    public void test18() {
+        assertLatestVersion("1.10",
+                "1.1", "1.10");
+    }
+
+    @Test
+    public void test19() {
+        assertLatestVersion("1.1",
+                "1.01", "1.1");
+    }
+
+    @Test
+    public void test20() {
+        // epoch must be a positive integer
+        assertThrows(NumberFormatException.class, () -> {
+            getLatestVersion(Set.of("1.0:alpha", "2.0:alpha"));
+        });
+    }
+
+    @Test
+    public void test21() {
+        // 2 epoch is later than 1 epoch
+        assertLatestVersion("2:1.1",
+                "1:1.1", "2:1.1");
     }
 
     private static void assertLatestVersion(String expectedLatest, String... versions) {
