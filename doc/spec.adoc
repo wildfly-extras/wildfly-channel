@@ -19,7 +19,15 @@ All concepts related to Galleon are defined in https://docs.wildfly.org/galleon/
 It is out of scope of this document to define how WildFly and the components it incorporates are versioned.
 However, channels are referencing Maven versions. A channel can specify a pattern of version and pick the “latest” version that matches that pattern. 
 
-The Java library that implements this channel specification will provide a Comparator to sort the versions in a deterministic way.
+This "latest" version is determined by comparing all the versions and returns the last one using the
+`org.wildfly.channel.version.VersionMatcher.getLatestVersion(Set<String> versions)` method.
+
+[NOTE]
+====
+This provides a deterministic way to find the "latest" version. However, it is out of scope of this specification to capture all the
+different version patterns. Our recommendation is to specify a pattern in `versionPattern` that constrains as much as possible the set of versions
+to compare before determine the latest ones among them.
+====
 
 ### Channel Compatibility
 

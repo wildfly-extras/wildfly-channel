@@ -19,10 +19,15 @@ package org.wildfly.channel.version;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Utility class to determine tle latest version among a set of versions.
+ *
+ * The {@code #COMPARATOR} provides the implementation to compare the versions.
+ * The latest one is the "last" determine by this comparator.
+ */
 public interface VersionMatcher {
     /**
      * Determine the latest version among the parameters based on the {@link #COMPARATOR}.
@@ -70,10 +75,10 @@ public interface VersionMatcher {
                 int ei1 = i1, ei2 = i2;
                 while (ei1 < lim1 && Character.isDigit(v1.charAt(ei1))) ei1++;
                 while (ei2 < lim2 && Character.isDigit(v2.charAt(ei2))) ei2++;
-                final int n1 = ei1 == i1 ? 0 : Integer.valueOf(v1.substring(i1, ei1));
-                final int n2 = ei2 == i2 ? 0 : Integer.valueOf(v2.substring(i2, ei2));
+                final long n1 = ei1 == i1 ? 0 : Long.valueOf(v1.substring(i1, ei1));
+                final long n2 = ei2 == i2 ? 0 : Long.valueOf(v2.substring(i2, ei2));
                 if (n1 != n2)
-                    return n1 - n2;
+                    return (int)(n1 - n2);
                 i1 = ei1;
                 i2 = ei2;
                 if (i1 != i2)
