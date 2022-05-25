@@ -20,8 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
 
@@ -51,6 +54,22 @@ public class ChannelTestCase {
         Assertions.assertThrows(RuntimeException.class, () -> {
             ChannelMapper.from(file);
         });
+    }
+
+    @Test()
+    public void multipleChannelsTest() throws IOException {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("channels/multiple-channels.yaml");
+
+        try (InputStream in = file.openStream())
+        {
+            byte[] bytes = in.readAllBytes();
+            String content = new String(bytes, Charset.defaultCharset());
+            List<Channel> channels = ChannelMapper.fromString(content);
+            assertEquals(2, channels.size());
+            assertEquals("Channel for WildFly 27", channels.get(0).getName());
+            assertEquals("Channel for WildFly 28", channels.get(1).getName());
+        }
     }
 
     @Test
