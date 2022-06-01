@@ -75,12 +75,12 @@ public class ChannelRecorderTestCase {
                 .thenReturn(mock(File.class));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
-            session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null);
-            session.resolveMavenArtifact("io.undertow", "undertow-core", null, null);
-            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null);
+            session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "20.0.0.Final");
+            session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "15.0.0.Final");
+            session.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "1.0.0.Final");
+            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "1.0.0.Final");
             // This should not be recorded, size should remain 4.
-            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null);
+            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "1.0.0.Final");
 
             Channel recordedChannel = session.getRecordedChannel();
             System.out.println(ChannelMapper.toYaml(recordedChannel));

@@ -107,7 +107,7 @@ public class ChannelSessionTestCase {
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
-            MavenArtifact artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+            MavenArtifact artifact = session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
             assertNotNull(artifact);
 
             assertEquals("org.wildfly", artifact.getGroupId());
@@ -138,7 +138,7 @@ public class ChannelSessionTestCase {
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             try {
-                session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
+                session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
                 fail("Must throw a UnresolvedMavenArtifactException");
             } catch (UnresolvedMavenArtifactException e) {
                 // pass
@@ -167,7 +167,7 @@ public class ChannelSessionTestCase {
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
             Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
-                session.resolveMavenArtifact("org.bar", "bar", null, null);
+                session.resolveMavenArtifact("org.bar", "bar", null, null, "25.0.0.Final");
             });
 
             MavenArtifact artifact = session.resolveDirectMavenArtifact("org.bar", "bar", null, null, "1.0.0.Final");

@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -55,10 +56,16 @@ public class ChannelSession implements AutoCloseable {
      * @param artifactId - required
      * @param extension - can be null
      * @param classifier - can be null
+     * @param baseVersion - required
      * @return the Maven Artifact (with a file corresponding to the artifact).
      * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
      */
-    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        // baseVersion is not used at the moment but will provide essential to support advanced use cases to determine multiple streams of the same Maven component.
+        requireNonNull(baseVersion);
+
         Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier);
         String latestVersion = result.version;
         Channel channel = result.channel;
