@@ -33,11 +33,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
+import org.wildfly.channel.version.VersionPatternMatcher;
 
 /**
  * Java representation of a Channel.
@@ -177,7 +179,7 @@ public class Channel implements AutoCloseable {
     }
 
 
-    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier) {
+    Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(resolver);
@@ -190,7 +192,7 @@ public class Channel implements AutoCloseable {
             // we return the latest value from the required channels
             Map<String, Channel> foundVersions = new HashMap<>();
             for (Channel requiredChannel : requiredChannels) {
-                Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+                Optional<Channel.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
                 if (found.isPresent()) {
                     foundVersions.put(found.get().version, found.get().channel);
                 }
@@ -211,6 +213,14 @@ public class Channel implements AutoCloseable {
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
             Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
             foundVersion = foundStream.get().getVersionComparator().matches(versions);
+        } else if (stream.getVersions() != null) {
+            Map<String, Pattern> versionStreams = stream.getVersions();
+            for (Map.Entry<String, Pattern> entry : versionStreams.entrySet()) {
+                if (Pattern.compile(entry.getKey()).matcher(baseVersion).matches()) {
+                    Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
+                    foundVersion = new VersionPatternMatcher(entry.getValue()).matches(versions);
+                }
+            }
         }
 
         if (foundVersion.isPresent()) {

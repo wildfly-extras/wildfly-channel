@@ -55,11 +55,12 @@ public class ChannelSession implements AutoCloseable {
      * @param artifactId - required
      * @param extension - can be null
      * @param classifier - can be null
+     * @param baseVersion - required
      * @return the Maven Artifact (with a file corresponding to the artifact).
      * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
      */
-    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier);
+    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+        Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
         String latestVersion = result.version;
         Channel channel = result.channel;
 
@@ -98,11 +99,12 @@ public class ChannelSession implements AutoCloseable {
      * @param artifactId - required
      * @param extension - can be null
      * @param classifier - can be null
+     * @param baseVersion - required
      * @return the latest version if a Maven artifact
      * @throws UnresolvedMavenArtifactException if the latest version cannot be established
      */
-    public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
-        return findChannelWithLatestVersion(groupId, artifactId, extension, classifier).version;
+    public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+        return findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion).version;
     }
 
     @Override
@@ -125,12 +127,12 @@ public class ChannelSession implements AutoCloseable {
         return recorder.getRecordedChannel();
     }
 
-    private Channel.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
+    private Channel.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
         for (Channel channel : channels) {
-            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
             if (result.isPresent()) {
                 return result.get();
             }

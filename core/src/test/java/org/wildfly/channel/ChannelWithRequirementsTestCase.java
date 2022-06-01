@@ -66,7 +66,7 @@ public class ChannelWithRequirementsTestCase {
         assertEquals(1, channels.size());
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null);
+            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null, "1.0.0");
             assertNotNull(artifact);
 
             assertEquals("org.example", artifact.getGroupId());
@@ -105,7 +105,7 @@ public class ChannelWithRequirementsTestCase {
         assertEquals(1, channels.size());
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null);
+            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null, "1.0.0.Final");
             assertNotNull(artifact);
 
             assertEquals("org.example", artifact.getGroupId());

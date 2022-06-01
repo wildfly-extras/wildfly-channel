@@ -76,6 +76,11 @@
           "versionPattern" : {
             "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Only one of version, versionPattern must be set.",
             "type": "string"
+          },
+          "versionStreams" : {
+            "description": "Multiple versions of the stream. The key are regular expressions that matches the baseline version, the value are regular expresssion to determine the latest versio for that baseline",
+            "type": "object",
+            "additionalProperties": { "type": "string" }
           }
         },
         "required": ["groupId", "artifactId"],
@@ -85,7 +90,11 @@
           },
           {
             "required": ["versionPattern"]
+          },
+          {
+            "required": ["versions"]
           }
+
         ]
       }
     }

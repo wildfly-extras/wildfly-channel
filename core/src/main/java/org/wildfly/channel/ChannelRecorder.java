@@ -29,7 +29,7 @@ class ChannelRecorder {
     void recordStream(String groupId, String artifactId, String version) {
         boolean isRecorded = recordedChannel.getStreams().stream().anyMatch(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId) && s.getVersion().equals(version));
         if (!isRecorded) {
-            recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
+            recordedChannel.addStream(new Stream(groupId, artifactId, version, null, null));
         }
     }
 
