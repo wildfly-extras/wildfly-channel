@@ -1,0 +1,5 @@
+groupId: org.example
+artifactId: foo
+versions:
+  '2\..*': '2\.4\..*'
+  '3\..*': '3\.0\.1\.Final'

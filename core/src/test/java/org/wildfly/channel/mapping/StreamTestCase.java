@@ -16,6 +16,7 @@
  */
 package org.wildfly.channel.mapping;
 
+import static java.util.regex.Pattern.compile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -24,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -116,5 +119,21 @@ public class StreamTestCase {
                     "version: 26.0.0.Final\n" +
                     "versionPattern: \"2\\\\.2\\\\..*\"");
         });
+    }
+
+    @Test
+    public void testValidStreamWithVersionStreams() throws IOException {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("streams/stream-with-versions.yaml");
+        Stream stream = fromURL(file);
+        assertEquals("org.example", stream.getGroupId());
+        assertEquals("foo", stream.getArtifactId());
+        assertNull(stream.getVersion());
+        assertNull(stream.getVersionPattern());
+        Map<String, Pattern> versionStreams = stream.getVersions();
+        assertEquals(2, versionStreams.size());
+
+        assertEquals("2\\.4\\..*", versionStreams.get("2\\..*").pattern());
+        assertEquals("3\\.0\\.1\\.Final", versionStreams.get("3\\..*").pattern());
     }
 }

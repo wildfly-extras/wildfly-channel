@@ -16,7 +16,14 @@
  */
 package org.wildfly.channel;
 
+import static java.util.regex.Pattern.compile;
+import static java.util.regex.Pattern.quote;
+
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 class ChannelRecorder {
 
@@ -26,10 +33,24 @@ class ChannelRecorder {
             null,
             Collections.emptyList());
 
-    void recordStream(String groupId, String artifactId, String version) {
-        boolean isRecorded = recordedChannel.getStreams().stream().anyMatch(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId) && s.getVersion().equals(version));
-        if (!isRecorded) {
-            recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
+    void recordStream(String groupId, String artifactId, String newVersion) {
+        Optional<Stream> optStream = recordedChannel.getStreams().stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId)).findFirst();
+        if (!optStream.isPresent()) {
+            recordedChannel.addStream(new Stream(groupId, artifactId, newVersion, null, null));
+        } else {
+            Stream stream = optStream.get();
+            String version = stream.getVersion();
+            Map<String, Pattern> versions = stream.getVersions();
+            if (version != null) {
+                if (version.equals(newVersion)) {
+                    return;
+                }
+                versions = new HashMap<>();
+                versions.put(quote(version), compile(quote(version)));
+            }
+            versions.put(quote(newVersion), compile(quote(newVersion)));
+            recordedChannel.getStreams().remove(stream);
+            recordedChannel.addStream(new Stream(groupId, artifactId, null, null, versions));
         }
     }
 
