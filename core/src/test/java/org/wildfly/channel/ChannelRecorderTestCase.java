@@ -16,8 +16,10 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -28,10 +30,13 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -75,12 +80,12 @@ public class ChannelRecorderTestCase {
                 .thenReturn(mock(File.class));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null);
-            session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null);
-            session.resolveMavenArtifact("io.undertow", "undertow-core", null, null);
-            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null);
+            session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "20.0.0.Final");
+            session.resolveMavenArtifact("org.wildfly.core", "wildfly.core.cli", null, null, "15.0.0.Final");
+            session.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "1.0.0.Final");
+            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "1.0.0.Final");
             // This should not be recorded, size should remain 4.
-            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null);
+            session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "1.0.0.Final");
 
             Channel recordedChannel = session.getRecordedChannel();
             System.out.println(ChannelMapper.toYaml(recordedChannel));
@@ -119,6 +124,57 @@ public class ChannelRecorderTestCase {
                 i++;
             }
         }
+    }
+
+    @Test
+    public void testChannelRecorderWithMultipleVersions() throws IOException, UnresolvedMavenArtifactException {
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+
+        when(factory.create())
+                .thenReturn(resolver);
+        when(resolver.getAllVersions(eq("io.undertow"), anyString(), eq(null), eq(null)))
+                .thenReturn(Set.of("1.0.0.Final", "1.1.1.Final", "2.0.0.Final", "2.1.0.Final", "2.2.0.Final"));
+        when(resolver.resolveArtifact(anyString(), anyString(), eq(null), eq(null), anyString()))
+                .thenReturn(mock(File.class));
+
+        try (ChannelSession session = new ChannelSession(emptyList(), factory)) {
+            session.resolveDirectMavenArtifact("io.undertow", "undertow-core", null, null, "1.0.0.Final");
+            session.resolveDirectMavenArtifact("io.undertow", "undertow-core", null, null, "1.0.0.Final");
+            session.resolveDirectMavenArtifact("io.undertow", "undertow-core", null, null, "2.0.0.Final");
+
+            Channel recordedChannel = session.getRecordedChannel();
+            System.out.println(ChannelMapper.toYaml(recordedChannel));
+
+            Collection<Stream> streams = recordedChannel.getStreams();
+            assertEquals(1, streams.size());
+            Stream stream = streams.iterator().next();
+            assertEquals("io.undertow", stream.getGroupId());
+            assertEquals("undertow-core", stream.getArtifactId());
+            assertNull(stream.getVersion());
+            assertNull(stream.getVersionPattern());
+            Map<String, Pattern> versions = stream.getVersions();
+            assertNotNull(versions);
+            assertEquals(2, versions.size());
+            assertTrue(versions.containsKey(Pattern.quote("1.0.0.Final")));
+            assertTrue(versions.containsKey(Pattern.quote("2.0.0.Final")));
+
+
+            // let's test the recorded channel serialization
+            List<Channel> channels = ChannelMapper.fromString(ChannelMapper.toYaml(recordedChannel));
+            assertEquals(1, channels.size());
+            Channel readChannel = channels.get(0);
+
+            try (ChannelSession session1 = new ChannelSession(List.of(readChannel), factory)) {
+                MavenArtifact mavenArtifact_100Final = session1.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "1.0.0.Final");
+                assertEquals("1.0.0.Final", mavenArtifact_100Final.getVersion());
+
+                MavenArtifact mavenArtifact_200Final = session1.resolveMavenArtifact("io.undertow", "undertow-core", null, null, "2.0.0.Final");
+                assertEquals("2.0.0.Final", mavenArtifact_200Final.getVersion());
+            }
+
+        }
+
     }
 
     private static void assertStreamExistsFor(Collection<Stream> streams, String groupId, String artifactId, String version) {

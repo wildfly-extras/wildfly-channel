@@ -54,8 +54,10 @@ Each element is composed of:
 ** A required `groupId` that corresponds to Maven GroupId to pull artifacts (it is not allowed to specify `*` for the groupId).
 ** A required `artifactId` that corresponds to Maven ArtifactId to pull artifacts. Special syntax `*` can be used to match _any_ artifactId.
 ** One of the following fields (which are mutually exclusive) that provides rules to resolve the Maven artifacts to provision. At most one field must be present in the stream definition.
-*** `versionPattern` corresponds to a Pattern through which the available versions are matched (e.g. `2\.2\..*`)
 *** `version` corresponds to a single version (e.g. `2.2.Final`)
+*** `versionPattern` corresponds to a Pattern through which the available versions are matched (e.g. `2\.2\..*`)
+*** `versions` corresponds to a map of versions when multiple version of the same stream needs to be determined. The key corresponds to a Pattern that matches the baseline version, the value
+corresponds to a Pattern to determine the latest version for this baseline version.
 
 A channel does not define the Maven repositories that contain the resolved Maven artifacts from any of its streams.
 It is up to the provisioning tooling to properly configure the required Maven repositories.
