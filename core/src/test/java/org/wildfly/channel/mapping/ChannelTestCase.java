@@ -19,6 +19,7 @@ package org.wildfly.channel.mapping;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,7 +102,8 @@ public class ChannelTestCase {
 
     @Test
     public void channelWithoutStreams() {
-        List<Channel> channels = ChannelMapper.fromString("name: My Channel\n" +
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "name: My Channel\n" +
                 "description: |-\n" +
                 "  This is my channel\n" +
                 "  with no stream");
@@ -113,7 +115,8 @@ public class ChannelTestCase {
 
     @Test
     public void channelWithRequires() {
-        List<Channel> channels = ChannelMapper.fromString("name: My Channel\n" +
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n"
+                +"name: My Channel\n" +
                 "description: |-\n" +
                 "  This is my channel\n" +
                 "  with no stream\n" +

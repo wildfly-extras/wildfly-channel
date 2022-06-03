@@ -3,6 +3,11 @@
 
 ## WildFly Channels
 
+[cols="1,1"]
+|===
+| Schema Version | 1.0.0 |
+|===
+
 ### Summary
 
 This document describes the overall architecture and concepts related to Channels to provision WildFly.
@@ -68,7 +73,7 @@ A JSON Schema is provided to validate that channels comply with the model descri
 
 ## Channel Representation
 
-A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/channel-schema.json[corresponding JSON schema] to validate its structure.
+A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/v1.0.0./schema.json[corresponding JSON schema] to validate its structure.
 
 ### Channel Actions and Responsibilities
 
@@ -106,3 +111,10 @@ If the stream defines a `version`, the artifact will be resolved based on this v
 from the Maven repositories, an error is returned to the caller.
 If the stream defines a `versionPattern`, the version will be determined by querying the version of the artifacts from the
 Maven repositories and use the latest version that matches the pattern. If no version matches the pattern, an error is returned to the caller.
+
+### Changelog
+
+### Version 1.0.0
+
+* Initial release of the Channel specification
+

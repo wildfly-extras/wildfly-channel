@@ -16,19 +16,20 @@
  */
 package org.wildfly.channel;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
+
 import java.net.URL;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class ChannelMapperTestCase {
 
     @Test
     public void testWriteReadChannel() throws Exception {
-        final Channel channel = new Channel("test_name", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
+        final Channel channel = new Channel(CURRENT_SCHEMA_VERSION,"test_name", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
         final String yaml = ChannelMapper.toYaml(channel);
 
         final Channel channel1 = ChannelMapper.fromString(yaml).get(0);

@@ -1,0 +1,15 @@
+schemaVersion: "1.0.0"
+name: My Channel in schema version 1.0.0
+description: |-
+  This is my channel
+  with my stuff
+vendor:
+  name: My Vendor
+  support: community
+streams:
+  - groupId: org.example
+    artifactId: bar
+    version: 2.0.0.Final
+  - groupId: org.example
+    artifactId: foo
+    versionPattern: '2\.2\..*'

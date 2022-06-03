@@ -19,6 +19,7 @@ package org.wildfly.channel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.util.Optional;
 
@@ -29,7 +30,8 @@ public class StreamResolverTestCase {
     @Test
     public void testFindingStreamMatchingArtifactIdAndGroupId() {
 
-        String yamlContent = "streams:\n" +
+        String yamlContent = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
                 "    version: 3.0.0.Final\n" +

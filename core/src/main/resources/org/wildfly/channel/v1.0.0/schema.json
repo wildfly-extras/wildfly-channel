@@ -1,8 +1,14 @@
 {
-  "$id": "https://wildfly.org/channel.schema.json",
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wildfly.org/channels/v1.0.0/schema.json",
+  "$schema": "http://json-schema.org/draft/2019-09/schema#",
   "type": "object",
+  "required": ["schemaVersion"],
   "properties": {
+    "schemaVersion": {
+      "description": "The version of the schema defining a channel resource.",
+      "type": "string",
+      "pattern": "^[0-9]+.[0-9]+.[0-9]+$"
+    },
     "name": {
       "description": "Name of the channel. This is a one-line human-readable description of the channel",
       "type": "string"

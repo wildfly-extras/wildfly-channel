@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
 import java.util.List;
@@ -40,7 +41,9 @@ public class ChannelSessionTestCase {
 
     @Test
     public void testFindLatestMavenArtifactVersion() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
+        List<Channel> channels = ChannelMapper.fromString(
+                "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
@@ -63,7 +66,8 @@ public class ChannelSessionTestCase {
 
     @Test
     public void testFindLatestMavenArtifactVersionThrowsUnresolvedMavenArtifactException() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
+        List<Channel> channels = ChannelMapper.fromString(                "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
@@ -90,7 +94,8 @@ public class ChannelSessionTestCase {
 
     @Test
     public void testResolveLatestMavenArtifact() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
@@ -123,7 +128,9 @@ public class ChannelSessionTestCase {
 
     @Test
     public void testResolveLatestMavenArtifactThrowUnresolvedMavenArtifactException() {
-        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "schemaVersion: 1.0.0\n" +
+                "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
                 "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
@@ -150,7 +157,8 @@ public class ChannelSessionTestCase {
 
     @Test
     public void testResolveDirectMavenArtifact() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("streams:\n" +
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
                 "  - groupId: org.foo\n" +
                 "    artifactId: foo\n" +
                 "    version: \"25.0.0.Final\"");
