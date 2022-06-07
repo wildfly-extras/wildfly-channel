@@ -16,11 +16,13 @@
  */
 package org.wildfly.channel;
 
+import java.net.URL;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ChannelMapperTestCase {
 
@@ -31,5 +33,14 @@ public class ChannelMapperTestCase {
 
         final Channel channel1 = ChannelMapper.fromString(yaml).get(0);
         assertEquals(Vendor.Support.COMMUNITY, channel1.getVendor().getSupport());
+    }
+
+    @Test
+    public void testReadChannelWithUnknownProperties() {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("channels/channel-with-unknown-properties.yaml");
+
+        Channel channel = ChannelMapper.from(file);
+        assertNotNull(channel);
     }
 }
