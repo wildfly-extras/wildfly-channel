@@ -1,0 +1,13 @@
+name: My Channel
+description: |-
+  This is my channel
+  with properties that are not defined in the schema
+vendor:
+  name: My Vendor
+  support: community
+foo: not an known property
+streams:
+  - groupId: org.wildfly
+    artifactId: wildfly-ee-galleon-pack
+    version: 26.0.0.Final
+    bar: not a known property

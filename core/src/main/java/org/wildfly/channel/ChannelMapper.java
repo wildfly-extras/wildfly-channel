@@ -16,17 +16,14 @@
  */
 package org.wildfly.channel;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -51,7 +48,8 @@ public class ChannelMapper {
 
     private static final String SCHEMA_FILE = "org/wildfly/channel/channel-schema.json";
     private static final YAMLFactory YAML_FACTORY = new YAMLFactory();
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY)
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(OBJECT_MAPPER).build();
     private static final JsonSchema SCHEMA = SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE));
 
