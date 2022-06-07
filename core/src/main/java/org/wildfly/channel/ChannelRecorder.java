@@ -20,7 +20,8 @@ import java.util.Collections;
 
 class ChannelRecorder {
 
-    final Channel recordedChannel = new Channel(null,
+    final Channel recordedChannel = new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION,
+            null,
             null,
             null,
             null,

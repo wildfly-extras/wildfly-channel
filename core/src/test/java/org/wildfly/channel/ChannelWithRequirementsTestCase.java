@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -58,11 +59,11 @@ public class ChannelWithRequirementsTestCase {
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
 
-        List<Channel> channels = ChannelMapper.fromString(
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My Channel\n" +
-                        "requires:\n" +
-                        "  - groupId: org.foo\n" +
-                        "    artifactId: required-channel");
+                "requires:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: required-channel");
         assertEquals(1, channels.size());
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
@@ -96,12 +97,12 @@ public class ChannelWithRequirementsTestCase {
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
 
-        List<Channel> channels = ChannelMapper.fromString(
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My Channel\n" +
-                        "requires:\n" +
-                        "  - groupId: org.foo\n" +
-                        "    artifactId: required-channel\n" +
-                        "    version: 2.0.0.Final");
+                "requires:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: required-channel\n" +
+                "    version: 2.0.0.Final");
         assertEquals(1, channels.size());
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {

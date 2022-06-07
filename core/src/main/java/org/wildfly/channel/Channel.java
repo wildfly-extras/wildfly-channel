@@ -47,6 +47,11 @@ public class Channel implements AutoCloseable {
     private static final String CLASSIFIER="channel";
     private static final String EXTENSION="yaml";
 
+    /** Version of the schema used by this channel.
+     * This is a required field.
+     */
+    private final String schemaVersion;
+
     /**
      * Name of the channel (as an one-line human readable description of the channel).
      * This is an optional field.
@@ -83,12 +88,14 @@ public class Channel implements AutoCloseable {
 
     private MavenVersionsResolver resolver;
 
-    public Channel(@JsonProperty(value = "name") String name,
+    public Channel(@JsonProperty(value = "schemaVersion", required = true) String schemaVersion,
+                   @JsonProperty(value = "name") String name,
                    @JsonProperty(value = "description") String description,
                    @JsonProperty(value = "vendor") Vendor vendor,
                    @JsonProperty(value = "requires")
                    @JsonInclude(NON_EMPTY) List<ChannelRequirement> channelRequirements,
                    @JsonProperty(value = "streams") Collection<Stream> streams) {
+        this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
         this.vendor = vendor;
@@ -97,6 +104,11 @@ public class Channel implements AutoCloseable {
         if (streams != null) {
             this.streams.addAll(streams);
         }
+    }
+
+    @JsonInclude
+    public String getSchemaVersion() {
+        return schemaVersion;
     }
 
     @JsonInclude(NON_NULL)

@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,7 @@ public class ChannelRecorderTestCase {
     public void testChannelRecorder() throws IOException, UnresolvedMavenArtifactException {
 
         List<Channel> channels = ChannelMapper.fromString("---\n" +
+                "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
@@ -53,6 +55,7 @@ public class ChannelRecorderTestCase {
                 "    artifactId: '*'\n" +
                 "    versionPattern: '2\\.\\1\\.\\d+.Final'\n" +
                 "---\n" +
+                "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +

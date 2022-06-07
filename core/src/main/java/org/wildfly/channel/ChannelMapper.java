@@ -25,7 +25,9 @@ import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,12 +48,32 @@ import com.networknt.schema.ValidationMessage;
  */
 public class ChannelMapper {
 
-    private static final String SCHEMA_FILE = "org/wildfly/channel/channel-schema.json";
+    public static final String SCHEMA_VERSION_1_0_0 = "1.0.0";
+    public static final String CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_1_0_0;
+
+    private static final String SCHEMA_1_0_0_FILE = "org/wildfly/channel/v1.0.0/schema.json";
     private static final YAMLFactory YAML_FACTORY = new YAMLFactory();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY)
             .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)).objectMapper(OBJECT_MAPPER).build();
-    private static final JsonSchema SCHEMA = SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_FILE));
+    private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909)).objectMapper(OBJECT_MAPPER).build();
+    private static final Map<String, JsonSchema> SCHEMAS = new HashMap<>();
+
+    static {
+        SCHEMAS.put(SCHEMA_VERSION_1_0_0, SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_1_0_0_FILE)));
+    }
+
+    private static JsonSchema getSchema(JsonNode node) {
+        JsonNode schemaVersion = node.path("schemaVersion");
+        String version = schemaVersion.asText();
+        if (version == null || version.isEmpty()) {
+            throw new RuntimeException("The channel does not specify a schemaVersion.");
+        }
+        JsonSchema schema = SCHEMAS.get(version);
+        if (schema == null) {
+            throw new RuntimeException("Unknown schema version " + schemaVersion);
+        }
+        return schema;
+    }
 
     public static String toYaml(Channel... channels) throws IOException {
         return toYaml(Arrays.asList(channels));
@@ -105,13 +127,15 @@ public class ChannelMapper {
 
     private static List<String> validate(URL url) throws IOException {
         JsonNode node = OBJECT_MAPPER.readTree(url);
-        Set<ValidationMessage> validationMessages = SCHEMA.validate(node);
+        JsonSchema schema = getSchema(node);
+        Set<ValidationMessage> validationMessages = schema.validate(node);
         return validationMessages.stream().map(ValidationMessage::getMessage).collect(Collectors.toList());
     }
 
     private static List<String> validateString(String yamlContent) throws IOException {
         JsonNode node = OBJECT_MAPPER.readTree(yamlContent);
-        Set<ValidationMessage> validationMessages = SCHEMA.validate(node);
+        JsonSchema schema = getSchema(node);
+        Set<ValidationMessage> validationMessages = schema.validate(node);
         return validationMessages.stream().map(ValidationMessage::getMessage).collect(Collectors.toList());
     }
 
