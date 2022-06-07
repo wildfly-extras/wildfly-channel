@@ -44,8 +44,11 @@ import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
+import org.jboss.logging.Logger;
 
 public class VersionResolverFactory implements MavenVersionsResolver.Factory {
+
+    private static final Logger LOG = Logger.getLogger(VersionResolverFactory.class);
 
     private final RepositorySystem system;
     private final RepositorySystemSession session;
@@ -145,6 +148,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             for (ChannelCoordinate channelCoord : channelCoords) {
                 if (channelCoord.getUrl() != null) {
                     Channel channel = ChannelMapper.from(channelCoord.getUrl());
+                    LOG.infof("Resolving channel at %s", channelCoord.getUrl());
                     channels.add(channel);
                     continue;
                 }
@@ -159,6 +163,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 }
                 File channelArtifact = resolver.resolveArtifact(channelCoord.getGroupId(), channelCoord.getArtifactId(), channelCoord.getExtension(), channelCoord.getClassifier(), version);
                 Channel channel = ChannelMapper.from(channelArtifact.toURI().toURL());
+                LOG.infof("Resolving channel from Maven artifact %s:%s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId(), version);
                 channels.add(channel);
             }
         }

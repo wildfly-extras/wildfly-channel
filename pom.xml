@@ -28,6 +28,7 @@
         <version.com.fasterxml.jackson.databind>2.13.3</version.com.fasterxml.jackson.databind>
         <version.com.networknt.json-schema-validator>1.0.70</version.com.networknt.json-schema-validator>
         <version.junit5>5.8.2</version.junit5>
+        <version.org.jboss.logging>3.5.0.Final</version.org.jboss.logging>
         <version.release.plugin>2.5.3</version.release.plugin>
         <version.aether-api>1.1.0</version.aether-api>
         <version.maven-aether-provider>3.3.9</version.maven-aether-provider>
@@ -60,6 +61,11 @@
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-aether-provider</artifactId>
                 <version>${version.maven-aether-provider}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>${version.org.jboss.logging}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit</groupId>
