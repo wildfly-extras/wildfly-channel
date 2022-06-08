@@ -34,6 +34,12 @@ public class Vendor {
      */
     private final Support support;
 
+    /**
+     * Vendor resource
+     *
+     * @param name Name of the vendor - required
+     * @param support Support level of the vendor - required
+     */
     @JsonCreator
     public Vendor(@JsonProperty(value = "name", required = true) String name, @JsonProperty(value = "support", required = true) Support support) {
         this.name = name;
