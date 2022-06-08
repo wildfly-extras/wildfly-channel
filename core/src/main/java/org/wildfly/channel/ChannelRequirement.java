@@ -16,6 +16,10 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Objects.requireNonNull;
+
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -28,10 +32,20 @@ public class ChannelRequirement {
     private final String artifactId;
     private final String version;
 
+    /**
+     * Representation of a channel requirement.
+     *
+     * @param groupId groupId of the Maven coordinate - required
+     * @param artifactId artifactId of the Maven coordinate - required
+     * @param version version of the Maven coordinate - can be {@code null}
+    */
     @JsonCreator
-    ChannelRequirement(@JsonProperty(value = "groupId", required = true) String groupId,
+    public ChannelRequirement(@JsonProperty(value = "groupId", required = true) String groupId,
                        @JsonProperty(value = "artifactId", required = true) String artifactId,
                        @JsonProperty(value = "version") String version) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;

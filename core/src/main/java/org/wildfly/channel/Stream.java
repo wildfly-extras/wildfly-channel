@@ -63,6 +63,34 @@ public class Stream implements Comparable<Stream> {
 
     private VersionMatcher versionMatcher;
 
+    /**
+     * @see #Stream(String, String, String, Pattern)
+     */
+    public Stream(String groupId,
+                  String artifactId,
+                  String version) {
+        this(groupId, artifactId, version, null);
+    }
+
+    /**
+     * @see #Stream(String, String, String, Pattern)
+     */
+    public Stream(String groupId,
+                  String artifactId,
+                  Pattern versionPattern) {
+        this(groupId, artifactId, null, versionPattern);
+    }
+
+    /**
+     * Representation of a stream resource
+     *
+     * @param groupId groupId of the Maven coordinate - required
+     * @param artifactId artifactId of the Maven coordinate - required
+     * @param version version of the Maven coordinate - can be {@code null}
+     * @param versionPattern version patter to determine the latest version of the resource - can be {@code null}
+     *
+     * Either {@code version} or {@code versionPattern} must be defined.
+     */
     @JsonCreator
     public Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,

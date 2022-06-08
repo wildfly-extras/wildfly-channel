@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -88,6 +89,35 @@ public class Channel implements AutoCloseable {
 
     private MavenVersionsResolver resolver;
 
+    /**
+     * Representation of a Channel resource using the current schema version.
+     *
+     * @see #Channel(String, String, Vendor, List, Collection)
+     */
+    public Channel(String name,
+                   String description,
+                   Vendor vendor,
+                   List<ChannelRequirement> channelRequirements,
+                   Collection<Stream> streams) {
+        this(ChannelMapper.CURRENT_SCHEMA_VERSION,
+                name,
+                description,
+                vendor,
+                channelRequirements,
+                streams);
+    }
+
+    /**
+     * Representation of a Channel resource
+     *
+     * @param schemaVersion the version of the schema to validate this channel resource - required
+     * @param name the name of the channel - can be {@code null}
+     * @param description the description of the channel - can be {@code null}
+     * @param vendor the vendor of the channel - can be {@code null}
+     * @param channelRequirements the required channels - cane be {@code null}
+     * @param streams the streams defined by the channel - can be {@code null}
+     */
+    @JsonCreator
     public Channel(@JsonProperty(value = "schemaVersion", required = true) String schemaVersion,
                    @JsonProperty(value = "name") String name,
                    @JsonProperty(value = "description") String description,

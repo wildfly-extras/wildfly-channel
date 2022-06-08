@@ -22,6 +22,7 @@ import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.net.URL;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,11 +30,25 @@ public class ChannelMapperTestCase {
 
     @Test
     public void testWriteReadChannel() throws Exception {
-        final Channel channel = new Channel(CURRENT_SCHEMA_VERSION,"test_name", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
+        final Channel channel = new Channel("test_name", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
         final String yaml = ChannelMapper.toYaml(channel);
 
         final Channel channel1 = ChannelMapper.fromString(yaml).get(0);
         assertEquals(Vendor.Support.COMMUNITY, channel1.getVendor().getSupport());
+    }
+
+    @Test
+    public void testWriteMultipleChannels() throws Exception {
+        final Channel channel1 = new Channel("test_name_1", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
+        final Channel channel2 = new Channel("test_name_2", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
+        final String yaml = ChannelMapper.toYaml(channel1, channel2);
+
+        List<Channel> channels = ChannelMapper.fromString(yaml);
+        assertEquals(2, channels.size());
+        final Channel c1 = channels.get(0);
+        final Channel c2 = channels.get(1);
+        assertEquals(channel1.getName(), c1.getName());
+        assertEquals(channel2.getName(), c2.getName());
     }
 
     @Test
