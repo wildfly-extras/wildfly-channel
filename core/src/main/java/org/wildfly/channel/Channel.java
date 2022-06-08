@@ -37,6 +37,7 @@ import java.util.TreeSet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
 
@@ -118,6 +119,7 @@ public class Channel implements AutoCloseable {
      * @param streams the streams defined by the channel - can be {@code null}
      */
     @JsonCreator
+    @JsonPropertyOrder({ "schemaVersion", "name", "description", "vendor", "requires", "streams" })
     public Channel(@JsonProperty(value = "schemaVersion", required = true) String schemaVersion,
                    @JsonProperty(value = "name") String name,
                    @JsonProperty(value = "description") String description,
@@ -157,6 +159,7 @@ public class Channel implements AutoCloseable {
     }
 
     @JsonInclude(NON_EMPTY)
+    @JsonProperty(value = "requires")
     public List<ChannelRequirement> getChannelRequirements() {
         return channelRequirements;
     }

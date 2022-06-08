@@ -17,6 +17,7 @@
 package org.wildfly.channel;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -32,9 +33,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLParser;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
@@ -52,9 +57,11 @@ public class ChannelMapper {
     public static final String CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_1_0_0;
 
     private static final String SCHEMA_1_0_0_FILE = "org/wildfly/channel/v1.0.0/schema.json";
-    private static final YAMLFactory YAML_FACTORY = new YAMLFactory();
+    private static final YAMLFactory YAML_FACTORY = new YAMLFactory()
+            .configure(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR, true);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY)
-            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(ORDER_MAP_ENTRIES_BY_KEYS, true);
     private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909)).objectMapper(OBJECT_MAPPER).build();
     private static final Map<String, JsonSchema> SCHEMAS = new HashMap<>();
 
