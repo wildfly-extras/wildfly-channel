@@ -52,6 +52,11 @@ public class ChannelSession implements AutoCloseable {
     /**
      * Resolve the Maven artifact according to the session's channels.
      *
+     * In order to find the stream corresponding to the Maven artifact, the channels are searched depth-first, starting
+     * with the first channel in the list and into their respective required channels.
+     * Once the first stream that matches the {@code groupId} and {@artifactId} parameters is found, the Maven artifact
+     * will be resolved with the version determined by this stream.
+     *
      * @param groupId - required
      * @param artifactId - required
      * @param extension - can be null
@@ -59,7 +64,8 @@ public class ChannelSession implements AutoCloseable {
      * @param baseVersion - can be null. The base version is required when the stream for the component specifies multiple versions and needs the base version to
      *                    determine the appropriate version to resolve.
      * @return the Maven Artifact (with a file corresponding to the artifact).
-     * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved
+     * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved.
+     *
      */
     public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
