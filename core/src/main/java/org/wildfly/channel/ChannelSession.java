@@ -19,8 +19,10 @@ package org.wildfly.channel;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -82,6 +84,40 @@ public class ChannelSession implements AutoCloseable {
     }
 
     /**
+     * Resolve a list of Maven artifacts according to the session's channels.
+     *
+     * In order to find the stream corresponding to the Maven artifact, the channels are searched depth-first, starting
+     * with the first channel in the list and into their respective required channels.
+     * Once the first stream that matches the {@code groupId} and {@artifactId} parameters is found, the Maven artifact
+     * will be resolved with the version determined by this stream.
+     *
+     * The returned list of resolved artifacts does not maintain ordering of requested coordinates
+     *
+     * @param coordinates list of ArtifactCoordinates to resolve
+     * @return a list of resolved MavenArtifacts with resolved versions asnd files
+     * @throws UnresolvedMavenArtifactException
+     */
+    public List<MavenArtifact> resolveMavenArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+        requireNonNull(coordinates);
+
+        Map<Channel, List<ArtifactCoordinate>> channelMap = splitArtifactsPerChannel(coordinates);
+
+        final ArrayList<MavenArtifact> res = new ArrayList<>();
+        for (Channel channel : channelMap.keySet()) {
+            final List<ArtifactCoordinate> requests = channelMap.get(channel);
+            final List<Channel.ResolveArtifactResult> resolveArtifactResults = channel.resolveArtifacts(requests);
+            for (int i = 0; i < requests.size(); i++) {
+                final ArtifactCoordinate request = requests.get(i);
+                final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), resolveArtifactResults.get(i).file);
+
+                recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion());
+                res.add(resolvedArtifact);
+            }
+        }
+        return res;
+    }
+
+    /**
      * Resolve the Maven artifact with a specific version without checking the channels.
      *
      * If the artifact is resolved, a stream for it is added to the {@code getRecordedChannel}.
@@ -102,6 +138,34 @@ public class ChannelSession implements AutoCloseable {
         File file = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
         recorder.recordStream(groupId, artifactId, version);
         return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
+    }
+
+    /**
+     * Resolve a list of Maven artifacts with a specific version without checking the channels.
+     *
+     * If the artifact is resolved, a stream for it is added to the {@code getRecordedChannel}.
+     *
+     * @param coordinates - list of ArtifactCoordinates to check
+     * @return the Maven Artifact (with a file corresponding to the artifact).
+     * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
+     */
+    public List<MavenArtifact> resolveDirectMavenArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+        coordinates.stream().forEach(c->{
+            requireNonNull(c.getGroupId());
+            requireNonNull(c.getArtifactId());
+            requireNonNull(c.getVersion());
+        });
+        final List<File> files = resolver.resolveArtifacts(coordinates);
+
+        final ArrayList<MavenArtifact> res = new ArrayList<>();
+        for (int i = 0; i < coordinates.size(); i++) {
+            final ArtifactCoordinate request = coordinates.get(i);
+            final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), files.get(i));
+
+            recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion());
+            res.add(resolvedArtifact);
+        }
+        return res;
     }
 
     /**
@@ -151,5 +215,20 @@ public class ChannelSession implements AutoCloseable {
             }
         }
         throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
+    }
+
+    private Map<Channel, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<? extends ArtifactCoordinate> coordinates) {
+        Map<Channel, List<ArtifactCoordinate>> channelMap = new HashMap<>();
+        for (ArtifactCoordinate coord : coordinates) {
+            Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(), coord.getArtifactId(),
+                                                                                     coord.getExtension(), coord.getClassifier(), coord.getVersion());
+            DefaultArtifactCoordinate query = new DefaultArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), result.version);
+            Channel channel = result.channel;
+            if (!channelMap.containsKey(channel)) {
+                channelMap.put(channel, new ArrayList<>());
+            }
+            channelMap.get(channel).add(query);
+        }
+        return channelMap;
     }
 }

@@ -18,8 +18,11 @@ package org.wildfly.channel.spi;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.List;
 import java.util.Set;
 
+import org.wildfly.channel.ArtifactCoordinate;
+import org.wildfly.channel.DefaultArtifactCoordinate;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 
 /**
@@ -51,9 +54,22 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * @return a File representing the resolved Maven artifact.
     *
-    * @throws UnresolvedMavenArtifactException if th artifact can not be resolved.
+    * @throws UnresolvedMavenArtifactException if the artifact can not be resolved.
     */
    File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException;
+
+   /**
+    * Resolve a list of maven artifacts based on the full coordinates.
+    *
+    * The order of returned Files is the same as order of coordinates.
+    *
+    * @param coordinates - list of ArtifactCoordinates. They need contain at least groupId, artifactId and version.
+    *
+    * @return a list of File representing the resolved Maven artifact.
+    *
+    * @throws UnresolvedMavenArtifactException if any artifacts can not be resolved.
+    */
+   List<File> resolveArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException;
 
    default void close() {
    }

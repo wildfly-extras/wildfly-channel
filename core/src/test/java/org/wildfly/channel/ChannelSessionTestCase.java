@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,12 +31,16 @@ import static org.mockito.Mockito.when;
 import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelSessionTestCase {
@@ -193,4 +199,172 @@ public class ChannelSessionTestCase {
         verify(resolver, times(2)).close();
     }
 
+    @Test
+    public void testResolveMavenArtifactsFromOneChannel() throws UnresolvedMavenArtifactException {
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                                                             "streams:\n" +
+                                                             "  - groupId: org.foo\n" +
+                                                             "    artifactId: foo\n" +
+                                                             "    version: \"25.0.0.Final\"\n" +
+                                                             "  - groupId: org.bar\n" +
+                                                             "    artifactId: bar\n" +
+                                                             "    version: \"26.0.0.Final\""
+                                                             );
+        assertNotNull(channels);
+        assertEquals(1, channels.size());
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile1 = mock(File.class);
+        File resolvedArtifactFile2 = mock(File.class);
+
+        when(factory.create()).thenReturn(resolver);
+        final List<DefaultArtifactCoordinate> coordinates = Arrays.asList(
+           new DefaultArtifactCoordinate("org.foo", "foo", null, null, null),
+           new DefaultArtifactCoordinate("org.bar", "bar", null, null, null));
+        when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
+           .thenReturn(Arrays.asList(resolvedArtifactFile1, resolvedArtifactFile2));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+
+            List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
+            assertNotNull(resolved);
+
+            final List<MavenArtifact> expected = Arrays.asList(
+               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
+               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+            );
+            assertContainsAll(expected, resolved);
+
+            Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
+            assertTrue(stream.isPresent());
+            assertEquals("26.0.0.Final", stream.get().getVersion());
+            stream = session.getRecordedChannel().findStreamFor("org.foo", "foo");
+            assertTrue(stream.isPresent());
+            assertEquals("25.0.0.Final", stream.get().getVersion());
+        }
+
+        verify(resolver, times(2)).close();
+    }
+
+    @Test
+    public void testResolveMavenArtifactsFromTwoChannel() throws UnresolvedMavenArtifactException {
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                                                             "streams:\n" +
+                                                             "  - groupId: org.foo\n" +
+                                                             "    artifactId: foo\n" +
+                                                             "    version: \"25.0.0.Final\"\n" +
+                                                             "---\n" +
+                                                             "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                                                             "streams:\n" +
+                                                             "  - groupId: org.bar\n" +
+                                                             "    artifactId: bar\n" +
+                                                             "    version: \"26.0.0.Final\""
+        );
+        assertNotNull(channels);
+        assertEquals(2, channels.size());
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile1 = mock(File.class);
+        File resolvedArtifactFile2 = mock(File.class);
+
+        when(factory.create()).thenReturn(resolver);
+        final List<DefaultArtifactCoordinate> coordinates = Arrays.asList(
+           new DefaultArtifactCoordinate("org.foo", "foo", null, null, null),
+           new DefaultArtifactCoordinate("org.bar", "bar", null, null, null));
+        when(resolver.resolveArtifacts(any()))
+           .then(new Answer<List<File>>() {
+               @Override
+               public List<File> answer(InvocationOnMock invocationOnMock) throws Throwable {
+                   final List<DefaultArtifactCoordinate> coordinates = invocationOnMock.getArgument(0);
+                   assertEquals(1, coordinates.size());
+                   if (coordinates.get(0).getArtifactId().equals("foo")) {
+                       return Arrays.asList(resolvedArtifactFile1);
+                   } else if (coordinates.get(0).getArtifactId().equals("bar")) {
+                       return Arrays.asList(resolvedArtifactFile2);
+                   } else {
+                       return null;
+                   }
+               }
+           });
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+
+            List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
+            assertNotNull(resolved);
+
+            final List<MavenArtifact> expected = Arrays.asList(
+               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
+               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+            );
+            assertContainsAll(expected, resolved);
+
+            Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
+            assertTrue(stream.isPresent());
+            assertEquals("26.0.0.Final", stream.get().getVersion());
+            stream = session.getRecordedChannel().findStreamFor("org.foo", "foo");
+            assertTrue(stream.isPresent());
+            assertEquals("25.0.0.Final", stream.get().getVersion());
+        }
+
+        verify(resolver, times(3)).close();
+    }
+
+    @Test
+    public void testResolveDirectMavenArtifacts() throws UnresolvedMavenArtifactException {
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                                                             "streams:\n" +
+                                                             "  - groupId: org.not\n" +
+                                                             "    artifactId: used\n" +
+                                                             "    version: \"1.0.0.Final\"");
+        assertNotNull(channels);
+        assertEquals(1, channels.size());
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile1 = mock(File.class);
+        File resolvedArtifactFile2 = mock(File.class);
+
+        when(factory.create()).thenReturn(resolver);
+        final List<DefaultArtifactCoordinate> coordinates = Arrays.asList(
+           new DefaultArtifactCoordinate("org.foo", "foo", null, null, "25.0.0.Final"),
+           new DefaultArtifactCoordinate("org.bar", "bar", null, null, "26.0.0.Final"));
+        when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
+           .thenReturn(Arrays.asList(resolvedArtifactFile1, resolvedArtifactFile2));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+
+            List<MavenArtifact> resolved = session.resolveDirectMavenArtifacts(coordinates);
+            assertNotNull(resolved);
+
+            final List<MavenArtifact> expected = Arrays.asList(
+               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
+               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+            );
+            assertContainsAll(expected, resolved);
+
+            Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
+            assertTrue(stream.isPresent());
+            assertEquals("26.0.0.Final", stream.get().getVersion());
+            stream = session.getRecordedChannel().findStreamFor("org.foo", "foo");
+            assertTrue(stream.isPresent());
+            assertEquals("25.0.0.Final", stream.get().getVersion());
+        }
+
+        verify(resolver, times(2)).close();
+    }
+
+    private static void assertContainsAll(List<MavenArtifact> expected, List<MavenArtifact> actual) {
+        List<MavenArtifact> testList = new ArrayList<>(expected);
+        for (MavenArtifact a : actual) {
+            if (!expected.contains(a)) {
+                fail("Unexpected artifact " + a);
+            }
+            testList.remove(a);
+        }
+        if (!testList.isEmpty()) {
+            fail("Expected artifact not found " + expected.get(0));
+        }
+    }
 }

@@ -39,8 +39,10 @@ import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.version.Version;
+import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
+import org.wildfly.channel.DefaultArtifactCoordinate;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
@@ -124,6 +126,36 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex);
             }
             return result.getArtifact().getFile();
+        }
+
+        @Override
+        public List<File> resolveArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+            requireNonNull(coordinates);
+
+            List<ArtifactRequest> requests = new ArrayList<>();
+            for (ArtifactCoordinate coord : coordinates) {
+                requireNonNull(coord.getVersion());
+
+                Artifact artifact = new DefaultArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getClassifier(), coord.getExtension(), coord.getVersion());
+
+                ArtifactRequest request = new ArtifactRequest();
+                request.setArtifact(artifact);
+                if (repositories != null) {
+                    request.setRepositories(repositories);
+                }
+                requests.add(request);
+            }
+
+            try {
+                final List<ArtifactResult> artifactResults = system.resolveArtifacts(session, requests);
+                // results are in the same order as requests
+                return artifactResults.stream()
+                   .map(ArtifactResult::getArtifact)
+                   .map(Artifact::getFile)
+                   .collect(Collectors.toList());
+            } catch (ArtifactResolutionException ex) {
+                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex);
+            }
         }
     }
 

@@ -47,9 +47,8 @@ import org.eclipse.aether.version.Version;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.channel.Channel;
+import org.wildfly.channel.DefaultArtifactCoordinate;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
-import org.wildfly.channel.maven.ChannelCoordinate;
-import org.wildfly.channel.maven.VersionResolverFactory;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class VersionResolverFactoryTest {
@@ -144,6 +143,36 @@ public class VersionResolverFactoryTest {
 
         assertEquals("My Channel", channel.getName());
 
+    }
+
+    @Test
+    public void testResolverResolveAllArtifacts() throws ArtifactResolutionException {
+
+        RepositorySystem system = mock(RepositorySystem.class);
+        RepositorySystemSession session = mock(RepositorySystemSession.class);
+
+        File artifactFile1 = mock(File.class);
+        ArtifactResult artifactResult1 = new ArtifactResult(new ArtifactRequest());
+        Artifact artifact1 = new DefaultArtifact("org.foo", "bar", null, null, "1.0.0", null, artifactFile1);
+        artifactResult1.setArtifact(artifact1);
+
+        File artifactFile2 = mock(File.class);
+        ArtifactResult artifactResult2 = new ArtifactResult(new ArtifactRequest());
+        Artifact artifact2 = new DefaultArtifact("org.foo.another", "bar2", null, null, "1.0.0", null, artifactFile2);
+        artifactResult2.setArtifact(artifact2);
+
+        when(system.resolveArtifacts(eq(session), any(List.class))).thenReturn(Arrays.asList(artifactResult1, artifactResult2));
+
+        VersionResolverFactory factory = new VersionResolverFactory(system, session, Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create();
+
+        final List<DefaultArtifactCoordinate> coordinates = asList(
+           new DefaultArtifactCoordinate("org.foo", "bar", null, null, "1.0.0"),
+           new DefaultArtifactCoordinate("org.foo.another", "bar2", null, null, "1.0.0"));
+        final List<File> res = resolver.resolveArtifacts(coordinates);
+
+        assertEquals(artifactFile1, res.get(0));
+        assertEquals(artifactFile2, res.get(1));
     }
 }
 
