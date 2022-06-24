@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.wildfly.channel.ArtifactCoordinate;
-import org.wildfly.channel.DefaultArtifactCoordinate;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 
 /**
@@ -69,7 +68,7 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * @throws UnresolvedMavenArtifactException if any artifacts can not be resolved.
     */
-   List<File> resolveArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException;
+   List<File> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException;
 
    default void close() {
    }

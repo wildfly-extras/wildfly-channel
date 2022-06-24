@@ -16,14 +16,69 @@
  */
 package org.wildfly.channel;
 
-public interface ArtifactCoordinate {
-    String getGroupId();
+import java.util.Objects;
 
-    String getArtifactId();
+import static java.util.Objects.requireNonNull;
 
-    String getVersion();
+public class ArtifactCoordinate {
+    protected String groupId;
+    protected String artifactId;
+    protected String extension;
+    protected String classifier;
+    protected String version;
 
-    String getExtension();
+    public ArtifactCoordinate(String groupId, String artifactId, String extension, String classifier, String version) {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(version);
 
-    String getClassifier();
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.extension = extension;
+        this.classifier = classifier;
+        this.version = version;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public String getExtension() {
+        return extension;
+    }
+
+    public String getClassifier() {
+        return classifier;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public String toString() {
+        return "MavenCoordinate{" +
+           "groupId='" + groupId + '\'' +
+           ", artifactId='" + artifactId + '\'' +
+           ", extension='" + extension + '\'' +
+           ", classifier='" + classifier + '\'' +
+           ", version='" + version + '\'' +
+           '}';
+    }
+
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ArtifactCoordinate that = (ArtifactCoordinate) o;
+        return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId) && Objects.equals(extension, that.extension) && Objects.equals(classifier, that.classifier) && Objects.equals(version, that.version);
+    }
+
+    public int hashCode() {
+        return Objects.hash(groupId, artifactId, extension, classifier, version);
+    }
 }

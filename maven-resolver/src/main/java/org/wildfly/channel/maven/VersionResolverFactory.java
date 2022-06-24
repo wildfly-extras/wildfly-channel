@@ -42,7 +42,6 @@ import org.eclipse.aether.version.Version;
 import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
-import org.wildfly.channel.DefaultArtifactCoordinate;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
@@ -129,13 +128,11 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
         }
 
         @Override
-        public List<File> resolveArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+        public List<File> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
             requireNonNull(coordinates);
 
             List<ArtifactRequest> requests = new ArrayList<>();
             for (ArtifactCoordinate coord : coordinates) {
-                requireNonNull(coord.getVersion());
-
                 Artifact artifact = new DefaultArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getClassifier(), coord.getExtension(), coord.getVersion());
 
                 ArtifactRequest request = new ArtifactRequest();

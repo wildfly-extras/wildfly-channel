@@ -46,8 +46,8 @@ import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.version.Version;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.Channel;
-import org.wildfly.channel.DefaultArtifactCoordinate;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
@@ -131,10 +131,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifact(eq(session), any(ArtifactRequest.class))).thenReturn(artifactResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session, Collections.emptyList());
-        ChannelCoordinate channelCoord1 = new ChannelCoordinate();
-        channelCoord1.setGroupId("org.wildfly");
-        channelCoord1.setArtifactId("wildfly-galleon-pack");
-        channelCoord1.setVersion("27.0.0.Final");
+        ChannelCoordinate channelCoord1 = new ChannelCoordinate("org.wildfly", "wildfly-galleon-pack", "27.0.0.Final");
         List<ChannelCoordinate> channelCoords = Arrays.asList(channelCoord1);
 
         List<Channel> channels = factory.resolveChannels(channelCoords);
@@ -166,9 +163,9 @@ public class VersionResolverFactoryTest {
         VersionResolverFactory factory = new VersionResolverFactory(system, session, Collections.emptyList());
         MavenVersionsResolver resolver = factory.create();
 
-        final List<DefaultArtifactCoordinate> coordinates = asList(
-           new DefaultArtifactCoordinate("org.foo", "bar", null, null, "1.0.0"),
-           new DefaultArtifactCoordinate("org.foo.another", "bar2", null, null, "1.0.0"));
+        final List<ArtifactCoordinate> coordinates = asList(
+           new ArtifactCoordinate("org.foo", "bar", null, null, "1.0.0"),
+           new ArtifactCoordinate("org.foo.another", "bar2", null, null, "1.0.0"));
         final List<File> res = resolver.resolveArtifacts(coordinates);
 
         assertEquals(artifactFile1, res.get(0));

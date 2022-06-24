@@ -294,7 +294,7 @@ public class Channel implements AutoCloseable {
         return new ResolveArtifactResult(resolver.resolveArtifact(groupId, artifactId, extension, classifier, version), this);
     }
 
-    List<ResolveArtifactResult> resolveArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+    List<ResolveArtifactResult> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         final List<File> resolvedArtifacts = resolver.resolveArtifacts(coordinates);
         return resolvedArtifacts.stream().map(f->new ResolveArtifactResult(f, this)).collect(Collectors.toList());
     }

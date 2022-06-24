@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 import java.io.File;
 import java.util.Objects;
 
-public class MavenArtifact extends DefaultArtifactCoordinate {
+public class MavenArtifact extends ArtifactCoordinate {
     private final File file;
 
     public MavenArtifact(String groupId, String artifactId, String extension, String classifier, String version, File file) {

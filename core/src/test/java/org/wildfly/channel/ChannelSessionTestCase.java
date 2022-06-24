@@ -219,9 +219,9 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile2 = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        final List<DefaultArtifactCoordinate> coordinates = Arrays.asList(
-           new DefaultArtifactCoordinate("org.foo", "foo", null, null, null),
-           new DefaultArtifactCoordinate("org.bar", "bar", null, null, null));
+        final List<ArtifactCoordinate> coordinates = Arrays.asList(
+           new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
+           new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
            .thenReturn(Arrays.asList(resolvedArtifactFile1, resolvedArtifactFile2));
 
@@ -270,14 +270,14 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile2 = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        final List<DefaultArtifactCoordinate> coordinates = Arrays.asList(
-           new DefaultArtifactCoordinate("org.foo", "foo", null, null, null),
-           new DefaultArtifactCoordinate("org.bar", "bar", null, null, null));
+        final List<ArtifactCoordinate> coordinates = Arrays.asList(
+           new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
+           new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(any()))
            .then(new Answer<List<File>>() {
                @Override
                public List<File> answer(InvocationOnMock invocationOnMock) throws Throwable {
-                   final List<DefaultArtifactCoordinate> coordinates = invocationOnMock.getArgument(0);
+                   final List<ArtifactCoordinate> coordinates = invocationOnMock.getArgument(0);
                    assertEquals(1, coordinates.size());
                    if (coordinates.get(0).getArtifactId().equals("foo")) {
                        return Arrays.asList(resolvedArtifactFile1);
@@ -327,9 +327,9 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile2 = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        final List<DefaultArtifactCoordinate> coordinates = Arrays.asList(
-           new DefaultArtifactCoordinate("org.foo", "foo", null, null, "25.0.0.Final"),
-           new DefaultArtifactCoordinate("org.bar", "bar", null, null, "26.0.0.Final"));
+        final List<ArtifactCoordinate> coordinates = Arrays.asList(
+           new ArtifactCoordinate("org.foo", "foo", null, null, "25.0.0.Final"),
+           new ArtifactCoordinate("org.bar", "bar", null, null, "26.0.0.Final"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
            .thenReturn(Arrays.asList(resolvedArtifactFile1, resolvedArtifactFile2));
 

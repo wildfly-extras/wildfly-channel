@@ -17,63 +17,65 @@
 package org.wildfly.channel.maven;
 
 import java.net.URL;
-
-import org.wildfly.channel.ArtifactCoordinate;
+import java.util.Objects;
 
 /**
  * A channel coordinate either use Maven coordinates (groupId, artifactId, version)
  * or it uses a URL from which the channel definition file can be fetched.
  */
-public class ChannelCoordinate implements ArtifactCoordinate {
-
-    private String groupId;
-    private String artifactId;
-    private String version;
+public class ChannelCoordinate {
     // raw Channel file from an URL
-    private URL url;
+    private final String groupId;
+    private final String artifactId;
+    private final String version;
+    private final URL url;
 
-    @Override
-    public String getGroupId() {
-        return groupId;
+    public ChannelCoordinate(String groupId, String artifactId, String version) {
+        this(groupId, artifactId, version, null);
+        Objects.requireNonNull(groupId);
+        Objects.requireNonNull(artifactId);
+        Objects.requireNonNull(version);
     }
 
-    public void setGroupId(String groupId) {
+    public ChannelCoordinate(String groupId, String artifactId) {
+        this(groupId, artifactId, null, null);
+        Objects.requireNonNull(groupId);
+        Objects.requireNonNull(artifactId);
+    }
+
+    public ChannelCoordinate(URL url) {
+        this(null, null, null, url);
+        Objects.requireNonNull(url);
+    }
+
+    private ChannelCoordinate(String groupId, String artifactId, String version, URL url) {
         this.groupId = groupId;
-    }
-
-    @Override
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public void setArtifactId(String artifactId) {
         this.artifactId = artifactId;
-    }
-
-    @Override
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
         this.version = version;
-    }
-
-    @Override
-    public String getExtension() {
-        return "yaml";
-    }
-
-    @Override
-    public String getClassifier() {
-        return "channel";
+        this.url = url;
     }
 
     public URL getUrl() {
         return url;
     }
 
-    public void setUrl(URL url) {
-        this.url = url;
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public String getExtension() {
+        return "yaml";
+    }
+
+    public String getClassifier() {
+        return "channel";
     }
 }

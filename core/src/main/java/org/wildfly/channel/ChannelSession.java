@@ -97,7 +97,7 @@ public class ChannelSession implements AutoCloseable {
      * @return a list of resolved MavenArtifacts with resolved versions asnd files
      * @throws UnresolvedMavenArtifactException
      */
-    public List<MavenArtifact> resolveMavenArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+    public List<MavenArtifact> resolveMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         requireNonNull(coordinates);
 
         Map<Channel, List<ArtifactCoordinate>> channelMap = splitArtifactsPerChannel(coordinates);
@@ -149,7 +149,7 @@ public class ChannelSession implements AutoCloseable {
      * @return the Maven Artifact (with a file corresponding to the artifact).
      * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
      */
-    public List<MavenArtifact> resolveDirectMavenArtifacts(List<? extends ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+    public List<MavenArtifact> resolveDirectMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         coordinates.stream().forEach(c->{
             requireNonNull(c.getGroupId());
             requireNonNull(c.getArtifactId());
@@ -217,12 +217,12 @@ public class ChannelSession implements AutoCloseable {
         throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
     }
 
-    private Map<Channel, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<? extends ArtifactCoordinate> coordinates) {
+    private Map<Channel, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<ArtifactCoordinate> coordinates) {
         Map<Channel, List<ArtifactCoordinate>> channelMap = new HashMap<>();
         for (ArtifactCoordinate coord : coordinates) {
             Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(), coord.getArtifactId(),
                                                                                      coord.getExtension(), coord.getClassifier(), coord.getVersion());
-            DefaultArtifactCoordinate query = new DefaultArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), result.version);
+            ArtifactCoordinate query = new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), result.version);
             Channel channel = result.channel;
             if (!channelMap.containsKey(channel)) {
                 channelMap.put(channel, new ArrayList<>());
