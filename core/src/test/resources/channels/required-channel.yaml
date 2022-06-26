@@ -4,3 +4,6 @@ streams:
   - groupId: org.example
     artifactId: foo-bar
     version: 1.2.0.Final
+  - groupId: org.example
+    artifactId: im-only-in-required-channel
+    version: 1.0.0.Final
