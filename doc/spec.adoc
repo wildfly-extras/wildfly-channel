@@ -45,11 +45,11 @@ A channel is composed of several fields:
 * An optional `name` that is a human-readable one-line description of the channel (`Channel for WildFly 27`)
 * An optional `description` that provides human-readable description of the channel
 * An optional `vendor` that defines who provides the channel and their support level. This field is descriptive only and is not used to enforce any mechanism. This field is composed of:
-* A required `name` to identify the vendor (eg `WildFly Community Project`)
-* A required `support` type that accepts the following values:
-** `supported` - Components provided by this channel are supported by the vendor. Some features provided by this channel can still be considered as tech-preview.
-** `tech-preview` - Feature provided by this channel are Tech Preview by the vendor
-** `community` - Components provided by this channel are a community effort  from the vendor
+** A required `name` to identify the vendor (eg `WildFly Community Project`)
+** A required `support` type that accepts the following values:
+*** `supported` - Components provided by this channel are supported by the vendor. Some features provided by this channel can still be considered as tech-preview.
+*** `tech-preview` - Feature provided by this channel are Tech Preview by the vendor
+*** `community` - Components provided by this channel are a community effort  from the vendor
 * A collection of `requires`. Each element of that list corresponds to another channel that is required to provision components from this channel.
 This field can be used for layered products to enforce their dependencies so that the installation only need to update the top level channel to get updates from all required channels.
 Each element is composed of:
