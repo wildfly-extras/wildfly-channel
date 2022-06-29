@@ -19,48 +19,16 @@ package org.wildfly.channel;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
+import java.util.Objects;
 
-public class MavenArtifact implements ArtifactCoordinate {
-
-    private final String groupId;
-    private final String artifactId;
-    private final String extension;
-    private final String classifier;
-    private final String version;
+public class MavenArtifact extends ArtifactCoordinate {
     private final File file;
 
     public MavenArtifact(String groupId, String artifactId, String extension, String classifier, String version, File file) {
-        requireNonNull(groupId);
-        requireNonNull(artifactId);
-        requireNonNull(version);
+        super(groupId, artifactId, extension, classifier, version);
         requireNonNull(file);
 
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.extension = extension;
-        this.classifier = classifier;
-        this.version = version;
         this.file = file;
-    }
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public String getExtension() {
-        return extension;
-    }
-
-    public String getClassifier() {
-        return classifier;
-    }
-
-    public String getVersion() {
-        return version;
     }
 
     public File getFile() {
@@ -77,5 +45,20 @@ public class MavenArtifact implements ArtifactCoordinate {
                 ", version='" + version + '\'' +
                 ", file=" + file +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        MavenArtifact artifact = (MavenArtifact) o;
+        return Objects.equals(file, artifact.file) && Objects.equals(groupId, artifact.groupId) && Objects.equals(artifactId, artifact.artifactId) && Objects.equals(extension, artifact.extension) && Objects.equals(classifier, artifact.classifier) && Objects.equals(version, artifact.version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(file, groupId, artifactId, extension, classifier, version);
     }
 }

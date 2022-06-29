@@ -19,6 +19,7 @@ package org.wildfly.channel;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -171,5 +172,20 @@ public class Stream implements Comparable<Stream> {
             return groupIdComp;
         }
         return this.artifactId.compareTo(other.artifactId);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Stream stream = (Stream) o;
+        return groupId.equals(stream.groupId) && artifactId.equals(stream.artifactId) && version.equals(stream.version) && Objects.equals(versionPattern, stream.versionPattern);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(groupId, artifactId, version, versionPattern);
     }
 }

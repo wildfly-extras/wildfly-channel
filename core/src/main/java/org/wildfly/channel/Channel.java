@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -291,6 +292,11 @@ public class Channel implements AutoCloseable {
         }
 
         return new ResolveArtifactResult(resolver.resolveArtifact(groupId, artifactId, extension, classifier, version), this);
+    }
+
+    List<ResolveArtifactResult> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+        final List<File> resolvedArtifacts = resolver.resolveArtifacts(coordinates);
+        return resolvedArtifacts.stream().map(f->new ResolveArtifactResult(f, this)).collect(Collectors.toList());
     }
 
     public Optional<Stream> findStreamFor(String groupId, String artifactId) {

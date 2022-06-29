@@ -16,23 +16,20 @@
  */
 package org.wildfly.channel;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ChannelRecorder {
-
-    final Channel recordedChannel = new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION,
-            null,
-            null,
-            null,
-            null,
-            Collections.emptyList());
+    private ConcurrentHashMap<String, Stream> streams = new ConcurrentHashMap<>();
 
     void recordStream(String groupId, String artifactId, String version) {
-        boolean isRecorded = recordedChannel.getStreams().stream().anyMatch(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId) && s.getVersion().equals(version));
-        if (!isRecorded) {
-            recordedChannel.addStream(new Stream(groupId, artifactId, version, null));
-        }
+        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null));
     }
 
-    Channel getRecordedChannel() { return recordedChannel; }
+    Channel getRecordedChannel() {
+        return new Channel(null,
+                           null,
+                           null,
+                           null, new ArrayList<Stream>(streams.values()));
+    }
 }

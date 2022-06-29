@@ -46,10 +46,9 @@ import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.version.Version;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
-import org.wildfly.channel.maven.ChannelCoordinate;
-import org.wildfly.channel.maven.VersionResolverFactory;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class VersionResolverFactoryTest {
@@ -132,10 +131,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifact(eq(session), any(ArtifactRequest.class))).thenReturn(artifactResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session, Collections.emptyList());
-        ChannelCoordinate channelCoord1 = new ChannelCoordinate();
-        channelCoord1.setGroupId("org.wildfly");
-        channelCoord1.setArtifactId("wildfly-galleon-pack");
-        channelCoord1.setVersion("27.0.0.Final");
+        ChannelCoordinate channelCoord1 = new ChannelCoordinate("org.wildfly", "wildfly-galleon-pack", "27.0.0.Final");
         List<ChannelCoordinate> channelCoords = Arrays.asList(channelCoord1);
 
         List<Channel> channels = factory.resolveChannels(channelCoords);
@@ -144,6 +140,36 @@ public class VersionResolverFactoryTest {
 
         assertEquals("My Channel", channel.getName());
 
+    }
+
+    @Test
+    public void testResolverResolveAllArtifacts() throws ArtifactResolutionException {
+
+        RepositorySystem system = mock(RepositorySystem.class);
+        RepositorySystemSession session = mock(RepositorySystemSession.class);
+
+        File artifactFile1 = mock(File.class);
+        ArtifactResult artifactResult1 = new ArtifactResult(new ArtifactRequest());
+        Artifact artifact1 = new DefaultArtifact("org.foo", "bar", null, null, "1.0.0", null, artifactFile1);
+        artifactResult1.setArtifact(artifact1);
+
+        File artifactFile2 = mock(File.class);
+        ArtifactResult artifactResult2 = new ArtifactResult(new ArtifactRequest());
+        Artifact artifact2 = new DefaultArtifact("org.foo.another", "bar2", null, null, "1.0.0", null, artifactFile2);
+        artifactResult2.setArtifact(artifact2);
+
+        when(system.resolveArtifacts(eq(session), any(List.class))).thenReturn(Arrays.asList(artifactResult1, artifactResult2));
+
+        VersionResolverFactory factory = new VersionResolverFactory(system, session, Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create();
+
+        final List<ArtifactCoordinate> coordinates = asList(
+           new ArtifactCoordinate("org.foo", "bar", null, null, "1.0.0"),
+           new ArtifactCoordinate("org.foo.another", "bar2", null, null, "1.0.0"));
+        final List<File> res = resolver.resolveArtifacts(coordinates);
+
+        assertEquals(artifactFile1, res.get(0));
+        assertEquals(artifactFile2, res.get(1));
     }
 }
 
