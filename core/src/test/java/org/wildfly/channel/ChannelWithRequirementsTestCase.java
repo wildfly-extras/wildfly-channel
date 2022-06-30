@@ -385,6 +385,7 @@ public class ChannelWithRequirementsTestCase {
 
     /**
      * Test that multiple requirements are propagating artifacts versions correctly
+     * If multiple required channels define the same stream, newest defined version of the stream will be used
      */
     @Test
     public void testChannelMultipleRequirements() throws UnresolvedMavenArtifactException, URISyntaxException {
@@ -420,9 +421,6 @@ public class ChannelWithRequirementsTestCase {
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "2.0.0.Final"))
                 .thenReturn(mock(File.class));
 
-        // If the channel requires other channels, these will be searched first in their listed order.
-        // The first stream that is found matching the groupId/artifactId will be used to determine the version of the artifact to pull.
-        // Therefore version of foo-bar from required-channel should be used
         List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "name: root level requiring channel\n" +
                 "requires:\n" +
@@ -441,7 +439,7 @@ public class ChannelWithRequirementsTestCase {
             assertEquals("foo-bar", artifact.getArtifactId());
             assertNull(artifact.getExtension());
             assertNull(artifact.getClassifier());
-            assertEquals("1.2.0.Final", artifact.getVersion());
+            assertEquals("2.0.0.Final", artifact.getVersion());
 
             // im-only-in-required-channel should propagate to the root level channel
             artifact = session.resolveMavenArtifact("org.example", "im-only-in-required-channel", null, null, "0");
@@ -453,8 +451,7 @@ public class ChannelWithRequirementsTestCase {
             assertNull(artifact.getClassifier());
             assertEquals("1.0.0.Final", artifact.getVersion());
         }
-        // required-channel-2 has newer version of foo-bar artifact,
-        // and as it is listed first, the 2.0.0 version of foo-bar should be used
+
         channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "name: root level requiring channel\n" +
                 "requires:\n" +
