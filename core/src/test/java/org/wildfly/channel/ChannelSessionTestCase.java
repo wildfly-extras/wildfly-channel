@@ -16,6 +16,7 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -23,7 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -219,18 +222,18 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile2 = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        final List<ArtifactCoordinate> coordinates = Arrays.asList(
+        final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
-           .thenReturn(Arrays.asList(resolvedArtifactFile1, resolvedArtifactFile2));
+           .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
             List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
             assertNotNull(resolved);
 
-            final List<MavenArtifact> expected = Arrays.asList(
+            final List<MavenArtifact> expected = asList(
                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
             );
@@ -270,7 +273,7 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile2 = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        final List<ArtifactCoordinate> coordinates = Arrays.asList(
+        final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(any()))
@@ -280,9 +283,9 @@ public class ChannelSessionTestCase {
                    final List<ArtifactCoordinate> coordinates = invocationOnMock.getArgument(0);
                    assertEquals(1, coordinates.size());
                    if (coordinates.get(0).getArtifactId().equals("foo")) {
-                       return Arrays.asList(resolvedArtifactFile1);
+                       return asList(resolvedArtifactFile1);
                    } else if (coordinates.get(0).getArtifactId().equals("bar")) {
-                       return Arrays.asList(resolvedArtifactFile2);
+                       return asList(resolvedArtifactFile2);
                    } else {
                        return null;
                    }
@@ -294,7 +297,7 @@ public class ChannelSessionTestCase {
             List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
             assertNotNull(resolved);
 
-            final List<MavenArtifact> expected = Arrays.asList(
+            final List<MavenArtifact> expected = asList(
                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
             );
@@ -327,18 +330,18 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile2 = mock(File.class);
 
         when(factory.create()).thenReturn(resolver);
-        final List<ArtifactCoordinate> coordinates = Arrays.asList(
+        final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "25.0.0.Final"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "26.0.0.Final"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
-           .thenReturn(Arrays.asList(resolvedArtifactFile1, resolvedArtifactFile2));
+           .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
             List<MavenArtifact> resolved = session.resolveDirectMavenArtifacts(coordinates);
             assertNotNull(resolved);
 
-            final List<MavenArtifact> expected = Arrays.asList(
+            final List<MavenArtifact> expected = asList(
                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
             );
@@ -354,6 +357,44 @@ public class ChannelSessionTestCase {
 
         verify(resolver, times(2)).close();
     }
+
+    @Test
+    public void testResolveMavenArtifactsFromTwoChannelsWithSameStream() throws UnresolvedMavenArtifactException {
+        Channel channel1 = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: foo\n" +
+                "    version: \"25.0.0.Final\""
+        ).get(0);
+        assertNotNull(channel1);
+        Channel channel2 = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: foo\n" +
+                "    version: \"26.0.0.Final\""
+        ).get(0);
+        assertNotNull(channel2);
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        when(factory.create()).thenReturn(resolver);
+        when(resolver.resolveArtifact(eq("org.foo"), eq("foo"), eq(null), eq(null), anyString())).thenReturn(resolvedArtifactFile);
+
+        // channel order does not matter to determine the latest version
+        try (ChannelSession session = new ChannelSession(asList(channel1, channel2), factory)) {
+            MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "foo", null, null, "1.0.0.Final");
+            assertNotNull(resolvedArtifact);
+            assertEquals("26.0.0.Final", resolvedArtifact.getVersion());
+        }
+        try (ChannelSession session = new ChannelSession(asList(channel2, channel1), factory)) {
+            MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "foo", null, null, "1.0.0.Final");
+            assertNotNull(resolvedArtifact);
+            assertEquals("26.0.0.Final", resolvedArtifact.getVersion());
+        }
+    }
+
 
     private static void assertContainsAll(List<MavenArtifact> expected, List<MavenArtifact> actual) {
         List<MavenArtifact> testList = new ArrayList<>(expected);

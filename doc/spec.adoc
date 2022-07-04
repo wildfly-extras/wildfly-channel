@@ -101,11 +101,13 @@ They consume channels by pulling the channel artifact corresponding to the `grou
 A Maven artifact can be resolved through a channel.
 Such a resolution will use the Maven repositories configured by the provisioning tool.
 
-The channels will be searched in their listed order to find a stream that matches the `groupId`/`artifactId` of the artifact.
+The channels will be searched for a stream that matches the `groupId`/`artifactId` of the artifact.
 
 If a channel directly defines a stream that matches the groupId/artifactId of the artifact, the version will be resolved from this stream.
 
 If channel does not directly define a stream, required channels will be searched. The latest version of the stream found in the required channels will be used.
+
+If multiple channels are defined, the latest version from any channel that defines the stream (directly or through required channels) is used.
 
 If no stream that matches the artifact have been found, an error is returned to the caller.
 
