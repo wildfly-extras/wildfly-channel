@@ -333,7 +333,7 @@ public class ChannelWithRequirementsTestCase {
 
         // check that root level can override all streams from required channels
         channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
-                "name: root level requiring channel\n"+
+                "name: root level requiring channel\n" +
                 "requires:\n" +
                 "  - groupId: org.foo\n" +
                 "    artifactId: 2nd-level-requiring-channel\n" +
@@ -380,6 +380,108 @@ public class ChannelWithRequirementsTestCase {
             assertNull(artifact.getExtension());
             assertNull(artifact.getClassifier());
             assertEquals("2.0.0.Final", artifact.getVersion());
+        }
+    }
+
+    /**
+     * Test that multiple requirements are propagating artifacts versions correctly
+     * If multiple required channels define the same stream, newest defined version of the stream will be used
+     */
+    @Test
+    public void testChannelMultipleRequirements() throws UnresolvedMavenArtifactException, URISyntaxException {
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL resolvedRequiredChannelURL = tccl.getResource("channels/required-channel.yaml");
+        File resolvedRequiredChannelFile = Paths.get(resolvedRequiredChannelURL.toURI()).toFile();
+        URL resolvedRequiredChannel2URL = tccl.getResource("channels/required-channel-2.yaml");
+        File resolvedRequiredChannel2File = Paths.get(resolvedRequiredChannel2URL.toURI()).toFile();
+
+        when(factory.create())
+                .thenReturn(resolver);
+        when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "2.0.0.Final"))
+                .thenReturn(resolvedRequiredChannelFile);
+        when(resolver.resolveArtifact("org.foo", "required-channel-2", "yaml", "channel", "2.0.0.Final"))
+                .thenReturn(resolvedRequiredChannel2File);
+
+        when(resolver.getAllVersions("org.example", "foo-bar", null, null))
+                .thenReturn(Set.of("1.0.0.Final", "1.2.0.Final", "2.0.0.Final"));
+        when(resolver.getAllVersions("org.example", "im-only-in-required-channel", null, null))
+                .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
+
+        when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
+                .thenReturn(mock(File.class));
+        when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
+                .thenReturn(mock(File.class));
+        when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
+                .thenReturn(mock(File.class));
+        when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "1.0.0.Final"))
+                .thenReturn(mock(File.class));
+        when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "2.0.0.Final"))
+                .thenReturn(mock(File.class));
+
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "name: root level requiring channel\n" +
+                "requires:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: required-channel\n" +
+                "    version: 2.0.0.Final\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: required-channel-2\n" +
+                "    version: 2.0.0.Final");
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null, "0");
+            assertNotNull(artifact);
+
+            assertEquals("org.example", artifact.getGroupId());
+            assertEquals("foo-bar", artifact.getArtifactId());
+            assertNull(artifact.getExtension());
+            assertNull(artifact.getClassifier());
+            assertEquals("2.0.0.Final", artifact.getVersion());
+
+            // im-only-in-required-channel should propagate to the root level channel
+            artifact = session.resolveMavenArtifact("org.example", "im-only-in-required-channel", null, null, "0");
+            assertNotNull(artifact);
+
+            assertEquals("org.example", artifact.getGroupId());
+            assertEquals("im-only-in-required-channel", artifact.getArtifactId());
+            assertNull(artifact.getExtension());
+            assertNull(artifact.getClassifier());
+            assertEquals("1.0.0.Final", artifact.getVersion());
+        }
+
+        channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "name: root level requiring channel\n" +
+                "requires:\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: required-channel-2\n" +
+                "    version: 2.0.0.Final\n" +
+                "  - groupId: org.foo\n" +
+                "    artifactId: required-channel\n" +
+                "    version: 2.0.0.Final"
+        );
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            MavenArtifact artifact = session.resolveMavenArtifact("org.example", "foo-bar", null, null, "0");
+            assertNotNull(artifact);
+
+            assertEquals("org.example", artifact.getGroupId());
+            assertEquals("foo-bar", artifact.getArtifactId());
+            assertNull(artifact.getExtension());
+            assertNull(artifact.getClassifier());
+            assertEquals("2.0.0.Final", artifact.getVersion());
+
+            // im-only-in-required-channel should propagate to the root level channel
+            artifact = session.resolveMavenArtifact("org.example", "im-only-in-required-channel", null, null, "0");
+            assertNotNull(artifact);
+
+            assertEquals("org.example", artifact.getGroupId());
+            assertEquals("im-only-in-required-channel", artifact.getArtifactId());
+            assertNull(artifact.getExtension());
+            assertNull(artifact.getClassifier());
+            assertEquals("1.0.0.Final", artifact.getVersion());
         }
     }
 }
