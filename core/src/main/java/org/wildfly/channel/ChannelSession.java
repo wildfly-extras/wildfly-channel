@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.version.VersionMatcher;
 
 /**
  * A ChannelSession is used to install and resolve Maven Artifacts inside a single scope.
@@ -208,13 +209,19 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
+        Map<String, Channel.ResolveLatestVersionResult> foundVersions = new HashMap<>();
         for (Channel channel : channels) {
             Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
             if (result.isPresent()) {
-                return result.get();
+                foundVersions.put(result.get().version, result.get());
             }
         }
-        throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
+
+        // find the latest version from all the channels that defined the stream.
+        Optional<String> foundLatestVersionInChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
+        return foundVersions.get(foundLatestVersionInChannels.orElseThrow(() -> {
+            throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
+        }));
     }
 
     private Map<Channel, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<ArtifactCoordinate> coordinates) {
