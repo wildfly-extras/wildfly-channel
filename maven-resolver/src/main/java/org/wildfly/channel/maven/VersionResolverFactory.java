@@ -190,9 +190,9 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                         throw new UnresolvedMavenArtifactException(String.format("Unable to resolve the latest version of channel %s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId()));
                     });
                 }
+                LOG.infof("Resolving channel from Maven artifact %s:%s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId(), version);
                 File channelArtifact = resolver.resolveArtifact(channelCoord.getGroupId(), channelCoord.getArtifactId(), channelCoord.getExtension(), channelCoord.getClassifier(), version);
                 Channel channel = ChannelMapper.from(channelArtifact.toURI().toURL());
-                LOG.infof("Resolving channel from Maven artifact %s:%s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId(), version);
                 channels.add(channel);
             }
         }
