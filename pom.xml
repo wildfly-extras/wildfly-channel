@@ -15,9 +15,9 @@
     <name>WildFly Channel - Parent</name>
 
     <scm>
-        <connection>scm:git:git@github.com:jmesnil/wildfly-channel.git</connection>
-        <developerConnection>scm:git:git@github.com:jmesnil/wildfly-channel.git</developerConnection>
-        <url>https://github.com/jmesnil/wildfly-channel</url>
+        <connection>scm:git:git@github.com:wildfly-extras/wildfly-channel.git</connection>
+        <developerConnection>scm:git:git@github.com:wildfly-extras/wildfly-channel.git</developerConnection>
+        <url>https://github.com/wildfly-extras/wildfly-channel</url>
         <tag>HEAD</tag>
     </scm>
 
