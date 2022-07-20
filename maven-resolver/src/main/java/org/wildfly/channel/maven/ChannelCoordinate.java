@@ -16,6 +16,8 @@
  */
 package org.wildfly.channel.maven;
 
+import static java.util.Objects.requireNonNull;
+
 import java.net.URL;
 import java.util.Objects;
 
@@ -24,28 +26,33 @@ import java.util.Objects;
  * or it uses a URL from which the channel definition file can be fetched.
  */
 public class ChannelCoordinate {
+    private String groupId;
+    private String artifactId;
+    private String version;
     // raw Channel file from an URL
-    private final String groupId;
-    private final String artifactId;
-    private final String version;
-    private final URL url;
+    private URL url;
+
+    // empty constructor used by the wildlfy-maven-plugin
+    // through reflection
+    public ChannelCoordinate() {
+    }
 
     public ChannelCoordinate(String groupId, String artifactId, String version) {
         this(groupId, artifactId, version, null);
-        Objects.requireNonNull(groupId);
-        Objects.requireNonNull(artifactId);
-        Objects.requireNonNull(version);
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(version);
     }
 
     public ChannelCoordinate(String groupId, String artifactId) {
         this(groupId, artifactId, null, null);
-        Objects.requireNonNull(groupId);
-        Objects.requireNonNull(artifactId);
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
     }
 
     public ChannelCoordinate(URL url) {
         this(null, null, null, url);
-        Objects.requireNonNull(url);
+        requireNonNull(url);
     }
 
     private ChannelCoordinate(String groupId, String artifactId, String version, URL url) {
