@@ -24,7 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 
+import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
 
@@ -32,9 +36,14 @@ import org.wildfly.channel.version.VersionMatcher;
  * A ChannelSession is used to install and resolve Maven Artifacts inside a single scope.
  */
 public class ChannelSession implements AutoCloseable {
+
+    private static final Logger LOG = Logger.getLogger(ChannelSession.class);
+    private static final int DEFAULT_SPLIT_ARTIFACT_PARALLELISM = 10;
+
     private final List<Channel> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
     private final MavenVersionsResolver resolver;
+    private final int versionResolutionParallelism;
 
     /**
      * Create a ChannelSession.
@@ -43,6 +52,17 @@ public class ChannelSession implements AutoCloseable {
      * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
      */
     public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory factory) {
+        this(channels, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM);
+    }
+
+    /**
+     * Create a ChannelSession.
+     *
+     * @param channels the list of channels to resolve Maven artifact
+     * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
+     * @param versionResolutionParallelism Number of threads to use when resolving available artifact versions.
+     */
+    public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory factory, int versionResolutionParallelism) {
         requireNonNull(channels);
         requireNonNull(factory);
         this.resolver = factory.create();
@@ -50,6 +70,7 @@ public class ChannelSession implements AutoCloseable {
         for (Channel channel : channels) {
             channel.init(factory);
         }
+        this.versionResolutionParallelism = versionResolutionParallelism;
     }
 
     /**
@@ -225,17 +246,37 @@ public class ChannelSession implements AutoCloseable {
     }
 
     private Map<Channel, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<ArtifactCoordinate> coordinates) {
+        long start = System.currentTimeMillis();
         Map<Channel, List<ArtifactCoordinate>> channelMap = new HashMap<>();
-        for (ArtifactCoordinate coord : coordinates) {
-            Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(), coord.getArtifactId(),
-                                                                                     coord.getExtension(), coord.getClassifier(), coord.getVersion());
-            ArtifactCoordinate query = new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), result.version);
-            Channel channel = result.channel;
-            if (!channelMap.containsKey(channel)) {
-                channelMap.put(channel, new ArrayList<>());
-            }
-            channelMap.get(channel).add(query);
+
+        ForkJoinPool customThreadPool = new ForkJoinPool(versionResolutionParallelism);
+        ForkJoinTask<?> task = customThreadPool.submit(() -> {
+            coordinates.parallelStream().forEach(coord -> {
+                Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(),
+                        coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), coord.getVersion());
+                ArtifactCoordinate query = new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(),
+                        coord.getExtension(), coord.getClassifier(), result.version);
+                Channel channel = result.channel;
+                synchronized (ChannelSession.this) {
+                    if (!channelMap.containsKey(channel)) {
+                        channelMap.put(channel, new ArrayList<>());
+                    }
+                    channelMap.get(channel).add(query);
+                }
+            });
+        });
+
+        try {
+            task.get();
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException("Unable to resolve latest artifact versions.", e);
+        } finally {
+            customThreadPool.shutdown();
         }
+
+        float total = (System.currentTimeMillis() - start) / 1000f;
+        LOG.debugf("Splitting artifacts per channels took %.2f seconds", total);
+
         return channelMap;
     }
 }

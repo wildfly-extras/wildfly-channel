@@ -35,7 +35,6 @@ import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -220,24 +219,26 @@ public class ChannelSessionTestCase {
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
+        final List<MavenArtifact> expectedArtifacts = asList(
+                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
+                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+        );
 
         when(factory.create()).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
-           .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
+                .thenAnswer(invocationOnMock -> {
+                    List<ArtifactCoordinate> coords = invocationOnMock.getArgument(0);
+                    return extractFilesInGivenOrder(coords, expectedArtifacts);
+                });
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
             List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
             assertNotNull(resolved);
-
-            final List<MavenArtifact> expected = asList(
-               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
-               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
-            );
-            assertContainsAll(expected, resolved);
+            assertContainsAll(expectedArtifacts, resolved);
 
             Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
             assertTrue(stream.isPresent());
@@ -407,5 +408,25 @@ public class ChannelSessionTestCase {
         if (!testList.isEmpty()) {
             fail("Expected artifact not found " + expected.get(0));
         }
+    }
+
+    /**
+     * Extracts maven artifact files from the expectedArtifacts argument, and returns them in an order defined by the
+     * list in the order argument.
+     *
+     * @param order ArtifactCoordinate list that defines the order of returned files
+     * @param expectedArtifacts MavenArtifact list to extract the artifact files from
+     * @return ordered list of files
+     */
+    private static List<File> extractFilesInGivenOrder(List<ArtifactCoordinate> order, List<MavenArtifact> expectedArtifacts) {
+        ArrayList<File> files = new ArrayList<>();
+        for (ArtifactCoordinate coord: order) {
+            Optional<MavenArtifact> first = expectedArtifacts.stream()
+                    .filter(a -> a.getArtifactId().equals(coord.getArtifactId()))
+                    .findFirst();
+            assertTrue(first.isPresent());
+            files.add(first.get().getFile());
+        }
+        return files;
     }
 }
