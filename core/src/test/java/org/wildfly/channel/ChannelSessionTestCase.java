@@ -21,7 +21,6 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -121,7 +120,7 @@ public class ChannelSessionTestCase {
             try {
                 session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "26.0.0.Final");
                 fail("Must throw a UnresolvedMavenArtifactException");
-            } catch (UnresolvedMavenArtifactException e) {
+            } catch (UnresolvedMavenArtifactException ignore) {
                 // pass
             }
         }
@@ -184,7 +183,7 @@ public class ChannelSessionTestCase {
             try {
                 session.resolveMavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
                 fail("Must throw a UnresolvedMavenArtifactException");
-            } catch (UnresolvedMavenArtifactException e) {
+            } catch (UnresolvedMavenArtifactException ignore) {
                 // pass
             }
         }
@@ -245,13 +244,20 @@ public class ChannelSessionTestCase {
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
+        final List<MavenArtifact> expectedArtifacts = asList(
+                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
+                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+        );
 
         when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
-           .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
+                .thenAnswer(invocationOnMock -> {
+                    List<ArtifactCoordinate> coords = invocationOnMock.getArgument(0);
+                    return extractFilesInGivenOrder(coords, expectedArtifacts);
+                });
 
         final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
@@ -259,12 +265,7 @@ public class ChannelSessionTestCase {
 
             List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
             assertNotNull(resolved);
-
-            final List<MavenArtifact> expected = asList(
-               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
-               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
-            );
-            assertContainsAll(expected, resolved);
+            assertContainsAll(expectedArtifacts, resolved);
 
             Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
             assertTrue(stream.isPresent());
@@ -602,5 +603,25 @@ public class ChannelSessionTestCase {
         if (!testList.isEmpty()) {
             fail("Expected artifact not found " + expected.get(0));
         }
+    }
+
+    /**
+     * Extracts maven artifact files from the expectedArtifacts argument, and returns them in an order defined by the
+     * list in the order argument.
+     *
+     * @param order ArtifactCoordinate list that defines the order of returned files
+     * @param expectedArtifacts MavenArtifact list to extract the artifact files from
+     * @return ordered list of files
+     */
+    static List<File> extractFilesInGivenOrder(List<ArtifactCoordinate> order, List<MavenArtifact> expectedArtifacts) {
+        ArrayList<File> files = new ArrayList<>();
+        for (ArtifactCoordinate coord: order) {
+            Optional<MavenArtifact> first = expectedArtifacts.stream()
+                    .filter(a -> a.getArtifactId().equals(coord.getArtifactId()))
+                    .findFirst();
+            assertTrue(first.isPresent());
+            files.add(first.get().getFile());
+        }
+        return files;
     }
 }

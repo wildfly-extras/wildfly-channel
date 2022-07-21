@@ -45,6 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
+import static org.wildfly.channel.ChannelSessionTestCase.extractFilesInGivenOrder;
 
 public class ChannelWithBlocklistTestCase {
 
@@ -377,6 +378,10 @@ public class ChannelWithBlocklistTestCase {
 
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
+        final List<MavenArtifact> expectedArtifacts = asList(
+                new MavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final", resolvedArtifactFile1),
+                new MavenArtifact("org.wildfly", "wildfly-cli", null, null, "26.0.0.Final", resolvedArtifactFile2)
+        );
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(new HashSet<>(Set.of("25.0.1.Final","25.0.0.Final")));
@@ -384,18 +389,17 @@ public class ChannelWithBlocklistTestCase {
            new ArtifactCoordinate("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final"),
            new ArtifactCoordinate("org.wildfly", "wildfly-cli", null, null, "26.0.0.Final"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
-           .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
+                .thenAnswer(invocationOnMock -> {
+                    List<ArtifactCoordinate> coords = invocationOnMock.getArgument(0);
+                    return extractFilesInGivenOrder(coords, expectedArtifacts);
+                });
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
             List<MavenArtifact> resolved = session.resolveMavenArtifacts(coordinates);
             assertNotNull(resolved);
 
-            final List<MavenArtifact> expected = asList(
-               new MavenArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final", resolvedArtifactFile1),
-               new MavenArtifact("org.wildfly", "wildfly-cli", null, null, "26.0.0.Final", resolvedArtifactFile2)
-            );
-            assertContainsAll(expected, resolved);
+            assertContainsAll(expectedArtifacts, resolved);
 
             Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.wildfly", "wildfly-ee-galleon-pack");
             assertTrue(stream.isPresent());
