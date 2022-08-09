@@ -39,6 +39,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
+import org.wildfly.channel.version.VersionPatternMatcher;
 
 /**
  * Java representation of a Channel.
@@ -77,6 +78,8 @@ public class Channel implements AutoCloseable {
      * This is an optional field.
      */
     private List<ChannelRequirement> channelRequirements;
+
+    private BlocklistCoordinate blocklistCoordinate;
 
     /**
      * Required channels
@@ -117,7 +120,8 @@ public class Channel implements AutoCloseable {
                 vendor,
                 channelRequirements,
                 repositories,
-                manifestCoordinate);
+                manifestCoordinate,
+                null);
     }
 
     Channel(String name,
@@ -131,8 +135,8 @@ public class Channel implements AutoCloseable {
                 vendor,
                 channelRequirements,
                 emptyList(),
+                null,
                 null);
-        this.channelManifest = channelManifest;
     }
 
     /**
@@ -154,7 +158,8 @@ public class Channel implements AutoCloseable {
                    @JsonInclude(NON_EMPTY) List<ChannelRequirement> channelRequirements,
                    @JsonProperty(value = "repositories")
                    @JsonInclude(NON_EMPTY) List<Repository> repositories,
-                   @JsonProperty(value = "manifest") ChannelManifestCoordinate manifestCoordinate) {
+                   @JsonProperty(value = "manifest") ChannelManifestCoordinate manifestCoordinate,
+                   @JsonProperty(value = "blocklist") @JsonInclude(NON_EMPTY) BlocklistCoordinate blocklistCoordinate) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
@@ -162,6 +167,7 @@ public class Channel implements AutoCloseable {
         this.channelRequirements = (channelRequirements != null) ? channelRequirements : emptyList();
         this.repositories = (repositories != null) ? repositories : emptyList();
         this.manifestCoordinate = manifestCoordinate;
+        this.blocklistCoordinate = blocklistCoordinate;
     }
 
     @JsonInclude
@@ -200,6 +206,9 @@ public class Channel implements AutoCloseable {
         return manifestCoordinate;
     }
 
+    @JsonIgnore
+    public Optional<Blocklist> blocklist = Optional.empty();
+
     void init(MavenVersionsResolver.Factory factory) {
         resolver = factory.create(repositories);
 
@@ -237,6 +246,34 @@ public class Channel implements AutoCloseable {
                 throw new RuntimeException(String.format("Unable to resolve required channel %s:%s", groupId, artifactId, version));
             }
         }
+        if (blocklistCoordinate != null) {
+            String groupId = blocklistCoordinate.getGroupId();
+            String artifactId = blocklistCoordinate.getArtifactId();
+            String version = blocklistCoordinate.getVersion();
+            if (version == null) {
+                final Set<String> versions = resolver.getAllVersions(groupId, artifactId,
+                        BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER);
+                Optional<String> latest = VersionMatcher.getLatestVersion(versions);
+                if (latest.isPresent()) {
+                    version = latest.get();
+                }
+            }
+
+            if (version != null) {
+                final File file = resolver.resolveArtifact(groupId,
+                        artifactId,
+                        BlocklistCoordinate.EXTENSION,
+                        BlocklistCoordinate.CLASSIFIER,
+                        version);
+                try {
+                    blocklist = Optional.of(Blocklist.from(file.toURI().toURL()));
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                blocklist = Optional.empty();
+            }
+        }
     }
 
     @Override
@@ -246,6 +283,10 @@ public class Channel implements AutoCloseable {
         }
         this.resolver.close();
         this.resolver = null;
+    }
+
+    public BlocklistCoordinate getBlocklistCoordinate() {
+        return blocklistCoordinate;
     }
 
     static class ResolveLatestVersionResult {
@@ -272,7 +313,6 @@ public class Channel implements AutoCloseable {
 
         // first we find if there is a stream for that given (groupId, artifactId).
         Optional<Stream> foundStream = channelManifest.findStreamFor(groupId, artifactId);
-
         // no stream for this artifact, let's look into the required channel
         if (!foundStream.isPresent()) {
             // we return the latest value from the required channels
@@ -298,6 +338,11 @@ public class Channel implements AutoCloseable {
         } else if (stream.getVersionPattern() != null) {
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
             Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
+            if (this.blocklist.isPresent()) {
+                final Set<String> blocklistedVersions = this.blocklist.get().getVersionsFor(groupId, artifactId);
+
+                versions.removeAll(blocklistedVersions);
+            }
             foundVersion = foundStream.get().getVersionComparator().matches(versions);
         }
 

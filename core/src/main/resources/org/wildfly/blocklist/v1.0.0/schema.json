@@ -27,6 +27,7 @@
           "versions": {
             "description": "List of blocklisted versions of the artifact.",
             "type": "array",
+            "minItems": 1,
             "items": {
               "type": "string"
             }

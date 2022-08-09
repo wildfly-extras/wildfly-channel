@@ -1,0 +1,6 @@
+---
+schemaVersion: 1.0.0
+blocks:
+  - groupId: org.wildfly
+    artifactId: wildfly-ee-galleon-pack
+    versions: [ 25.0.1.Final ]

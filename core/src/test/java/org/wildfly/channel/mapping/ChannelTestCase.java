@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.wildfly.channel.BlocklistCoordinate;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelRequirement;
@@ -108,5 +109,22 @@ public class ChannelTestCase {
         ChannelRequirement requirement = channel.getChannelRequirements().get(0);
         assertEquals("org.foo.channels", requirement.getGroupId());
         assertEquals("my-required-channel", requirement.getArtifactId());
+    }
+
+    @Test
+    public void channelWithBlocklist() throws MalformedURLException {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("channels/channel-with-blocklist.yaml");
+
+        Channel channel = ChannelMapper.from(file);
+
+        Collection<ChannelRequirement> requires = channel.getChannelRequirements();
+        assertEquals(0, requires.size());
+
+        BlocklistCoordinate blocklist = channel.getBlocklistCoordinate();
+
+        assertEquals("blocklist", blocklist.getArtifactId());
+        assertEquals("org.wildfly", blocklist.getGroupId());
+        assertEquals("1.2.3",  blocklist.getVersion());
     }
 }
