@@ -17,13 +17,14 @@
 package org.wildfly.channel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 class ChannelRecorder {
     private ConcurrentHashMap<String, Stream> streams = new ConcurrentHashMap<>();
 
     void recordStream(String groupId, String artifactId, String version) {
-        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null));
+        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null, Collections.emptySet()));
     }
 
     Channel getRecordedChannel() {

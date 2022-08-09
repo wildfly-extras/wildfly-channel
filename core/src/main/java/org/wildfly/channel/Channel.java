@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -255,7 +256,9 @@ public class Channel implements AutoCloseable {
             foundVersion = Optional.of(stream.getVersion());
         } else if (stream.getVersionPattern() != null) {
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
-            Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
+            Set<String> versions = new HashSet<>(resolver.getAllVersions(groupId, artifactId, extension, classifier));
+            versions.removeAll(stream.getExcludedVersions());
+
             foundVersion = foundStream.get().getVersionComparator().matches(versions);
         }
 

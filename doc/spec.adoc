@@ -5,7 +5,7 @@
 
 [cols="1,1"]
 |===
-| Schema Version | 1.0.0 |
+| Schema Version | 1.0.1 |
 |===
 
 ### Summary
@@ -61,6 +61,7 @@ Each element is composed of:
 ** One of the following fields (which are mutually exclusive) that provides rules to resolve the Maven artifacts to provision. At most one field must be present in the stream definition.
 *** `versionPattern` corresponds to a Pattern through which the available versions are matched (e.g. `2\.2\..*`)
 *** `version` corresponds to a single version (e.g. `2.2.Final`)
+** An optional `excludedVersions` lists versions to be excluded from a stream (e.g. `[ 2.2.2.Final ]`). This field can only be used together with `versionPattern`.
 
 A channel does not define the Maven repositories that contain the resolved Maven artifacts from any of its streams.
 It is up to the provisioning tooling to properly configure the required Maven repositories.
@@ -114,11 +115,14 @@ If no stream that matches the artifact have been found, an error is returned to 
 If the stream defines a `version`, the artifact will be resolved based on this version. If that version of the artifact can not be pulled
 from the Maven repositories, an error is returned to the caller.
 If the stream defines a `versionPattern`, the version will be determined by querying the version of the artifacts from the
-Maven repositories and use the latest version that matches the pattern. If no version matches the pattern, an error is returned to the caller.
+Maven repositories. Any versions listed in `excludedVersions` will be ignored and the latest remaining version that matches the pattern will be resolved. If no version matches the pattern, or all eligible versions are excluded, an error is returned to the caller.
 
 ### Changelog
 
 ### Version 1.0.0
 
 * Initial release of the Channel specification
+
+### Version 1.0.1
+* Added `excludedVersions` to the stream definition
 

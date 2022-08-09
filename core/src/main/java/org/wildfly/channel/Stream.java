@@ -16,10 +16,13 @@
  */
 package org.wildfly.channel;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -62,24 +65,31 @@ public class Stream implements Comparable<Stream> {
      */
     private final Pattern versionPattern;
 
+    /**
+     * Versions excluded from the stream.
+     *
+     * Can only be used together with {@code versionPattern}.
+     */
+    private final Set<String> excludedVersions;
+
     private VersionMatcher versionMatcher;
 
     /**
-     * @see #Stream(String, String, String, Pattern)
+     * @see #Stream(String, String, String, Pattern, Set)
      */
     public Stream(String groupId,
                   String artifactId,
                   String version) {
-        this(groupId, artifactId, version, null);
+        this(groupId, artifactId, version, null, Collections.emptySet());
     }
 
     /**
-     * @see #Stream(String, String, String, Pattern)
+     * @see #Stream(String, String, String, Pattern, Set)
      */
     public Stream(String groupId,
                   String artifactId,
                   Pattern versionPattern) {
-        this(groupId, artifactId, null, versionPattern);
+        this(groupId, artifactId, null, versionPattern, Collections.emptySet());
     }
 
     /**
@@ -89,6 +99,7 @@ public class Stream implements Comparable<Stream> {
      * @param artifactId artifactId of the Maven coordinate - required
      * @param version version of the Maven coordinate - can be {@code null}
      * @param versionPattern version patter to determine the latest version of the resource - can be {@code null}
+     * @param excludedVersions versions to be excluded from version pattern - can be {@code null}
      *
      * Either {@code version} or {@code versionPattern} must be defined.
      */
@@ -96,11 +107,13 @@ public class Stream implements Comparable<Stream> {
     public Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
-           @JsonProperty("versionPattern") Pattern versionPattern) {
+           @JsonProperty("versionPattern") Pattern versionPattern,
+           @JsonProperty("excludedVersions") Set<String> excludedVersions) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.versionPattern = versionPattern;
+        this.excludedVersions = excludedVersions == null?Collections.emptySet():excludedVersions;
         validate();
         initVersionMatcher();
     }
@@ -126,6 +139,11 @@ public class Stream implements Comparable<Stream> {
             throw new IllegalArgumentException(
                     String.format("Invalid stream. Only one of version, versionPattern field must be set"));
         }
+
+        if (version != null && !excludedVersions.isEmpty()) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid stream. ExcludedVersions cannot be used when version field is set."));
+        }
     }
 
     public String getGroupId() {
@@ -144,6 +162,11 @@ public class Stream implements Comparable<Stream> {
     @JsonInclude(NON_NULL)
     public Pattern getVersionPattern() {
         return versionPattern;
+    }
+
+    @JsonInclude(NON_EMPTY)
+    public Set<String> getExcludedVersions() {
+        return excludedVersions;
     }
 
     @JsonIgnore

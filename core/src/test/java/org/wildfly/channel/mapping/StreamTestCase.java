@@ -109,12 +109,22 @@ public class StreamTestCase {
     }
 
     @Test
-    public void tesVersionAndVersionPatternAreBothDefined()  {
+    public void testVersionAndVersionPatternAreBothDefined()  {
         assertThrows(Exception.class, () -> {
             Stream stream = fromYamlContent("groupId: org.wildfly\n" +
                     "artifactId: wildfly-ee-galleon-pack\n" +
                     "version: 26.0.0.Final\n" +
                     "versionPattern: \"2\\\\.2\\\\..*\"");
+        });
+    }
+
+    @Test
+    public void testVersionAndExcludedVersionsAreBothDefined() throws Exception {
+        assertThrows(Exception.class, () -> {
+            Stream stream = fromYamlContent("groupId: org.wildfly\n" +
+                    "artifactId: wildfly-ee-galleon-pack\n" +
+                    "version: 26.0.0.Final\n" +
+                    "excludedVersions: [ 26.0.0.Final ]");
         });
     }
 }
