@@ -66,13 +66,21 @@ public class StreamTestCase {
     }
 
     @Test
-    public void testAnyGroupIdIsNotValid() throws IOException {
+    public void testAnyGroupIdWithSpecificArtifactIdIsNotValid() throws IOException {
         assertThrows(Exception.class, () -> {
 
             fromYamlContent("groupId: '*'\n" +
-                    "artifactId: '*'\n" +
+                    "artifactId: 'example'\n" +
                     "version: 1.1.1.Final");
         });
+    }
+
+    @Test
+    public void testAnyGroupIdWithAnyArtifactIdIsValid() throws IOException {
+        final Stream stream = fromYamlContent("groupId: '*'\n" +
+                                                 "artifactId: '*'\n" +
+                                                 "version: 1.1.1.Final");
+        assertEquals("1.1.1.Final", stream.getVersion());
     }
 
     @Test

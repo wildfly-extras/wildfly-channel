@@ -395,6 +395,30 @@ public class ChannelSessionTestCase {
         }
     }
 
+    @Test
+    public void testResolveMavenArtifactFromChannelWithWildcardGroup() throws UnresolvedMavenArtifactException {
+        Channel channel1 = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                                                       "streams:\n" +
+                                                       "  - groupId: \"*\"\n" +
+                                                       "    artifactId: \"*\"\n" +
+                                                       "    version: \"25.0.0.Final\""
+        ).get(0);
+        assertNotNull(channel1);
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        when(factory.create()).thenReturn(resolver);
+        when(resolver.resolveArtifact(eq("org.foo"), eq("foo"), eq(null), eq(null), anyString())).thenReturn(resolvedArtifactFile);
+
+        // channel order does not matter to determine the latest version
+        try (ChannelSession session = new ChannelSession(asList(channel1), factory)) {
+            MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "foo", null, null, "1.0.0.Final");
+            assertNotNull(resolvedArtifact);
+            assertEquals("25.0.0.Final", resolvedArtifact.getVersion());
+        }
+    }
 
     private static void assertContainsAll(List<MavenArtifact> expected, List<MavenArtifact> actual) {
         List<MavenArtifact> testList = new ArrayList<>(expected);

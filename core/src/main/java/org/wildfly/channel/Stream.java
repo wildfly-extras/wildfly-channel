@@ -36,6 +36,8 @@ import org.wildfly.channel.version.VersionPatternMatcher;
 public class Stream implements Comparable<Stream> {
     /**
      * GroupId of the stream.
+     * It must be either a valid groupId (corresponding to the G of a Maven GAV) or {@code *} to represent any groupId.
+     * If the value is {@code *}, the {@code artifactId} also has to have a value of {@code *}.
      */
     private final String groupId;
 
@@ -116,9 +118,9 @@ public class Stream implements Comparable<Stream> {
     }
 
     private void validate() {
-        if ("*".equals(groupId)) {
+        if ("*".equals(groupId) && !"*".equals(artifactId)) {
             throw new IllegalArgumentException(
-                    String.format("Invalid stream. the groupId does not accept wildcard '*'"));
+               String.format("Invalid stream %s:%s. It is not valid to use a * groupId if the artifactId is defined", groupId, artifactId));
         }
 
         if ((version != null && versionPattern != null) ||
