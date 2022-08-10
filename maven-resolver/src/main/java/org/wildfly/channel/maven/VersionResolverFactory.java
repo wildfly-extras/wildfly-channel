@@ -17,6 +17,7 @@
 package org.wildfly.channel.maven;
 
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
@@ -122,7 +123,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             try {
                 result = system.resolveArtifact(session, request);
             } catch (ArtifactResolutionException ex) {
-                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex);
+                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex, singleton(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)));
             }
             return result.getArtifact().getFile();
         }
@@ -151,7 +152,12 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                    .map(Artifact::getFile)
                    .collect(Collectors.toList());
             } catch (ArtifactResolutionException ex) {
-                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex);
+                Set<ArtifactCoordinate> failed = ex.getResults().stream()
+                   .filter(r->r.getArtifact() == null)
+                   .map(res->res.getRequest().getArtifact())
+                   .map(a->new ArtifactCoordinate(a.getGroupId(), a.getArtifactId(), a.getExtension(), a.getClassifier(), a.getVersion()))
+                   .collect(Collectors.toSet());
+                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex, failed);
             }
         }
     }

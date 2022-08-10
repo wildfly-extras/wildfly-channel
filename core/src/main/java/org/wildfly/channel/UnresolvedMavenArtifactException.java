@@ -16,7 +16,13 @@
  */
 package org.wildfly.channel;
 
+import java.util.Collections;
+import java.util.Set;
+
 public class UnresolvedMavenArtifactException extends RuntimeException {
+
+    private Set<ArtifactCoordinate> unresolvedArtifacts = Collections.emptySet();
+
     public UnresolvedMavenArtifactException(String message) {
         super(message);
     }
@@ -25,7 +31,14 @@ public class UnresolvedMavenArtifactException extends RuntimeException {
         super();
     }
 
-    public UnresolvedMavenArtifactException(String message, Throwable cause) {
-        super(message, cause);
+    public UnresolvedMavenArtifactException(String localizedMessage,
+                                            Throwable cause,
+                                            Set<ArtifactCoordinate> unresolvedArtifacts) {
+        super(localizedMessage, cause);
+        this.unresolvedArtifacts = unresolvedArtifacts;
+    }
+
+    public Set<ArtifactCoordinate> getUnresolvedArtifacts() {
+        return unresolvedArtifacts;
     }
 }
