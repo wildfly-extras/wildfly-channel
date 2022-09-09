@@ -29,6 +29,6 @@ class ChannelRecorder {
     ChannelManifest getRecordedChannel() {
         return new ChannelManifest(null,
                            null,
-                            new ArrayList<Stream>(streams.values()));
+                            new ArrayList<>(streams.values()));
     }
 }

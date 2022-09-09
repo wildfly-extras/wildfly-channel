@@ -92,6 +92,30 @@ public interface MavenVersionsResolver extends Closeable {
     */
    List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> manifestCoords) throws UnresolvedMavenArtifactException;
 
+   /**
+    * Returns the {@code <release>} version according to the repositories' Maven metadata. If multiple repositories
+    * contain the same artifact, {@link org.wildfly.channel.version.VersionMatcher#COMPARATOR} is used to choose version.
+    *
+    * @param groupId Maven GroupId - required
+    * @param artifactId Maven ArtifactId - required
+    *
+    * @return the {@code release} version.
+    * @throws UnresolvedMavenArtifactException if the metadata can not be resolved or is incomplete.
+    */
+   String getMetadataReleaseVersion(String groupId, String artifactId);
+
+   /**
+    * Returns the {@code <latest>} version according to the repositories' Maven metadata. If multiple repositories
+    * contain the same artifact, {@link org.wildfly.channel.version.VersionMatcher#COMPARATOR} is used to choose version.
+    *
+    * @param groupId Maven GroupId - required
+    * @param artifactId Maven ArtifactId - required
+    *
+    * @return the {@code latest} version.
+    * @throws UnresolvedMavenArtifactException if the metadata can not be resolved or is incomplete.
+    */
+   String getMetadataLatestVersion(String groupId, String artifactId);
+
    default void close() {
    }
 

@@ -19,8 +19,11 @@ package org.wildfly.channel.maven;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -32,15 +35,21 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.metadata.DefaultMetadata;
+import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.MetadataRequest;
+import org.eclipse.aether.resolution.MetadataResult;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
@@ -185,6 +194,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             }
         }
 
+        @Override
         public List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> manifestCoords) throws UnresolvedMavenArtifactException {
             requireNonNull(manifestCoords);
 
@@ -216,6 +226,62 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 }
             }
             return channels;
+        }
+
+        @Override
+        public String getMetadataReleaseVersion(String groupId, String artifactId) {
+            requireNonNull(groupId);
+            requireNonNull(artifactId);
+
+            final List<MetadataResult> metadataResults = getMavenMetadata(groupId, artifactId);
+
+            final Function<org.apache.maven.artifact.repository.metadata.Metadata, String> getVersion = m -> m.getVersioning().getRelease();
+            return findLatestMetadataVersion(metadataResults, getVersion, groupId, artifactId);
+        }
+
+        @Override
+        public String getMetadataLatestVersion(String groupId, String artifactId) {
+            requireNonNull(groupId);
+            requireNonNull(artifactId);
+
+            final List<MetadataResult> metadataResults = getMavenMetadata(groupId, artifactId);
+
+            return findLatestMetadataVersion(metadataResults, m -> m.getVersioning().getLatest(), groupId, artifactId);
+        }
+
+        private String findLatestMetadataVersion(List<MetadataResult> metadataResults,
+                                                 Function<org.apache.maven.artifact.repository.metadata.Metadata, String> getVersion,
+                                                 String groupId, String artifactId) {
+            final MetadataXpp3Reader reader = new MetadataXpp3Reader();
+            return metadataResults.stream()
+                    .filter(r -> r.getMetadata() != null)
+                    .map(m -> m.getMetadata().getFile())
+                    .map(f -> {
+                        try {
+                            return reader.read(new FileReader(f));
+                        } catch (IOException | XmlPullParserException e) {
+                            final ArtifactCoordinate requestedArtifact = new ArtifactCoordinate(groupId, artifactId, null, null, "*");
+                            throw new UnresolvedMavenArtifactException(e.getLocalizedMessage(), e, Set.of(requestedArtifact));
+                        }
+                    })
+                    .filter(m->m.getVersioning() != null)
+                    .map(getVersion)
+                    .filter(s->s!=null&&!s.isEmpty())
+                    .max(COMPARATOR)
+                    .orElseThrow(()->new UnresolvedMavenArtifactException("No versioning information found in metadata.",
+                            Set.of(new ArtifactCoordinate(groupId, artifactId, null, null, "*"))));
+        }
+
+        private List<MetadataResult> getMavenMetadata(String groupId, String artifactId) {
+            final DefaultMetadata metadata = new DefaultMetadata(groupId, artifactId, "maven-metadata.xml", Metadata.Nature.RELEASE);
+            final List<MetadataRequest> requests = repositories.stream().map(r -> {
+                final MetadataRequest metadataRequest = new MetadataRequest();
+                metadataRequest.setMetadata(metadata);
+                metadataRequest.setRepository(r);
+                return metadataRequest;
+            }).collect(Collectors.toList());
+            final List<MetadataResult> metadataResults = system.resolveMetadata(session, requests);
+            return metadataResults;
         }
     }
 

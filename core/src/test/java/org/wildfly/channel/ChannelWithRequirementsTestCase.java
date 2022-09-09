@@ -35,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -550,6 +551,53 @@ public class ChannelWithRequirementsTestCase {
         Files.writeString(manifestFile, manifest);
 
         mockManifest(resolver, manifestFile.toUri().toURL(), gav);
+    }
+
+    @Test
+    public void testRequiredChannelIgnoresNoStreamStrategy() throws UnresolvedMavenArtifactException, URISyntaxException {
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        // create a Mock MavenVersionsResolver that will resolve the required channel
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+
+        // the default strategy is ORIGINAL
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL resolvedRequiredChannelURL = tccl.getResource("channels/required-channel.yaml");
+        File resolvedRequiredChannelFile = Paths.get(resolvedRequiredChannelURL.toURI()).toFile();
+        File resolvedArtifactFile = mock(File.class);
+
+        URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
+        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
+
+        when(factory.create(any()))
+           .thenReturn(resolver);
+        when(resolver.getAllVersions("org.foo", "required-channel", "yaml", "channel"))
+           .thenReturn(Set.of("1", "2", "3"));
+        when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "3"))
+           .thenReturn(resolvedRequiredChannelFile);
+        when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "1.2.0.Final"))
+           .thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.example", "foo-bar", null, null))
+           .thenReturn(Set.of("1.0.0.Final, 1.1.0.Final", "1.2.0.Final"));
+        when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
+           .thenReturn(resolvedArtifactFile);
+
+        // strict NoStreamStrategy should result in no matches
+        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + ChannelMapper.CURRENT_SCHEMA_VERSION + "\n" +
+                                                             "resolves-if-no-stream: none\n" +
+                                                             "name: My Channel\n" +
+                                                             "requires:\n" +
+                                                             "  - groupId: org.foo\n" +
+                                                             "    artifactId: required-channel\n" +
+                                                             "repositories:\n" +
+                                                             "  - id: test\n" +
+                                                             "    url: http://test.te");
+        assertEquals(1, channels.size());
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, ()->
+                session.resolveMavenArtifact("org.example", "idontexist", null, null, "1.2.3")
+            );
+        }
     }
 
     private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
