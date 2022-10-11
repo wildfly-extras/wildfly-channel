@@ -1,9 +1,12 @@
 schemaVersion: "1.0.0"
-name: 2nd level requiring channel
+name: 2nd level requiring manifest
 requires:
-  - groupId: org.foo
-    artifactId: required-channel
-    version: 2.0.0.Final
+  - id: 1st-level
+    maven:
+      groupId: test.channels
+      artifactId: required-manifest
+      version: 1.0.0
+
 streams:
   - groupId: org.example
     artifactId: foo-bar

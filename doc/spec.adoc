@@ -72,11 +72,10 @@ A channel is composed of several fields:
 **** Optional `version` to stick to a given blocklist version (instead of requiring the latest version of that blocklist). In the absence of this `version`, the latest version of the blocklist will be determined based on the Maven repository metadata (see <<Component Version>>).
 *** `url` corresponding to a URL where the blocklist file can be found.
 * An optional `resolve-if-no-stream` that defines strategy for version resolution if the artifact has not been found in the `streams` collection or if the channel didn't declare a manifest. Allowed values are:
-** `original` - fallback to the `baseVersion` provided when querying the channel. Default value if no strategy is provided.
 ** `latest` - use the latest version found in the Maven repositories (using mechanism described in <<Component Version>>)
 ** `maven-latest` - a version marked as `latest` in the Maven metadata
 ** `maven-release` - a version marked as `release` in the Maven metadata
-** `none` - do not attempt to resolve versions of artifact not listed in the `streams` collection
+** `none` - do not attempt to resolve versions of artifact not listed in the `streams` collection. Default value if no strategy is provided.
 
 ### Manifest definition
 A Channel Manifest is composed of following fields:

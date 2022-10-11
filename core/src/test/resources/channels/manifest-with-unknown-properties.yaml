@@ -1,0 +1,11 @@
+schemaVersion: "1.0.0"
+name: My Manifest
+description: |-
+  This is my manifest
+  with properties that are not defined in the schema
+foo: not an known property
+streams:
+  - groupId: org.wildfly
+    artifactId: wildfly-ee-galleon-pack
+    version: 26.0.0.Final
+    bar: not a known property

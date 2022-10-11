@@ -21,6 +21,7 @@ import static java.util.Collections.singleton;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,39 +32,46 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
+import static org.wildfly.channel.ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelSessionTestCase {
 
+    @TempDir
+    private Path tempDir;
+
     @Test
-    public void testFindLatestMavenArtifactVersion() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString(
+    public void testFindLatestMavenArtifactVersion() throws Exception {
+        String manifest =
                 "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                "    versionPattern: '25\\.\\d+\\.\\d+.Final'";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(singleton("25.0.0.Final"));
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             String version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
@@ -73,21 +81,41 @@ public class ChannelSessionTestCase {
         verify(resolver, times(2)).close();
     }
 
+    public static List<Channel> mockChannel(MavenVersionsResolver resolver, Path tempDir, String... manifests) throws IOException {
+        return mockChannel(resolver, tempDir, null, manifests);
+    }
+
+    public static List<Channel> mockChannel(MavenVersionsResolver resolver, Path tempDir, Channel.NoStreamStrategy strategy, String... manifests) throws IOException {
+        List<Channel> channels = new ArrayList<>();
+        for (int i = 0; i < manifests.length; i++) {
+            channels.add(new ChannelBuilder()
+                            .setManifestCoordinate("org.channels", "channel" + i, "1.0.0")
+                            .setResolveStrategy(strategy)
+                            .build());
+            String manifest = manifests[i];
+            Path manifestFile = Files.writeString(tempDir.resolve("manifest" + i +".yaml"), manifest);
+
+            when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.channels", "channel" + i, "1.0.0")))))
+                    .thenReturn(List.of(manifestFile.toUri().toURL()));
+        }
+        return channels;
+    }
+
     @Test
-    public void testFindLatestMavenArtifactVersionThrowsUnresolvedMavenArtifactException() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString(                "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testFindLatestMavenArtifactVersionThrowsUnresolvedMavenArtifactException() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                "    versionPattern: '25\\.\\d+\\.\\d+.Final'";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(singleton("26.0.0.Final"));
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             try {
@@ -102,22 +130,22 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveLatestMavenArtifact() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveLatestMavenArtifact() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                "    versionPattern: '25\\.\\d+\\.\\d+.Final'";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile = mock(File.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(Set.of("25.0.0.Final", "25.0.1.Final"));
         when(resolver.resolveArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.1.Final")).thenReturn(resolvedArtifactFile);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
@@ -136,21 +164,21 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveLatestMavenArtifactThrowUnresolvedMavenArtifactException() {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveLatestMavenArtifactThrowUnresolvedMavenArtifactException() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "schemaVersion: 1.0.0\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                "    versionPattern: '25\\.\\d+\\.\\d+.Final'";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(singleton("26.0.0.Final"));
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             try {
@@ -165,21 +193,21 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveDirectMavenArtifact() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveDirectMavenArtifact() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.foo\n" +
                 "    artifactId: foo\n" +
-                "    version: \"25.0.0.Final\"");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                "    version: \"25.0.0.Final\"";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile = mock(File.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact("org.bar", "bar", null, null, "1.0.0.Final")).thenReturn(resolvedArtifactFile);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.NONE, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
@@ -203,30 +231,29 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveMavenArtifactsFromOneChannel() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveMavenArtifactsFromOneChannel() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                                                              "streams:\n" +
                                                              "  - groupId: org.foo\n" +
                                                              "    artifactId: foo\n" +
                                                              "    version: \"25.0.0.Final\"\n" +
                                                              "  - groupId: org.bar\n" +
                                                              "    artifactId: bar\n" +
-                                                             "    version: \"26.0.0.Final\""
-                                                             );
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                                                             "    version: \"26.0.0.Final\"";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
            .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
@@ -251,28 +278,24 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveMavenArtifactsFromTwoChannel() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveMavenArtifactsFromTwoChannel() throws Exception {
+        String manifest1 = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                                                              "streams:\n" +
                                                              "  - groupId: org.foo\n" +
                                                              "    artifactId: foo\n" +
-                                                             "    version: \"25.0.0.Final\"\n" +
-                                                             "---\n" +
-                                                             "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                                                             "    version: \"25.0.0.Final\"\n";
+        String manifest2 =                                   "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                                                              "streams:\n" +
                                                              "  - groupId: org.bar\n" +
                                                              "    artifactId: bar\n" +
-                                                             "    version: \"26.0.0.Final\""
-        );
-        assertNotNull(channels);
-        assertEquals(2, channels.size());
+                                                             "    version: \"26.0.0.Final\"";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
@@ -291,6 +314,8 @@ public class ChannelSessionTestCase {
                    }
                }
            });
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest1, manifest2);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
@@ -315,26 +340,26 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveDirectMavenArtifacts() throws UnresolvedMavenArtifactException {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveDirectMavenArtifacts() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                                                              "streams:\n" +
                                                              "  - groupId: org.not\n" +
                                                              "    artifactId: used\n" +
-                                                             "    version: \"1.0.0.Final\"");
-        assertNotNull(channels);
-        assertEquals(1, channels.size());
+                                                             "    version: \"1.0.0.Final\"";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "foo", null, null, "25.0.0.Final"),
            new ArtifactCoordinate("org.bar", "bar", null, null, "26.0.0.Final"));
         when(resolver.resolveArtifacts(argThat(mavenCoordinates -> mavenCoordinates.size() == 2)))
            .thenReturn(asList(resolvedArtifactFile1, resolvedArtifactFile2));
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
 
@@ -359,39 +384,209 @@ public class ChannelSessionTestCase {
     }
 
     @Test
-    public void testResolveMavenArtifactsFromTwoChannelsWithSameStream() throws UnresolvedMavenArtifactException {
-        Channel channel1 = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+    public void testResolveMavenArtifactsFromTwoChannelsWithSameStream() throws Exception {
+        String manifest1 = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.foo\n" +
                 "    artifactId: foo\n" +
-                "    version: \"25.0.0.Final\""
-        ).get(0);
-        assertNotNull(channel1);
-        Channel channel2 = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "    version: \"25.0.0.Final\"";
+        String manifest2 = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.foo\n" +
                 "    artifactId: foo\n" +
-                "    version: \"26.0.0.Final\""
-        ).get(0);
-        assertNotNull(channel2);
+                "    version: \"26.0.0.Final\"";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
         File resolvedArtifactFile = mock(File.class);
 
-        when(factory.create()).thenReturn(resolver);
+        when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact(eq("org.foo"), eq("foo"), eq(null), eq(null), anyString())).thenReturn(resolvedArtifactFile);
 
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest1, manifest2);
+
         // channel order does not matter to determine the latest version
-        try (ChannelSession session = new ChannelSession(asList(channel1, channel2), factory)) {
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
             MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "foo", null, null, "1.0.0.Final");
             assertNotNull(resolvedArtifact);
             assertEquals("26.0.0.Final", resolvedArtifact.getVersion());
         }
-        try (ChannelSession session = new ChannelSession(asList(channel2, channel1), factory)) {
+
+        Collections.reverse(channels);
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
             MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "foo", null, null, "1.0.0.Final");
             assertNotNull(resolvedArtifact);
             assertEquals("26.0.0.Final", resolvedArtifact.getVersion());
+        }
+    }
+
+    @Test
+    public void testChannelWithLatestStrategy() throws Exception {
+        String manifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
+                                                      "streams:\n" +
+                                                      "  - groupId: org.foo\n" +
+                                                      "    artifactId: foo\n" +
+                                                      "    version: \"25.0.0.Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.LATEST, manifest);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.2.Final"))).thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.2.Final", "25.0.1.Final", "25.0.0.Final"));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final");
+            assertNotNull(resolvedArtifact);
+            assertEquals("25.0.2.Final", resolvedArtifact.getVersion());
+        }
+    }
+
+    @Test
+    public void testChannelWithLatestStrategyNoArtifact() throws Exception {
+        String manifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
+                          "streams:\n" +
+                          "  - groupId: org.foo\n" +
+                          "    artifactId: foo\n" +
+                          "    version: \"25.0.0.Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.LATEST, manifest);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of());
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
+                session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final")
+            );
+        }
+    }
+
+    @Test
+    public void testChannelWithLatestStrategyWithVersionPattern() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                          "streams:\n" +
+                          "  - groupId: org.foo\n" +
+                          "    artifactId: bar\n" +
+                          "    versionPattern: \".*Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.LATEST, manifest);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("1.0.0"));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
+               session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final")
+            );
+        }
+    }
+
+    @Test
+    public void testChannelWithMavenReleaseStrategy() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                          "streams:\n" +
+                          "  - groupId: org.foo\n" +
+                          "    artifactId: foo\n" +
+                          "    version: \"25.0.0.Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.MAVEN_RELEASE, manifest);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.getMetadataReleaseVersion(eq("org.foo"), eq("bar"))).thenReturn("25.0.1.Final");
+        when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.1.Final"))).thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.1.Final", "25.0.0.Final"));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final");
+            assertEquals("25.0.1.Final", resolvedArtifact.getVersion());
+        }
+    }
+
+    @Test
+    public void testChannelWithMavenLatestStrategy() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                          "streams:\n" +
+                          "  - groupId: org.foo\n" +
+                          "    artifactId: foo\n" +
+                          "    version: \"25.0.0.Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.MAVEN_LATEST, manifest);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.getMetadataLatestVersion(eq("org.foo"), eq("bar"))).thenReturn("25.0.1.Final");
+        when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.1.Final"))).thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.1.Final", "25.0.0.Final"));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final");
+            assertEquals("25.0.1.Final", resolvedArtifact.getVersion());
+        }
+    }
+
+    @Test
+    public void testChannelWithStrictStrategy() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                          "streams:\n" +
+                          "  - groupId: org.foo\n" +
+                          "    artifactId: foo\n" +
+                          "    version: \"25.0.0.Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.NONE, manifest);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.1.Final"))).thenReturn(resolvedArtifactFile);
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.1.Final", "25.0.0.Final"));
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
+               session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final")
+            );
+        }
+    }
+
+    @Test
+    public void testChannelWithDefaultStrategy() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                          "streams:\n" +
+                          "  - groupId: org.foo\n" +
+                          "    artifactId: foo\n" +
+                          "    version: \"25.0.0.Final\"";
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile = mock(File.class);
+
+        when(factory.create(any())).thenReturn(resolver);
+        when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("1.0.0.Final"))).thenReturn(resolvedArtifactFile);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
+                session.resolveMavenArtifact("org.foo", "bar", null, null, "1.0.0.Final")
+            );
         }
     }
 

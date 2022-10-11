@@ -25,19 +25,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.channel.ChannelRequirement;
+import org.wildfly.channel.ManifestRequirement;
 
-public class ChannelRequirementTestCase {
+public class ManifestRequirementTestCase {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
 
-    static ChannelRequirement from(String str) throws IOException {
-        return OBJECT_MAPPER.readValue(str, ChannelRequirement.class);
+    static ManifestRequirement from(String str) throws IOException {
+        return OBJECT_MAPPER.readValue(str, ManifestRequirement.class);
     }
 
     @Test
     public void testValidRequires() throws IOException {
-        ChannelRequirement requirement = from("groupId: org.foo.channels\n" +
-                "artifactId: my-other-channel");
+        ManifestRequirement requirement = from(
+                "id: test\n" +
+                "maven:\n" +
+                "  groupId: org.foo.channels\n" +
+                "  artifactId: my-other-channel");
 
         assertEquals("org.foo.channels", requirement.getGroupId());
         assertEquals("my-other-channel", requirement.getArtifactId());
@@ -48,9 +51,12 @@ public class ChannelRequirementTestCase {
 
     @Test
     public void testValidRequiresWithVersion() throws IOException {
-        ChannelRequirement requirement = from("groupId: org.foo.channels\n" +
-                "artifactId: my-other-channel\n" +
-                "version: 1.2.3.Final");
+        ManifestRequirement requirement = from(
+                "id: test\n" +
+                "maven:\n" +
+                "  groupId: org.foo.channels\n" +
+                "  artifactId: my-other-channel\n" +
+                "  version: 1.2.3.Final");
 
         assertEquals("org.foo.channels", requirement.getGroupId());
         assertEquals("my-other-channel", requirement.getArtifactId());
@@ -63,12 +69,18 @@ public class ChannelRequirementTestCase {
     public void testInvalidRequires() {
         Assertions.assertThrows(Exception.class, () -> {
             // missing artifactID
-            from("groupId: org.foo.channels");
+            from(
+                    "id:test\n" +
+                        "maven:\n" +
+                        "  groupId: org.foo.channels");
         });
 
         Assertions.assertThrows(Exception.class, () -> {
             // missing groupId
-            from("artifactId: my-other-channel");
+            from(
+                    "id:test\n" +
+                        "maven:\n" +
+                        "  artifactId: my-other-channel");
         });
     }
 }

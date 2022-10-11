@@ -1,0 +1,9 @@
+schemaVersion: "1.0.0"
+name: My Channel
+description: |-
+  This is my manifest
+  with my stuff
+streams:
+  - groupId: org.wildfly
+    artifactId: wildfly-ee-galleon-pack
+    version: 26.0.0.Final

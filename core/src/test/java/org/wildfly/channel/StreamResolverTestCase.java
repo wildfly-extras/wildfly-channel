@@ -19,7 +19,7 @@ package org.wildfly.channel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
+import static org.wildfly.channel.ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
 
 import java.util.Optional;
 
@@ -41,24 +41,24 @@ public class StreamResolverTestCase {
                 "  - groupId: io.undertow\n" +
                 "    artifactId: undertow-servlet\n" +
                 "    version: 3.0.2.Final";
-        Channel channel = ChannelMapper.fromString(yamlContent).get(0);
+        ChannelManifest manifest = ChannelManifestMapper.fromString(yamlContent);
 
-        Optional<Stream> stream = channel.findStreamFor("io.undertow", "undertow-core");
+        Optional<Stream> stream = manifest.findStreamFor("io.undertow", "undertow-core");
         assertTrue(stream.isPresent());
         assertEquals("io.undertow", stream.get().getGroupId());
         assertEquals("undertow-core", stream.get().getArtifactId());
 
-        stream = channel.findStreamFor("io.undertow", "undertow-servlet");
+        stream = manifest.findStreamFor("io.undertow", "undertow-servlet");
         assertTrue(stream.isPresent());
         assertEquals("io.undertow", stream.get().getGroupId());
         assertEquals("undertow-servlet", stream.get().getArtifactId());
 
-        stream = channel.findStreamFor("io.undertow", "undertow-websockets-jsr");
+        stream = manifest.findStreamFor("io.undertow", "undertow-websockets-jsr");
         assertTrue(stream.isPresent());
         assertEquals("io.undertow", stream.get().getGroupId());
         assertEquals("*", stream.get().getArtifactId());
 
-        stream = channel.findStreamFor("org.example", "foo");
+        stream = manifest.findStreamFor("org.example", "foo");
         assertFalse(stream.isPresent());
 
     }

@@ -18,13 +18,9 @@ package org.wildfly.channel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
 
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +28,12 @@ public class ChannelMapperTestCase {
 
     @Test
     public void testWriteReadChannel() throws Exception {
-        final Channel channel = new Channel("test_name", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
+        final Channel channel = new Channel("test_name", "test_desc",
+                new Vendor("test_vendor_name", Vendor.Support.COMMUNITY),
+                List.of(new Repository("test", "https://test.org/repository")),
+                new ChannelManifestCoordinate("test.channels", "channel"),
+                new BlocklistCoordinate("test.block", "blocklist"),
+                Channel.NoStreamStrategy.NONE);
         final String yaml = ChannelMapper.toYaml(channel);
 
         final Channel channel1 = ChannelMapper.fromString(yaml).get(0);
@@ -41,11 +42,16 @@ public class ChannelMapperTestCase {
 
     @Test
     public void testWriteMultipleChannels() throws Exception {
-        final ChannelRequirement req = new ChannelRequirement("org", "foo", "1.2.3");
-        final Stream stream1 = new Stream("org.bar", "example", "1.2.3");
-        final Stream stream2 = new Stream("org.bar", "other-example", Pattern.compile("\\.*"));
-        final Channel channel1 = new Channel("test_name_1", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Arrays.asList(req), Arrays.asList(stream1, stream2));
-        final Channel channel2 = new Channel("test_name_2", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY), Collections.emptyList(), Collections.emptyList());
+        final Channel channel1 = new Channel("test_name_1", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY),
+                List.of(new Repository("test", "https://test.org/repository")),
+                new ChannelManifestCoordinate("test.channels", "channel"),
+                new BlocklistCoordinate("test.block", "blocklist"),
+                Channel.NoStreamStrategy.NONE);
+        final Channel channel2 = new Channel("test_name_2", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY),
+                List.of(new Repository("test", "https://test.org/repository")),
+                new ChannelManifestCoordinate(new URL("http://test.channels/channels")),
+                new BlocklistCoordinate("test.block", "blocklist"),
+                Channel.NoStreamStrategy.NONE);
         final String yaml = ChannelMapper.toYaml(channel1, channel2);
 
         System.out.println(yaml);
@@ -53,8 +59,6 @@ public class ChannelMapperTestCase {
         assertEquals(2, channels.size());
         final Channel c1 = channels.get(0);
         assertEquals(channel1.getName(), c1.getName());
-        assertEquals(1, c1.getChannelRequirements().size());
-        assertEquals("foo", c1.getChannelRequirements().get(0).getArtifactId());
         final Channel c2 = channels.get(1);
         assertEquals(channel2.getName(), c2.getName());
     }
@@ -66,5 +70,37 @@ public class ChannelMapperTestCase {
 
         Channel channel = ChannelMapper.from(file);
         assertNotNull(channel);
+    }
+
+    @Test
+    public void writeChannelWithUrlBlocklist() throws Exception {
+        Channel channel = new Channel("test_name_1", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY),
+                List.of(new Repository("test", "https://test.org/repository")),
+                new ChannelManifestCoordinate("test.channels", "channel"),
+                new BlocklistCoordinate(new URL("http://test.te")),
+                Channel.NoStreamStrategy.NONE);
+
+        final String yaml = ChannelMapper.toYaml(channel);
+
+        System.out.println(yaml);
+
+        Channel readChannel = ChannelMapper.fromString(yaml).get(0);
+        assertEquals(new URL("http://test.te"), readChannel.getBlocklistCoordinate().getUrl());
+    }
+
+    @Test
+    public void writeChannelWithNoResolveStrategy() throws Exception {
+        Channel channel = new Channel("test_name_1", "test_desc", new Vendor("test_vendor_name", Vendor.Support.COMMUNITY),
+                List.of(new Repository("test", "https://test.org/repository")),
+                new ChannelManifestCoordinate("test.channels", "channel"),
+                new BlocklistCoordinate(new URL("http://test.te")),
+                Channel.NoStreamStrategy.NONE);
+
+        final String yaml = ChannelMapper.toYaml(channel);
+
+        System.out.println(yaml);
+
+        Channel readChannel = ChannelMapper.fromString(yaml).get(0);
+        assertEquals(Channel.NoStreamStrategy.NONE, readChannel.getNoStreamStrategy());
     }
 }

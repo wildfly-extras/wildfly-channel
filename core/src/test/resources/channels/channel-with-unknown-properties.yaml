@@ -1,4 +1,4 @@
-schemaVersion: "1.0.0"
+schemaVersion: "2.0.0"
 name: My Channel
 description: |-
   This is my channel
@@ -7,8 +7,11 @@ vendor:
   name: My Vendor
   support: community
 foo: not an known property
-streams:
-  - groupId: org.wildfly
-    artifactId: wildfly-ee-galleon-pack
-    version: 26.0.0.Final
-    bar: not a known property
+manifest:
+  maven:
+    groupId: test.channels
+    artifactId: channel
+  bar: not a known property
+repositories:
+  - id: test
+    url: https://test.org/repository

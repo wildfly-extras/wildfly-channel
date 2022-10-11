@@ -18,10 +18,14 @@ package org.wildfly.channel.spi;
 
 import java.io.Closeable;
 import java.io.File;
+import java.net.URL;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import org.wildfly.channel.ArtifactCoordinate;
+import org.wildfly.channel.ChannelMetadataCoordinate;
+import org.wildfly.channel.Repository;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 
 /**
@@ -70,6 +74,48 @@ public interface MavenVersionsResolver extends Closeable {
     */
    List<File> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException;
 
+   /**
+    * Resolve a list of channel metadata artifacts based on the coordinates.
+    * If the {@code ChannelMetadataCoordinate} contains non-null URL, that URL is returned.
+    * If the {@code ChannelMetadataCoordinate} contains non-null Maven coordinates, the Maven artifact will be resolved
+    * and a URL to it will be returned.
+    * If the Maven coordinates specify only groupId and artifactId, latest available version of matching Maven artifact
+    * will be resolved.
+    *
+    * The order of returned URLs is the same as order of coordinates.
+    *
+    * @param manifestCoords - list of ChannelMetadataCoordinate.
+    *
+    * @return a list of URLs to the metadata files
+    *
+    * @throws UnresolvedMavenArtifactException if any artifacts can not be resolved.
+    */
+   List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> manifestCoords) throws UnresolvedMavenArtifactException;
+
+   /**
+    * Returns the {@code <release>} version according to the repositories' Maven metadata. If multiple repositories
+    * contain the same artifact, {@link org.wildfly.channel.version.VersionMatcher#COMPARATOR} is used to choose version.
+    *
+    * @param groupId Maven GroupId - required
+    * @param artifactId Maven ArtifactId - required
+    *
+    * @return the {@code release} version.
+    * @throws UnresolvedMavenArtifactException if the metadata can not be resolved or is incomplete.
+    */
+   String getMetadataReleaseVersion(String groupId, String artifactId);
+
+   /**
+    * Returns the {@code <latest>} version according to the repositories' Maven metadata. If multiple repositories
+    * contain the same artifact, {@link org.wildfly.channel.version.VersionMatcher#COMPARATOR} is used to choose version.
+    *
+    * @param groupId Maven GroupId - required
+    * @param artifactId Maven ArtifactId - required
+    *
+    * @return the {@code latest} version.
+    * @throws UnresolvedMavenArtifactException if the metadata can not be resolved or is incomplete.
+    */
+   String getMetadataLatestVersion(String groupId, String artifactId);
+
    default void close() {
    }
 
@@ -79,11 +125,11 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * A client of this library is responsible to provide an implementation of the {@link Factory} interface.
     *
-    * The {@link #create()} method will be called once for every channel.
+    * The {@link #create(Collection)}} method will be called once for every channel.
     */
    interface Factory extends Closeable {
 
-      MavenVersionsResolver create();
+      MavenVersionsResolver create(Collection<Repository> repositories);
 
       default void close() {
       }
