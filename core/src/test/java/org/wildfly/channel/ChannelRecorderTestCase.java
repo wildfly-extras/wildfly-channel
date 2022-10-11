@@ -21,28 +21,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
+import static org.wildfly.channel.ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelRecorderTestCase {
+
+    @TempDir
+    private Path tempDir;
+
     @Test
     public void testChannelRecorder() throws IOException, UnresolvedMavenArtifactException {
 
-        List<Channel> channels = ChannelMapper.fromString("---\n" +
+        String manifest1 = "---\n" +
                 "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: org.wildfly\n" +
@@ -53,20 +59,20 @@ public class ChannelRecorderTestCase {
                 "    versionPattern: '18\\.\\d+\\.\\d+.Final'\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '2\\.\\1\\.\\d+.Final'\n" +
-                "---\n" +
-                "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "    versionPattern: '2\\.\\1\\.\\d+.Final'\n";
+
+        String manifest2 = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
                 "streams:\n" +
                 "  - groupId: io.undertow\n" +
                 "    artifactId: '*'\n" +
-                "    versionPattern: '2\\.\\d+\\.\\d+.Final'");
-        Assertions.assertNotNull(channels);
-        assertEquals(2, channels.size());
+                "    versionPattern: '2\\.\\d+\\.\\d+.Final'";
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
-        when(factory.create())
+        final List<Channel> channels = ChannelSessionTestCase.mockChannel(resolver, tempDir, manifest1, manifest2);
+
+        when(factory.create(any()))
                 .thenReturn(resolver);
         when(resolver.getAllVersions(eq("org.wildfly"), anyString(), eq(null), eq(null)))
                 .thenReturn(singleton("24.0.0.Final"));
@@ -85,10 +91,10 @@ public class ChannelRecorderTestCase {
             // This should not be recorded, size should remain 4.
             session.resolveMavenArtifact("io.undertow", "undertow-servlet", null, null, "1.0.0.Final");
 
-            Channel recordedChannel = session.getRecordedChannel();
-            System.out.println(ChannelMapper.toYaml(recordedChannel));
+            ChannelManifest recordedManifest = session.getRecordedChannel();
+            System.out.println(ChannelManifestMapper.toYaml(recordedManifest));
 
-            Collection<Stream> streams = recordedChannel.getStreams();
+            Collection<Stream> streams = recordedManifest.getStreams();
 
             assertStreamExistsFor(streams, "org.wildfly", "wildfly-ee-galleon-pack", "24.0.0.Final");
             assertStreamExistsFor(streams, "org.wildfly.core", "wildfly.core.cli", "18.0.0.Final");

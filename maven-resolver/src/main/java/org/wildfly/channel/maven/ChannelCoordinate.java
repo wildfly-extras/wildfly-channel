@@ -16,73 +16,32 @@
  */
 package org.wildfly.channel.maven;
 
-import static java.util.Objects.requireNonNull;
+import org.wildfly.channel.Channel;
+import org.wildfly.channel.ChannelMetadataCoordinate;
 
 import java.net.URL;
-import java.util.Objects;
 
 /**
  * A channel coordinate either use Maven coordinates (groupId, artifactId, version)
  * or it uses a URL from which the channel definition file can be fetched.
  */
-public class ChannelCoordinate {
-    private String groupId;
-    private String artifactId;
-    private String version;
-    // raw Channel file from an URL
-    private URL url;
+public class ChannelCoordinate extends ChannelMetadataCoordinate {
 
     // empty constructor used by the wildlfy-maven-plugin
     // through reflection
     public ChannelCoordinate() {
+        super();
     }
 
     public ChannelCoordinate(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, version, null);
-        requireNonNull(groupId);
-        requireNonNull(artifactId);
-        requireNonNull(version);
+        super(groupId, artifactId, version, Channel.CLASSIFIER, Channel.EXTENSION);
     }
 
     public ChannelCoordinate(String groupId, String artifactId) {
-        this(groupId, artifactId, null, null);
-        requireNonNull(groupId);
-        requireNonNull(artifactId);
+        super(groupId, artifactId, Channel.CLASSIFIER, Channel.EXTENSION);
     }
 
     public ChannelCoordinate(URL url) {
-        this(null, null, null, url);
-        requireNonNull(url);
-    }
-
-    private ChannelCoordinate(String groupId, String artifactId, String version, URL url) {
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.version = version;
-        this.url = url;
-    }
-
-    public URL getUrl() {
-        return url;
-    }
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public String getExtension() {
-        return "yaml";
-    }
-
-    public String getClassifier() {
-        return "channel";
+        super(url);
     }
 }

@@ -24,18 +24,16 @@ import static java.util.Objects.requireNonNull;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -47,8 +45,8 @@ import org.wildfly.channel.version.VersionMatcher;
  */
 public class Channel implements AutoCloseable {
 
-    private static final String CLASSIFIER="channel";
-    private static final String EXTENSION="yaml";
+    public static final String CLASSIFIER="channel";
+    public static final String EXTENSION="yaml";
 
     /** Version of the schema used by this channel.
      * This is a required field.
@@ -72,6 +70,7 @@ public class Channel implements AutoCloseable {
      * This is an optional field.
      */
     private final Vendor vendor;
+    private final List<Repository> repositories;
 
     /**
      * Other channels that are required by the channel.
@@ -85,28 +84,55 @@ public class Channel implements AutoCloseable {
     private List<Channel> requiredChannels = Collections.emptyList();
 
     /**
-     * Streams of components that are provided by this channel.
+     * Optional channel manifest specifying streams.
      */
-    private Set<Stream> streams;
+    private ChannelManifest channelManifest;
+
+    /**
+     * Optional coordinates (either URL or GA[V]) of a channel manifest
+     */
+    private ChannelManifestCoordinate manifestCoordinate;
 
     private MavenVersionsResolver resolver;
+
+    @JsonIgnore
+    public ChannelManifest getManifest() {
+        return channelManifest;
+    }
 
     /**
      * Representation of a Channel resource using the current schema version.
      *
-     * @see #Channel(String, String, Vendor, List, Collection)
+     * @see #Channel(String, String, Vendor, List, List, ChannelManifestCoordinate)
      */
     public Channel(String name,
                    String description,
                    Vendor vendor,
                    List<ChannelRequirement> channelRequirements,
-                   Collection<Stream> streams) {
+                   List<Repository> repositories,
+                   ChannelManifestCoordinate manifestCoordinate) {
         this(ChannelMapper.CURRENT_SCHEMA_VERSION,
                 name,
                 description,
                 vendor,
                 channelRequirements,
-                streams);
+                repositories,
+                manifestCoordinate);
+    }
+
+    Channel(String name,
+                   String description,
+                   Vendor vendor,
+                   List<ChannelRequirement> channelRequirements,
+                   ChannelManifest channelManifest) {
+        this(ChannelMapper.CURRENT_SCHEMA_VERSION,
+                name,
+                description,
+                vendor,
+                channelRequirements,
+                emptyList(),
+                null);
+        this.channelManifest = channelManifest;
     }
 
     /**
@@ -117,7 +143,6 @@ public class Channel implements AutoCloseable {
      * @param description the description of the channel - can be {@code null}
      * @param vendor the vendor of the channel - can be {@code null}
      * @param channelRequirements the required channels - cane be {@code null}
-     * @param streams the streams defined by the channel - can be {@code null}
      */
     @JsonCreator
     @JsonPropertyOrder({ "schemaVersion", "name", "description", "vendor", "requires", "streams" })
@@ -127,16 +152,16 @@ public class Channel implements AutoCloseable {
                    @JsonProperty(value = "vendor") Vendor vendor,
                    @JsonProperty(value = "requires")
                    @JsonInclude(NON_EMPTY) List<ChannelRequirement> channelRequirements,
-                   @JsonProperty(value = "streams") Collection<Stream> streams) {
+                   @JsonProperty(value = "repositories")
+                   @JsonInclude(NON_EMPTY) List<Repository> repositories,
+                   @JsonProperty(value = "manifest") ChannelManifestCoordinate manifestCoordinate) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
         this.vendor = vendor;
         this.channelRequirements = (channelRequirements != null) ? channelRequirements : emptyList();
-        this.streams = new TreeSet<>();
-        if (streams != null) {
-            this.streams.addAll(streams);
-        }
+        this.repositories = (repositories != null) ? repositories : emptyList();
+        this.manifestCoordinate = manifestCoordinate;
     }
 
     @JsonInclude
@@ -165,18 +190,29 @@ public class Channel implements AutoCloseable {
         return channelRequirements;
     }
 
-    @JsonInclude(NON_EMPTY)
-    public Collection<Stream> getStreams() {
-        return streams;
+    @JsonProperty(value = "repositories")
+    public List<Repository> getRepositories() {
+        return repositories;
     }
 
-    void addStream(Stream stream) {
-        Objects.requireNonNull(stream);
-        this.streams.add(stream);
+    @JsonProperty(value = "manifest")
+    public ChannelManifestCoordinate getManifestRef() {
+        return manifestCoordinate;
     }
 
     void init(MavenVersionsResolver.Factory factory) {
-        resolver = factory.create();
+        resolver = factory.create(repositories);
+
+        if (manifestCoordinate != null) {
+            try {
+                channelManifest = resolveManifest(manifestCoordinate);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            channelManifest = new ChannelManifest(null, null, Collections.emptyList());
+        }
+
 
         if (!channelRequirements.isEmpty()) {
             requiredChannels = new ArrayList<>();
@@ -222,6 +258,12 @@ public class Channel implements AutoCloseable {
         }
     }
 
+    private ChannelManifest resolveManifest(ChannelManifestCoordinate manifestCoordinate) throws UnresolvedMavenArtifactException, MalformedURLException {
+        return resolver.resolveChannelMetadata(List.of(manifestCoordinate))
+                .stream()
+                .map(ChannelManifestMapper::from)
+                .findFirst().orElseThrow();
+    }
 
     Optional<ResolveLatestVersionResult> resolveLatestVersion(String groupId, String artifactId, String extension, String classifier) {
         requireNonNull(groupId);
@@ -229,7 +271,7 @@ public class Channel implements AutoCloseable {
         requireNonNull(resolver);
 
         // first we find if there is a stream for that given (groupId, artifactId).
-        Optional<Stream> foundStream = findStreamFor(groupId, artifactId);
+        Optional<Stream> foundStream = channelManifest.findStreamFor(groupId, artifactId);
 
         // no stream for this artifact, let's look into the required channel
         if (!foundStream.isPresent()) {
@@ -265,6 +307,32 @@ public class Channel implements AutoCloseable {
         return Optional.empty();
     }
 
+    MavenArtifact resolveDirectMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
+        requireNonNull(groupId);
+        requireNonNull(artifactId);
+        requireNonNull(version);
+
+        File file = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
+        return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
+    }
+
+    List<MavenArtifact> resolveDirectMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+        coordinates.stream().forEach(c->{
+            requireNonNull(c.getGroupId());
+            requireNonNull(c.getArtifactId());
+            requireNonNull(c.getVersion());
+        });
+        final List<File> files = resolver.resolveArtifacts(coordinates);
+
+        final ArrayList<MavenArtifact> res = new ArrayList<>();
+        for (int i = 0; i < coordinates.size(); i++) {
+            final ArtifactCoordinate request = coordinates.get(i);
+            final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), files.get(i));
+
+            res.add(resolvedArtifact);
+        }
+        return res;
+    }
 
     static class ResolveArtifactResult {
         File file;
@@ -299,25 +367,15 @@ public class Channel implements AutoCloseable {
         return resolvedArtifacts.stream().map(f->new ResolveArtifactResult(f, this)).collect(Collectors.toList());
     }
 
-    public Optional<Stream> findStreamFor(String groupId, String artifactId) {
-        // first exact match:
-        Optional<Stream> stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals(artifactId)).findFirst();
-        if (stream.isPresent()) {
-            return stream;
-        }
-        // check if there is a stream for groupId:*
-        stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals("*")).findFirst();
-        return stream;
-    }
-
     @Override
     public String toString() {
         return "Channel{" +
+                "schemaVersion='" + schemaVersion + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", vendor=" + vendor +
                 ", channelRequirements=" + channelRequirements +
-                ", streams=" + streams +
+                ", manifestRef=" + manifestCoordinate +
                 '}';
     }
 }

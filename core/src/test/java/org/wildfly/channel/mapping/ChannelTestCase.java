@@ -18,8 +18,7 @@ package org.wildfly.channel.mapping;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.wildfly.channel.ChannelMapper.CURRENT_SCHEMA_VERSION;
+import static org.wildfly.channel.ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelRequirement;
-import org.wildfly.channel.Stream;
 import org.wildfly.channel.Vendor;
 
 public class ChannelTestCase {
@@ -91,26 +89,6 @@ public class ChannelTestCase {
 
         Collection<ChannelRequirement> requires = channel.getChannelRequirements();
         assertEquals(0, requires.size());
-
-        Collection<Stream> streams = channel.getStreams();
-        assertEquals(1, streams.size());
-        Stream stream = streams.iterator().next();
-        assertEquals("org.wildfly", stream.getGroupId());
-        assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
-        assertEquals("26.0.0.Final", stream.getVersion());
-    }
-
-    @Test
-    public void channelWithoutStreams() {
-        List<Channel> channels = ChannelMapper.fromString("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
-                "name: My Channel\n" +
-                "description: |-\n" +
-                "  This is my channel\n" +
-                "  with no stream");
-        assertEquals(1, channels.size());
-        Channel channel = channels.get(0);
-
-        assertTrue(channel.getStreams().isEmpty());
     }
 
     @Test

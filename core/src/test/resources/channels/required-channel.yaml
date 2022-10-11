@@ -1,9 +1,10 @@
-schemaVersion: "1.0.0"
+schemaVersion: "2.0.0"
 name: My Required Channel
-streams:
-  - groupId: org.example
-    artifactId: foo-bar
-    version: 1.2.0.Final
-  - groupId: org.example
-    artifactId: im-only-in-required-channel
-    version: 1.0.0.Final
+manifest:
+  maven:
+    groupId: "test.channels"
+    artifactId: "required-manifest"
+    version: "1.0.0"
+repositories:
+  - id: test
+    url: test-repository

@@ -1,0 +1,6 @@
+schemaVersion: "1.0.0"
+name: My Required Manifest 2
+streams:
+  - groupId: org.example
+    artifactId: foo-bar
+    version: 2.0.0.Final

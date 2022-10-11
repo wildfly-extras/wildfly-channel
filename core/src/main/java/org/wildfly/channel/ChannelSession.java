@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
@@ -34,7 +36,7 @@ import org.wildfly.channel.version.VersionMatcher;
 public class ChannelSession implements AutoCloseable {
     private final List<Channel> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
-    private final MavenVersionsResolver resolver;
+    private final MavenVersionsResolver combinedResolver;
 
     /**
      * Create a ChannelSession.
@@ -45,7 +47,8 @@ public class ChannelSession implements AutoCloseable {
     public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory factory) {
         requireNonNull(channels);
         requireNonNull(factory);
-        this.resolver = factory.create();
+        final Set<Repository> repositories = channels.stream().flatMap(c -> c.getRepositories().stream()).collect(Collectors.toSet());
+        this.combinedResolver = factory.create(repositories);
         this.channels = channels;
         for (Channel channel : channels) {
             channel.init(factory);
@@ -136,7 +139,7 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(artifactId);
         requireNonNull(version);
 
-        File file = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
+        File file = combinedResolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
         recorder.recordStream(groupId, artifactId, version);
         return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
     }
@@ -156,7 +159,7 @@ public class ChannelSession implements AutoCloseable {
             requireNonNull(c.getArtifactId());
             requireNonNull(c.getVersion());
         });
-        final List<File> files = resolver.resolveArtifacts(coordinates);
+        final List<File> files = combinedResolver.resolveArtifacts(coordinates);
 
         final ArrayList<MavenArtifact> res = new ArrayList<>();
         for (int i = 0; i < coordinates.size(); i++) {
@@ -190,7 +193,7 @@ public class ChannelSession implements AutoCloseable {
         for (Channel channel : channels) {
             channel.close();
         }
-        resolver.close();
+        combinedResolver.close();
     }
 
     /**
@@ -201,7 +204,7 @@ public class ChannelSession implements AutoCloseable {
      *
      * @return a synthetic Channel.
      */
-    public Channel getRecordedChannel() {
+    public ChannelManifest getRecordedChannel() {
         return recorder.getRecordedChannel();
     }
 
