@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -42,6 +43,12 @@ public class ChannelWithRequirementsTestCase {
 
     @TempDir
     private Path tempDir;
+    private static File emptyFile;
+
+    @BeforeAll
+    static void setup() throws IOException {
+        emptyFile = File.createTempFile("ChannelWithRequirementsTestCase", ".jar");
+    }
 
     /**
      * Test that newest version of required channel is used when required channel version is not specified
@@ -174,9 +181,9 @@ public class ChannelWithRequirementsTestCase {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
 
-        File resolvedArtifactFile120Final = mock(File.class);
-        File resolvedArtifactFile200Final = mock(File.class);
-        File resolvedArtifactFile100Final = mock(File.class);
+        File resolvedArtifactFile120Final = emptyFile;
+        File resolvedArtifactFile200Final = emptyFile;
+        File resolvedArtifactFile100Final = emptyFile;
 
         when(factory.create(any()))
                 .thenReturn(resolver);
@@ -322,19 +329,19 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-second-level", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-second-level", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
 
         String manifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                         "name: root level requiring manifest\n"+
@@ -465,15 +472,15 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
 
         mockManifest(resolver, resolvedRequiredManifestURL, "test.channels:required-manifest:1.0.0");
         mockManifest(resolver, resolvedRequiredManifestURL2, "test.channels:required-manifest-2:1.0.0");

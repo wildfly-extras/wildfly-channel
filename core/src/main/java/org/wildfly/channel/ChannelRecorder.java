@@ -17,13 +17,22 @@
 package org.wildfly.channel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 class ChannelRecorder {
     private ConcurrentHashMap<String, Stream> streams = new ConcurrentHashMap<>();
 
-    void recordStream(String groupId, String artifactId, String version) {
-        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null));
+    void recordStream(String groupId, String artifactId, String version, String extension, String sha1Checksum) {
+        System.out.println("groupId = " + groupId + ", artifactId = " + artifactId + ", version = " + version + ", extension = " + extension + ", sha1Checksum = " + sha1Checksum);
+        Map sha1CheckSums = new HashMap<String, String>();
+        if (extension != null) {
+            sha1CheckSums.put(extension, sha1Checksum);
+        } else {
+            sha1CheckSums.put("wth", sha1Checksum);
+        }
+        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null, sha1CheckSums));
     }
 
     ChannelManifest getRecordedChannel() {
