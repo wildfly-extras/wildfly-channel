@@ -37,38 +37,38 @@ public class ChecksumUtilTest {
     @Test()
     public void testNullFile() {
         assertThrows(Exception.class, () -> {
-            ChecksumUtil.computeSHA1(null);
+            ChecksumUtil.computeSHA256(null);
         });
     }
 
     @Test()
     public void testNonExistingFile() {
         assertThrows(Exception.class, () -> {
-            ChecksumUtil.computeSHA1(new File("this does not exist"));
+            ChecksumUtil.computeSHA256(new File("this does not exist"));
         });
     }
 
     @Test()
     public void testDirectory() {
         assertThrows(Exception.class, () -> {
-            ChecksumUtil.computeSHA1(new File(System.getProperty("user.home")));
+            ChecksumUtil.computeSHA256(new File(System.getProperty("user.home")));
         });
     }
 
     @Test()
     public void testEmptyFile() throws IOException {
         Path temp = Files.createTempFile("hello", ".txt");
-        String sha1 = ChecksumUtil.computeSHA1(temp.toFile());
-        // expected sha1 computed with sha1sum /dev/null
-        assertEquals("da39a3ee5e6b4b0d3255bfef95601890afd80709", sha1);
+        String sha256 = ChecksumUtil.computeSHA256(temp.toFile());
+        // expected sha256 computed with sha256sum /dev/null
+        assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", sha256);
     }
 
     @Test()
     public void testFileWithContent() throws IOException {
         Path temp = Files.createTempFile("hello", ".txt");
         Files.write(temp, "Hello, World".getBytes());
-        String sha1 = ChecksumUtil.computeSHA1(temp.toFile());
-        // expected sha1 computed with sha1sum
-        assertEquals("907d14fb3af2b0d4f18c2d46abe8aedce17367bd", sha1);
+        String sha256 = ChecksumUtil.computeSHA256(temp.toFile());
+        // expected sha256 computed with sha256sum
+        assertEquals("03675ac53ff9cd1535ccc7dfcdfa2c458c5218371f418dc136f2d19ac1fbe8a5", sha256);
     }
 }

@@ -202,7 +202,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = File.createTempFile("resolvedArtifactFile", ".jar");
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact("org.bar", "bar", null, null, "1.0.0.Final")).thenReturn(resolvedArtifactFile);

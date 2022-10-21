@@ -17,7 +17,7 @@
 package org.wildfly.channel;
 
 import static java.util.Objects.requireNonNull;
-import static org.wildfly.channel.ChecksumUtil.computeSHA1;
+import static org.wildfly.channel.ChecksumUtil.computeSHA256;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,31 +93,30 @@ public class ChannelSession implements AutoCloseable {
         ChannelImpl.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
         String latestVersion = result.version;
         ChannelImpl channel = result.channel;
+        Stream stream = result.stream;
 
         ChannelImpl.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
         // verify the integrity of the artifact file.
-        String sha1 = verifySHA1CheckSum(artifact.channel, artifact.file, groupId, artifactId, extension);
-        recorder.recordStream(groupId, artifactId, latestVersion, extension, sha1);
+        String sha256 = verifySHA256Checksum(stream, artifact.file, extension);
+        recorder.recordStream(groupId, artifactId, latestVersion, extension, sha256);
         return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
     }
 
-    private String verifySHA1CheckSum(ChannelImpl channel, File artifactFile, String groupId, String artifactId, String extension) {
-        Optional<Stream> stream = channel.findStreamFor(groupId, artifactId);
-        String sha1;
+    private String verifySHA256Checksum(Stream stream, File artifactFile, String extension) {
+        String sha256;
         try {
-            sha1 = computeSHA1(artifactFile);
+            sha256 = computeSHA256(artifactFile);
         } catch (IOException e) {
             throw new RuntimeException(String.format("Unable to compute the SHA-1 checksum of %s", artifactFile));
         }
-        String finalSha1 = sha1;
-        stream.ifPresent(s -> {
-            if (extension != null && s.getSha1Checksum().containsKey(extension)) {
-                String expectedSha1 = s.getSha1Checksum().get(extension);
-                if (!finalSha1.equalsIgnoreCase(expectedSha1)) {
-                    throw new RuntimeException(String.format("Integrity of the file %s is not correct, SHA-1 sum does not match (expected: %s, computed: %s)",
-                            artifactFile.getAbsolutePath(), expectedSha1, finalSha1));
-                }}});
-        return  finalSha1;
+        if (extension != null &&  stream.getsha256Checksum().containsKey(extension)) {
+            String expectedsha256 = stream.getsha256Checksum().get(extension);
+            if (!sha256.equalsIgnoreCase(expectedsha256)) {
+                throw new RuntimeException(String.format("Integrity of the file %s is not correct, SHA-1 sum does not match (expected: %s, computed: %s)",
+                        artifactFile.getAbsolutePath(), expectedsha256, sha256));
+            }
+        }
+        return sha256;
     }
 
     /**
@@ -147,7 +146,8 @@ public class ChannelSession implements AutoCloseable {
                 final ArtifactCoordinate request = requests.get(i);
                 final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), resolveArtifactResults.get(i).file);
                 // verify the integrity of the artifact file.
-                String sha1 = verifySHA1CheckSum(channel, resolvedArtifact.getFile(), resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getExtension());
+                Optional<Stream> stream = channel.findStreamFor(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId());
+                String sha1 = verifySHA256Checksum(stream.get(), resolvedArtifact.getFile(), resolvedArtifact.getExtension());
                 recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion(), resolvedArtifact.getExtension(), sha1);
                 res.add(resolvedArtifact);
             }
@@ -174,7 +174,7 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(version);
 
         File file = combinedResolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
-        recorder.recordStream(groupId, artifactId, version, extension, computeSHA1(file));
+        recorder.recordStream(groupId, artifactId, version, extension, computeSHA256(file));
         return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
     }
 
@@ -200,7 +200,7 @@ public class ChannelSession implements AutoCloseable {
             final ArtifactCoordinate request = coordinates.get(i);
             final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), files.get(i));
 
-            recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion(), resolvedArtifact.getExtension(), computeSHA1(resolvedArtifact.getFile()));
+            recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion(), resolvedArtifact.getExtension(), computeSHA256(resolvedArtifact.getFile()));
             res.add(resolvedArtifact);
         }
         return res;

@@ -24,15 +24,12 @@ import java.util.concurrent.ConcurrentHashMap;
 class ChannelRecorder {
     private ConcurrentHashMap<String, Stream> streams = new ConcurrentHashMap<>();
 
-    void recordStream(String groupId, String artifactId, String version, String extension, String sha1Checksum) {
-        System.out.println("groupId = " + groupId + ", artifactId = " + artifactId + ", version = " + version + ", extension = " + extension + ", sha1Checksum = " + sha1Checksum);
-        Map sha1CheckSums = new HashMap<String, String>();
+    void recordStream(String groupId, String artifactId, String version, String extension, String sha256Checksum) {
+        Map sha256CheckSums = new HashMap<String, String>();
         if (extension != null) {
-            sha1CheckSums.put(extension, sha1Checksum);
-        } else {
-            sha1CheckSums.put("wth", sha1Checksum);
+            sha256CheckSums.put(extension, sha256Checksum);
         }
-        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null, sha1CheckSums));
+        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null, sha256CheckSums));
     }
 
     ChannelManifest getRecordedChannel() {

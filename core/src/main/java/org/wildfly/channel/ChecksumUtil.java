@@ -30,7 +30,6 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
 
 public class ChecksumUtil {
 
@@ -48,23 +47,25 @@ public class ChecksumUtil {
 
     static {
         try {
-            digest = MessageDigest.getInstance("SHA-1");
+            digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
         }
     }
 
-    static String computeSHA1(File file) throws IOException {
+    static String computeSHA256(File file) throws IOException {
         requireNonNull(digest);
         requireNonNull(file);
 
-        try (InputStream input = new FileInputStream( file );
-             DigestInputStream digestStream = new DigestInputStream( input, digest ) ) {
-            while(digestStream.read() != -1){
-            }
+        final byte[] buffer = new byte[1024];
+
+        try (InputStream input = new FileInputStream(file);
+             DigestInputStream digestStream = new DigestInputStream(input, digest)) {
+            int num;
+            do {
+                num = digestStream.read(buffer);
+            } while (num > 0);
             MessageDigest msgDigest = digestStream.getMessageDigest();
             return bytesToHex(msgDigest.digest());
-        } finally {
-            digest.reset();
         }
     }
 }
