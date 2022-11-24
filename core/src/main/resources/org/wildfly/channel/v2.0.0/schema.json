@@ -1,0 +1,146 @@
+{
+  "$id": "https://wildfly.org/channels/v2.0.0/schema.json",
+  "$schema": "http://json-schema.org/draft/2019-09/schema#",
+  "type": "object",
+  "required": ["schemaVersion", "repositories"],
+  "properties": {
+    "schemaVersion": {
+      "description": "The version of the schema defining a channel resource.",
+      "type": "string",
+      "pattern": "^[0-9]+.[0-9]+.[0-9]+$"
+    },
+    "name": {
+      "description": "Name of the channel. This is a one-line human-readable description of the channel",
+      "type": "string"
+    },
+    "description": {
+      "description": "Description of the channel. This is a multi-lines human-readable description of the channel",
+      "type": "string"
+    },
+    "vendor": {
+      "description": "Vendor of the channel.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the vendor",
+          "type": "string"
+        },
+        "support": {
+          "description": "Support level provided by the vendor",
+          "type": "string",
+          "enum": [
+            "supported",
+            "tech-preview",
+            "community"
+          ]
+        }
+      },
+      "required": ["name", "support"]
+    },
+    "requires": {
+      "description": "Channels that are required by this channel.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "minItems": 1,
+        "properties": {
+          "groupId": {
+            "description": "GroupID Maven coordinate of the channel",
+            "type": "string"
+          },
+          "artifactId": {
+            "description": "ArtifactID Maven coordinate of the channel",
+            "type": "string"
+          },
+          "version": {
+            "description": "Version Maven coordinate of the channel",
+            "type": "string"
+          }
+        },
+        "required": ["groupId", "artifactId"]
+      }
+    },
+    "repositories": {
+      "description": "Repositories the channel uses to resolve it's streams.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Id of the repository",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL of the repository",
+            "type": "string"
+          }
+        },
+        "required": ["id", "url"]
+      }
+    },
+    "manifest": {
+      "description": "Location of the channel's manifest",
+      "type": "object",
+      "properties": {
+        "gav": {
+          "description": "Maven coordinates of the manifest in format of 'groupId:artifactId[:version]'",
+          "type": "string"
+        },
+        "url": {
+          "description": "Static URL of the manifest file.",
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "gav"
+          ]
+        },
+        {
+          "required": [
+            "url"
+          ]
+        }
+      ]
+    },
+    "blocklist": {
+      "description": "Location of the channel's blocklist",
+      "type": "object",
+      "properties": {
+        "gav": {
+          "description": "Maven coordinates of the blocklist in format of 'groupId:artifactId[:version]'",
+          "type": "string"
+        },
+        "url": {
+          "description": "Static URL of the blocklist file.",
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "gav"
+          ]
+        },
+        {
+          "required": [
+            "url"
+          ]
+        }
+      ]
+    },
+    "resolves-if-no-stream": {
+      "description": "Strategy for resolving artifact versions if it is not listed in streams.",
+      "type": "string",
+      "enum": [
+        "latest",
+        "maven-latest",
+        "maven-release",
+        "none",
+        "original"
+      ]
+    }
+  }
+}

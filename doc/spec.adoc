@@ -5,7 +5,9 @@
 
 [cols="1,1"]
 |===
-| Schema Version | 1.0.0 |
+| Channel schema Version | 2.0.0
+| Manifest schema Version | 1.0.0
+| Blocklist schema Version | 1.0.0
 |===
 
 ### Summary
@@ -40,6 +42,8 @@ Backwards compatibility is only guaranteed inside a single channel. If an instal
 
 ## Channel Model
 
+Channel combines a Channel Manifest defining content of channel, one or more Repositories from which the content can be resolved and an optional Blocklist Manifest.
+
 A channel is composed of several fields:
 
 * An optional `name` that is a human-readable one-line description of the channel (`Channel for WildFly 27`)
@@ -55,6 +59,28 @@ This field can be used for layered products to enforce their dependencies so tha
 Each element is composed of:
 ** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the required channel.
 ** Optional `version` to stick to a given channel version (instead of requiring the latest version of that channel). In the absence of this `version`, the latest version of the channel will be determined based on the Maven repository metadata.
+* A collection of `repositories` that defines repositories associated with the channel. Only listed repositories are used to resolve channel's components. Each repository is composed of:
+** A required `id` that defines the repository name used in Maven cache
+** A required `url` pointing to a default Maven repository
+* Optional `manifest` corresponding to the Channel Manifest artefact. Channel Manifest is used to define streams available in the channel.
+** One of the following, mutually exclusive fields, used to resolve the Channel Manifest:
+*** `gav` corresponds to Maven coordinates of the Manifest. It can either use format of `groupId:artifactId` (resulting in the latest available version being used) or `groupId:artifactId:version` (resulting in concrete version being used)
+*** `url` corresponding to a static URL where the manifest file can be found.
+* Optional `blocklist` corresponding to the Blocklist artefact. Blocklist is used to define versions of artifacts excluded from a channel.
+** One of the following, mutually exclusive fields, used to resolve the Blocklist:
+*** `gav` corresponds to Maven coordinates of the Manifest. It can either use format of `groupId:artifactId` (resulting in the latest available version being used) or `groupId:artifactId:version` (resulting in concrete version being used)
+*** `url` corresponding to a static URL where the manifest file can be found.
+* An optional `resolves-if-no-stream` that defines strategy for version resolution if the artifact has not been found in the `streams` collection. Allowed values are:
+** `original` - fallback to the `baseVersion` provided when querying the channel. Default value if no strategy is provided.
+** `latest` - use the latest version found in the Maven repositories
+** `maven-latest` - a version marked as `latest` in the Maven metadata
+** `maven-release` - a version marked as `release` in the Maven metadata
+** `none` - do not attempt to resolve versions of artifact not listed in the `streams` collection
+
+A Channel Manifest is composed of following fields:
+
+* An optional `name` that is a human-readable one-line description of the channel (`Channel for WildFly 27`)
+* An optional `description` that provides human-readable description of the channel
 * A collection of `streams` that defines all the components installable from this channel. Each stream is composed of:
 ** A required `groupId` that corresponds to Maven GroupId to pull artifacts (it is not allowed to specify `*` for the groupId).
 ** A required `artifactId` that corresponds to Maven ArtifactId to pull artifacts. Special syntax `*` can be used to match _any_ artifactId.
@@ -69,37 +95,58 @@ A channel does not provide any default streams.
 
 ## Channel Schema
 
-A JSON Schema is provided to validate that channels comply with the model described above.
+JSON Schemas are provided to validate that channels and manifests comply with the model described above.
 
 ## Channel Representation
 
-A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/v1.0.0./schema.json[corresponding JSON schema] to validate its structure.
+A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/v2.0.0./schema.json[corresponding JSON schema] to validate its structure.
+
+A manifest is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/manifest/v1.0.0./schema.json[corresponding JSON schema] to validate its structure.
+
+A blocklist is specified in the YAML language with a link:.
+./core/src/main/resources/org/wildfly/blocklist/v1.0.0./schema.json[corresponding JSON schema] to validate its structure.
 
 ### Channel Actions and Responsibilities
 
 #### Create a channel
 
-A Channel is a single file that complies with the channel YAML representation.
-Creating a channel corresponds to the creation of such a file.
+A minimal Channel definition is a single file that complies with the channel YAML representation. The Channel definition may reference two additional resources: a Manifest file and a Blocklist file.
+
+Creating a channel corresponds to the creation of the above files.
 
 #### Publish a channel
-A channel must be “published” so that it can be read (or downloaded) by WildFly provisioning tooling. 
-Channels are published as a Maven artifact with the the classifier `channel` and extension/type `yaml`.
+A channel may be “published” so that it can be read (or downloaded) by WildFly provisioning tooling.
+Channels are published as a Maven artifact with the classifier `channel` and extension/type `yaml`.
+
+Manifest and Blocklist files must be "published" in one of the repositories defined in the Channel so that the Channel is able to resolve them.
+
+Manifests are published as Maven artifacts with the classifier `manifest` and extension/type `yaml`.
+
+Blocklists are published as Maven artifacts with the classifier `blocklist` and extension/type `yaml`. The manifest needs to be published in one of the repositories defined in the channel.
 
 #### Update a channel
 
-A channel definition can be updated to add or modify streams, change its requirements, etc.
-A new version of the channel must be published before it can be consumed.
+A channel definition and manifest can be updated to add or modify streams, change its requirements, etc. Each of the channel files can be updated independently of each other.
+
+To update a channel file, it needs to be published with a new version.
 
 #### Consume a channel
 The main consumers of WildFly Channels are the provisioning tooling provided by the WildFly project.
 
 They consume channels by pulling the channel artifact corresponding to the `groupId`/`artifactId` of a channel. If a `version` is specified, the channel corresponding to that version is pulled. Otherwise, the latest version of the channel is determined based on the Maven metadata from the repository that hosts the channel artifacts.
 
+#### Resolving channel manifest
+
+The manifest is resolved when a channel is initialized. The channel can omit the manifest definition in which case the `resolve-if-no-stream` strategy will be used to find artifacts.
+
+If the channel defines a manifest using URL, the manifest will be read from that location. If instead GAV is used the specified version of manifest is resolved from channel's repositories. If only `groupId` and `artifactId` is provided, the latest available version of the channel manifest will be used.
+
+If the chanel defines a manifest, but no manifest can be resolved (using either URL or GA[V]), an error will be thrown.
+
 ### Maven Artifact resolution
 
 A Maven artifact can be resolved through a channel.
-Such a resolution will use the Maven repositories configured by the provisioning tool.
+Such a resolution will use the Maven repositories defined within the channel. If a channel `requires` a different channel, the required channel will use the repositories from its own definition.
 
 The channels will be searched for a stream that matches the `groupId`/`artifactId` of the artifact.
 
@@ -109,14 +156,59 @@ If channel does not directly define a stream, required channels will be searched
 
 If multiple channels are defined, the latest version from any channel that defines the stream (directly or through required channels) is used.
 
-If no stream that matches the artifact have been found, an error is returned to the caller.
+If no stream that matches the artifact have been found, version is resolved using fallback strategy defined in `resolves-if-no-stream` for the channel.
+An error is returned to the caller if
+* the fallback strategy is `none`
+* the fallback strategy is `latest`, `maven-latest` or `maven-release` but underlying Maven repository contains no metadata for artifacts with required `groupId` and `artifactId`
 
 If the stream defines a `version`, the artifact will be resolved based on this version. If that version of the artifact can not be pulled
 from the Maven repositories, an error is returned to the caller.
 If the stream defines a `versionPattern`, the version will be determined by querying the version of the artifacts from the
 Maven repositories and use the latest version that matches the pattern. If no version matches the pattern, an error is returned to the caller.
 
+#### Maven repository proxies
+
+A channel defines repositories using their `id` and a default `url`. When creating the channel from definition the provisioning tool can replace the provided `url` with URL of a proxy server or an alternative repository. The `id` of the repository must not be changed.
+
+### Blocking artifact versions
+When using an open channel, a situation may arise where certain artifacts are promoted to the channel and later discovered to be invalid. As it’s impossible to remove artifacts already deployed into a repository, those versions have to blocklisted.
+The blocklist is a separate YAML artifact included in the channel itself. When channel resolves the blacklist artifact, it will always resolve the latest available version. Any changes to the blocked artifact versions can be done independently of channel changes.
+#### Format
+The blocklist file contains a list of stream GAVs with multiple versions:
+```
+---
+exclusions:
+- groupId: io.undertow
+artifactId: undertow-core
+versions: [2.2.18.Final, 2.2.17.Final]
+…
+```
+The artifactId can use a wildcard syntax to refer to all the artifacts with the same groupId
+```
+---
+exclusions:
+- groupId: io.undertow
+artifactId: “*”
+versions: [2.2.18.Final, 2.2.17.Final]
+```
+
+#### Resolving channel blocklist
+
+The blocklist is resolved when a channel is initialized. If no blocklist artifact can be resolved with supplied GAVs, the channel treats it as an empty blocklist.
+A blocklist applies only to the channel that defined it, not its required channels.
+
+#### Resolving artifact version
+
+During artifact version resolution, a stream matching artifact GA is located in the channel. If the stream uses concrete versions, that version of the artifact is resolved and returned to the user.
+If the stream uses `versionPattern`, the blocklist is checked for excluded versions. The excluded versions are removed from the set of available artifact versions before the latest remaining version matching the stream’s pattern is used to resolve the artifact.
+If the blocklist excludes all available artifact versions, `UnresolvedMavenArtifactException` is thrown.
+The blocklist is ignored when using `resolveDirectMavenArtifact` method.
+
 ### Changelog
+
+### Version 2.0.0
+
+* Introduction of the Channel Manifest
 
 ### Version 1.0.0
 
