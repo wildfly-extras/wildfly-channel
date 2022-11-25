@@ -44,6 +44,8 @@ Backwards compatibility is only guaranteed inside a single channel. If an instal
 
 Channel combines a Channel Manifest defining content of channel, one or more Repositories from which the content can be resolved and an optional Blocklist Manifest.
 
+
+### Channel definition
 A channel is composed of several fields:
 
 * An optional `name` that is a human-readable one-line description of the channel (`Channel for WildFly 27`)
@@ -62,24 +64,29 @@ Each element is composed of:
 * A collection of `repositories` that defines repositories associated with the channel. Only listed repositories are used to resolve channel's components. Each repository is composed of:
 ** A required `id` that defines the repository name used in Maven cache
 ** A required `url` pointing to a default Maven repository
-* Optional `manifest` corresponding to the Channel Manifest artefact. Channel Manifest is used to define streams available in the channel.
+* Optional `manifest` corresponding to the Channel Manifest artifact. Channel Manifest is used to define streams available in the channel.
 ** One of the following, mutually exclusive fields, used to resolve the Channel Manifest:
-*** `gav` corresponds to Maven coordinates of the Manifest. It can either use format of `groupId:artifactId` (resulting in the latest available version being used) or `groupId:artifactId:version` (resulting in concrete version being used)
-*** `url` corresponding to a static URL where the manifest file can be found.
-* Optional `blocklist` corresponding to the Blocklist artefact. Blocklist is used to define versions of artifacts excluded from a channel.
+*** `maven` corresponds to Maven coordinates of the Manifest. It's composed of:
+**** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the manifest.
+**** Optional `version` to stick to a given manifest version (instead of requiring the latest version of that manifest). In the absence of this `version`, the latest version of the manifest will be determined based on the Maven repository metadata (see <<Component Version>>).
+*** `url` corresponding to a URL where the manifest file can be found.
+* Optional `blocklist` corresponding to the Blocklist artifact. Blocklist is used to define versions of artifacts excluded from a channel.
 ** One of the following, mutually exclusive fields, used to resolve the Blocklist:
-*** `gav` corresponds to Maven coordinates of the Manifest. It can either use format of `groupId:artifactId` (resulting in the latest available version being used) or `groupId:artifactId:version` (resulting in concrete version being used)
-*** `url` corresponding to a static URL where the manifest file can be found.
-* An optional `resolves-if-no-stream` that defines strategy for version resolution if the artifact has not been found in the `streams` collection. Allowed values are:
+*** `maven` corresponds to Maven coordinates of the Blocklist. It's composed of:
+**** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the blocklist.
+**** Optional `version` to stick to a given blocklist version (instead of requiring the latest version of that blocklist). In the absence of this `version`, the latest version of the blocklist will be determined based on the Maven repository metadata (see <<Component Version>>).
+*** `url` corresponding to a URL where the blocklist file can be found.
+* An optional `resolve-if-no-stream` that defines strategy for version resolution if the artifact has not been found in the `streams` collection or if the channel didn't declare a manifest. Allowed values are:
 ** `original` - fallback to the `baseVersion` provided when querying the channel. Default value if no strategy is provided.
-** `latest` - use the latest version found in the Maven repositories
+** `latest` - use the latest version found in the Maven repositories (using mechanism described in <<Component Version>>)
 ** `maven-latest` - a version marked as `latest` in the Maven metadata
 ** `maven-release` - a version marked as `release` in the Maven metadata
 ** `none` - do not attempt to resolve versions of artifact not listed in the `streams` collection
 
+### Manifest definition
 A Channel Manifest is composed of following fields:
 
-* An optional `name` that is a human-readable one-line description of the channel (`Channel for WildFly 27`)
+* An optional `name` that is a human-readable one-line description of the channel (`manifest for WildFly 27`)
 * An optional `description` that provides human-readable description of the channel
 * A collection of `streams` that defines all the components installable from this channel. Each stream is composed of:
 ** A required `groupId` that corresponds to Maven GroupId to pull artifacts (it is not allowed to specify `*` for the groupId).
@@ -88,10 +95,11 @@ A Channel Manifest is composed of following fields:
 *** `versionPattern` corresponds to a Pattern through which the available versions are matched (e.g. `2\.2\..*`)
 *** `version` corresponds to a single version (e.g. `2.2.Final`)
 
-A channel does not define the Maven repositories that contain the resolved Maven artifacts from any of its streams.
-It is up to the provisioning tooling to properly configure the required Maven repositories.
-
-A channel does not provide any default streams.
+### Blocklist definition
+* A collection of `blocks` that defines all the component versions excluded from version resolution. Each exclusion is composed of:
+** A required `groupId` that corresponds to Maven GroupId of the excluded artifacts (it is not allowed to specify `*` for the groupId).
+** A required `artifactId` that corresponds to Maven ArtifactId of the excluded artifacts. Special syntax `*` can be used to match _any_ artifactId.
+** A required list of `versions` corresponding to excluded version (e.g. `[2.2.Final, 2.2.1.Final]`)
 
 ## Channel Schema
 
@@ -118,11 +126,11 @@ Creating a channel corresponds to the creation of the above files.
 A channel may be “published” so that it can be read (or downloaded) by WildFly provisioning tooling.
 Channels are published as a Maven artifact with the classifier `channel` and extension/type `yaml`.
 
-Manifest and Blocklist files must be "published" in one of the repositories defined in the Channel so that the Channel is able to resolve them.
+If the Channel uses maven coordinates to reference Manifest and/or Blocklist, those files must be "published" in one of the repositories defined in the Channel so that the Channel is able to resolve them. Otherwise, those files must be made available at the URLs defined by the Channel.
 
-Manifests are published as Maven artifacts with the classifier `manifest` and extension/type `yaml`.
+When manifests are published as Maven artifacts, they must use the classifier `manifest` and extension/type `yaml`.
 
-Blocklists are published as Maven artifacts with the classifier `blocklist` and extension/type `yaml`. The manifest needs to be published in one of the repositories defined in the channel.
+When blocklists are published as Maven artifacts, they must use the classifier `blocklist` and extension/type `yaml`.
 
 #### Update a channel
 
@@ -137,9 +145,9 @@ They consume channels by pulling the channel artifact corresponding to the `grou
 
 #### Resolving channel manifest
 
-The manifest is resolved when a channel is initialized. The channel can omit the manifest definition in which case the `resolve-if-no-stream` strategy will be used to find artifacts.
+The manifest is resolved when a channel is initialized. The channel can omit the manifest definition in which case the `resolve-if-no-stream` strategy will be used to resolve artifacts.
 
-If the channel defines a manifest using URL, the manifest will be read from that location. If instead GAV is used the specified version of manifest is resolved from channel's repositories. If only `groupId` and `artifactId` is provided, the latest available version of the channel manifest will be used.
+If the channel defines a manifest using URL, the manifest will be read from that location. If instead maven coordinates are used, the specified version of manifest is resolved from the channel's repositories. If only `groupId` and `artifactId` is provided, the latest available version of the channel manifest (as defined in <<Component Version>>) will be used.
 
 If the chanel defines a manifest, but no manifest can be resolved (using either URL or GA[V]), an error will be thrown.
 
@@ -156,8 +164,9 @@ If channel does not directly define a stream, required channels will be searched
 
 If multiple channels are defined, the latest version from any channel that defines the stream (directly or through required channels) is used.
 
-If no stream that matches the artifact have been found, version is resolved using fallback strategy defined in `resolves-if-no-stream` for the channel.
+If no stream that matches the artifact have been found, version is resolved using fallback strategy defined in `resolve-if-no-stream` for the channel.
 An error is returned to the caller if
+
 * the fallback strategy is `none`
 * the fallback strategy is `latest`, `maven-latest` or `maven-release` but underlying Maven repository contains no metadata for artifacts with required `groupId` and `artifactId`
 
@@ -172,29 +181,38 @@ A channel defines repositories using their `id` and a default `url`. When creati
 
 ### Blocking artifact versions
 When using an open channel, a situation may arise where certain artifacts are promoted to the channel and later discovered to be invalid. As it’s impossible to remove artifacts already deployed into a repository, those versions have to blocklisted.
-The blocklist is a separate YAML artifact included in the channel itself. When channel resolves the blacklist artifact, it will always resolve the latest available version. Any changes to the blocked artifact versions can be done independently of channel changes.
+
 #### Format
-The blocklist file contains a list of stream GAVs with multiple versions:
+The blocklist file contains a list of stream Maven coordinates with multiple versions:
 ```
 ---
-exclusions:
+blocks:
 - groupId: io.undertow
-artifactId: undertow-core
-versions: [2.2.18.Final, 2.2.17.Final]
+  artifactId: undertow-core
+  versions:
+  - 2.2.18.Final
+  - 2.2.17.Final
 …
 ```
 The artifactId can use a wildcard syntax to refer to all the artifacts with the same groupId
 ```
 ---
-exclusions:
+blocks:
 - groupId: io.undertow
-artifactId: “*”
-versions: [2.2.18.Final, 2.2.17.Final]
+  artifactId: “*”
+  versions:
+  - 2.2.18.Final
+  - 2.2.17.Final
 ```
 
 #### Resolving channel blocklist
 
-The blocklist is resolved when a channel is initialized. If no blocklist artifact can be resolved with supplied GAVs, the channel treats it as an empty blocklist.
+The blocklist is resolved when a channel is initialized.
+
+If the channel defines a blocklist using URL, the blocklist will be read from that location. If instead maven coordinates are used, the specified version of manifest is resolved from the channel's repositories. If only `groupId` and `artifactId` is provided, the latest available version of the blocklist (as defined in <<Component Version>>) will be used.
+
+If no blocklist artifact can be resolved with supplied Maven coordinates, the channel treats it as an empty blocklist.
+
 A blocklist applies only to the channel that defined it, not its required channels.
 
 #### Resolving artifact version
@@ -208,7 +226,7 @@ The blocklist is ignored when using `resolveDirectMavenArtifact` method.
 
 ### Version 2.0.0
 
-* Introduction of the Channel Manifest
+* Introduction of the Channel Manifest and Blocklist
 
 ### Version 1.0.0
 
