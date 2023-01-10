@@ -27,7 +27,7 @@
         <version.com.fasterxml.jackson>2.14.0</version.com.fasterxml.jackson>
         <version.com.fasterxml.jackson.databind>2.14.0</version.com.fasterxml.jackson.databind>
         <version.com.networknt.json-schema-validator>1.0.73</version.com.networknt.json-schema-validator>
-        <version.junit5>5.9.1</version.junit5>
+        <version.junit5>5.9.2</version.junit5>
         <version.org.jboss.logging>3.5.0.Final</version.org.jboss.logging>
         <version.release.plugin>2.5.3</version.release.plugin>
         <version.aether-api>1.1.0</version.aether-api>
