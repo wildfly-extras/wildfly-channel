@@ -47,8 +47,7 @@ public class Stream implements Comparable<Stream> {
 
     /**
      * Version of the stream.
-     * This must be either a single version (e.g. "1.0.0.Final") or a list of comma-separated versions
-     * (e.g. "1.0.0.Final, 1.0.1.Final, 1.1.0.Final")
+     * This must be a single version (e.g. "1.0.0.Final").
      *
      * Only one of {@code version}, {@code versionPattern} must be set.
      */

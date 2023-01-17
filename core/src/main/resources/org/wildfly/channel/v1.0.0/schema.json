@@ -76,7 +76,7 @@
             "type": "string"
           },
           "version" : {
-            "description": "Version of the stream. This must be either a single version. Only one of version, versionPattern must be set.",
+            "description": "Version of the stream. This must be a single version. Only one of version, versionPattern must be set.",
             "type": "string"
           },
           "versionPattern" : {
