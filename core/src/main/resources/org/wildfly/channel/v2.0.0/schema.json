@@ -37,29 +37,6 @@
       },
       "required": ["name", "support"]
     },
-    "requires": {
-      "description": "Channels that are required by this channel.",
-      "type": "array",
-      "items": {
-        "type": "object",
-        "minItems": 1,
-        "properties": {
-          "groupId": {
-            "description": "GroupID Maven coordinate of the channel",
-            "type": "string"
-          },
-          "artifactId": {
-            "description": "ArtifactID Maven coordinate of the channel",
-            "type": "string"
-          },
-          "version": {
-            "description": "Version Maven coordinate of the channel",
-            "type": "string"
-          }
-        },
-        "required": ["groupId", "artifactId"]
-      }
-    },
     "repositories": {
       "description": "Repositories the channel uses to resolve its streams.",
       "type": "array",

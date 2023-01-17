@@ -56,11 +56,6 @@ A channel is composed of several fields:
 *** `supported` - Components provided by this channel are supported by the vendor. Some features provided by this channel can still be considered as tech-preview.
 *** `tech-preview` - Feature provided by this channel are Tech Preview by the vendor
 *** `community` - Components provided by this channel are a community effort  from the vendor
-* A collection of `requires`. Each element of that list corresponds to another channel that is required to provision components from this channel.
-This field can be used for layered products to enforce their dependencies so that the installation only need to update the top level channel to get updates from all required channels.
-Each element is composed of:
-** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the required channel.
-** Optional `version` to stick to a given channel version (instead of requiring the latest version of that channel). In the absence of this `version`, the latest version of the channel will be determined based on the Maven repository metadata.
 * A collection of `repositories` that defines repositories associated with the channel. Only listed repositories are used to resolve channel's components. Each repository is composed of:
 ** A required `id` that defines the repository name used in Maven cache
 ** A required `url` pointing to a default Maven repository
@@ -87,7 +82,15 @@ Each element is composed of:
 A Channel Manifest is composed of following fields:
 
 * An optional `name` that is a human-readable one-line description of the channel (`manifest for WildFly 27`)
+* An optional `id` element that is used to identify channel.
 * An optional `description` that provides human-readable description of the channel
+* A collection of `requires`. Each element of that list corresponds to another channel that is required to provision components from this channel.
+This field can be used for layered products to enforce their dependencies so that the installation only need to update the top level channel to get updates from all required channels.
+Each element is composed of:
+** Mandatory `id` element corresponding to the ID of required manifest.
+** Optional `maven` element representing Maven coordinates the required manifest is published at.
+*** Mandatory `groupId` and `artifactId` elements.
+*** Optional `version` to stick to a given manifest version (instead of requiring the latest version of that manifest). In the absence of this `version`, the latest version of the manifest will be determined based on the Maven repository metadata.
 * A collection of `streams` that defines all the components installable from this channel. Each stream is composed of:
 ** A required `groupId` that corresponds to Maven GroupId to pull artifacts (it is not allowed to specify `*` for the groupId).
 ** A required `artifactId` that corresponds to Maven ArtifactId to pull artifacts. Special syntax `*` can be used to match _any_ artifactId.
@@ -151,6 +154,18 @@ If the channel defines a manifest using URL, the manifest will be read from that
 
 If the chanel defines a manifest, but no manifest can be resolved (using either URL or GA[V]), an error will be thrown.
 
+#### Resolving required channels
+
+Required channels are identified by their manifests' ID. When a channel is initialized, required channels' IDs are collected from the channel's manifest. If multiple channels are defined, the IDs are first resolved from the list of channels.
+
+If an ID cannot be resolved in this way, and the requirement provides `maven` element, a resolution will be attempted using provided maven coordinates. The parent channel's repositories will be used to resolve the new manifest and the created channel will inherit repository settings from the parent channel.
+
+If the resolution cannot be achieved, an error will be thrown.
+
+If the required channels form a cycle, an error will be thrown.
+
+If the set of channels contains non-unique manifest IDs, an error will be thrown.
+
 ### Maven Artifact resolution
 
 A Maven artifact can be resolved through a channel.
@@ -162,7 +177,7 @@ If a channel directly defines a stream that matches the groupId/artifactId of th
 
 If channel does not directly define a stream, required channels will be searched. The latest version of the stream found in the required channels will be used.
 
-If multiple channels are defined, the latest version from any channel that defines the stream (directly or through required channels) is used.
+If multiple channels are defined, the latest version from any channel that defines the stream (directly or through required channels) is used. Channel which manifests are `required` by another channel, are excluded from a direct search.
 
 If no stream that matches the artifact have been found, version is resolved using fallback strategy defined in `resolve-if-no-stream` for the channel.
 An error is returned to the caller if
