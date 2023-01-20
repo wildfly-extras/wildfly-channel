@@ -198,7 +198,7 @@ public class Channel implements AutoCloseable {
                 requiredChannel.init(factory);
                 requiredChannels.add(requiredChannel);
             } catch (UnresolvedMavenArtifactException | MalformedURLException e) {
-                throw new RuntimeException(String.format("Unable to resolve required channel %s:%s", groupId, artifactId, version));
+                throw new RuntimeException(String.format("Unable to resolve required channel %s:%s:%s", groupId, artifactId, version));
             }
         }
     }
