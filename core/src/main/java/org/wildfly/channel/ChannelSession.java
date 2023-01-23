@@ -107,12 +107,12 @@ public class ChannelSession implements AutoCloseable {
         try {
             sha256 = computeSHA256(artifactFile);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Unable to compute the SHA-1 checksum of %s", artifactFile));
+            throw new RuntimeException(String.format("Unable to compute the SHA-256 checksum of %s", artifactFile));
         }
         if (extension != null &&  stream.getsha256Checksum().containsKey(extension)) {
             String expectedsha256 = stream.getsha256Checksum().get(extension);
             if (!sha256.equalsIgnoreCase(expectedsha256)) {
-                throw new RuntimeException(String.format("Integrity of the file %s is not correct, SHA-1 sum does not match (expected: %s, computed: %s)",
+                throw new RuntimeException(String.format("Integrity of the file %s is not correct, SHA-256 sum does not match (expected: %s, computed: %s)",
                         artifactFile.getAbsolutePath(), expectedsha256, sha256));
             }
         }
@@ -146,7 +146,7 @@ public class ChannelSession implements AutoCloseable {
                 final ArtifactCoordinate request = requests.get(i);
                 final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), resolveArtifactResults.get(i).file);
                 // verify the integrity of the artifact file.
-                Optional<Stream> stream = channel.findStreamFor(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId());
+                Optional<Stream > stream = channel.getManifest().findStreamFor(request.getGroupId(), request.getArtifactId());
                 String sha1 = verifySHA256Checksum(stream.get(), resolvedArtifact.getFile(), resolvedArtifact.getExtension());
                 recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion(), resolvedArtifact.getExtension(), sha1);
                 res.add(resolvedArtifact);

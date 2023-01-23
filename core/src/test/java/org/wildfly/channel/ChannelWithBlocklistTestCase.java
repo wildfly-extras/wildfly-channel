@@ -17,6 +17,7 @@
 package org.wildfly.channel;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -50,6 +52,12 @@ public class ChannelWithBlocklistTestCase {
 
     @TempDir
     private Path tempDir;
+    private static File emptyFile;
+
+    @BeforeAll
+    static void setup() throws IOException {
+        emptyFile = File.createTempFile("ChannelWithRequirementsTestCase", ".jar");
+    }
 
     @Test
     public void testFindLatestMavenArtifactVersion() throws Exception {
@@ -269,7 +277,7 @@ public class ChannelWithBlocklistTestCase {
         when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(new HashSet<>(Set.of("25.0.0.Final", "25.0.1.Final")));
@@ -375,8 +383,8 @@ public class ChannelWithBlocklistTestCase {
         when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
-        File resolvedArtifactFile1 = mock(File.class);
-        File resolvedArtifactFile2 = mock(File.class);
+        File resolvedArtifactFile1 = emptyFile;
+        File resolvedArtifactFile2 = emptyFile;
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(new HashSet<>(Set.of("25.0.1.Final","25.0.0.Final")));

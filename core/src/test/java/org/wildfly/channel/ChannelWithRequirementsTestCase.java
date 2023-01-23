@@ -60,7 +60,7 @@ public class ChannelWithRequirementsTestCase {
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
 
@@ -120,7 +120,7 @@ public class ChannelWithRequirementsTestCase {
 
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
 
@@ -584,7 +584,7 @@ public class ChannelWithRequirementsTestCase {
 
         // the default strategy is ORIGINAL
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
         when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))))

@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.BeforeAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -41,7 +42,12 @@ import static org.mockito.Mockito.when;
 public class ChannelSessionInitTestCase {
     @TempDir
     private Path tempDir;
+    private static File emptyFile;
 
+    @BeforeAll
+    static void setup() throws IOException {
+        emptyFile = File.createTempFile("ChannelWithRequirementsTestCase", ".jar");
+    }
     /*
      * Verify that a manifest required by ID is resolved from a list of channels
      */
@@ -52,7 +58,7 @@ public class ChannelSessionInitTestCase {
         when(factory.create(any())).thenReturn(resolver);
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
 
         final ChannelManifest requiredManifest = new ManifestBuilder()
                 .setId("required-manifest-one")
@@ -140,7 +146,7 @@ public class ChannelSessionInitTestCase {
         when(factory.create(any())).thenReturn(resolver);
 
         when(resolver.resolveArtifact(eq("org.example"), eq("foo-bar"), eq(null), eq(null), any()))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
 
         final ChannelManifest requiredManifest = new ManifestBuilder()
                 .setId("required-manifest-one")

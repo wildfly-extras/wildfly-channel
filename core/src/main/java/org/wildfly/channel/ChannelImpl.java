@@ -180,10 +180,11 @@ class ChannelImpl implements AutoCloseable {
     static class ResolveLatestVersionResult {
         final String version;
         final ChannelImpl channel;
-
-        ResolveLatestVersionResult(String version, ChannelImpl channel) {
+        final Stream stream;
+        ResolveLatestVersionResult(String version, ChannelImpl channel, Stream stream) {
             this.version = version;
             this.channel = channel;
+            this.stream = stream;
         }
     }
 
@@ -204,16 +205,17 @@ class ChannelImpl implements AutoCloseable {
         // no stream for this artifact, let's look into the required channel
         if (!foundStream.isPresent()) {
             // we return the latest value from the required channels
-            Map<String, ChannelImpl> foundVersions = new HashMap<>();
+            Map<String, ChannelImpl.ResolveLatestVersionResult> foundVersions = new HashMap<>();
             for (ChannelImpl requiredChannel : requiredChannels) {
                 Optional<ChannelImpl.ResolveLatestVersionResult> found = requiredChannel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
                 if (found.isPresent()) {
-                    foundVersions.put(found.get().version, found.get().channel);
+                    foundVersions.put(found.get().version, found.get());
                 }
             }
             Optional<String> foundVersionInRequiredChannels = foundVersions.keySet().stream().sorted(COMPARATOR.reversed()).findFirst();
             if (foundVersionInRequiredChannels.isPresent()) {
-                return Optional.of(new ResolveLatestVersionResult(foundVersionInRequiredChannels.get(), foundVersions.get(foundVersionInRequiredChannels.get())));
+                return Optional.of(new ResolveLatestVersionResult(foundVersionInRequiredChannels.get(), 
+                        foundVersions.get(foundVersionInRequiredChannels.get()).channel,foundVersions.get(foundVersionInRequiredChannels.get()).stream));
             }
 
             // finally try the NoStreamStrategy
@@ -222,16 +224,16 @@ class ChannelImpl implements AutoCloseable {
                     Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
                     final Optional<String> latestVersion = versions.stream().sorted(COMPARATOR.reversed()).findFirst();
                     if (latestVersion.isPresent()) {
-                        return Optional.of(new ResolveLatestVersionResult(latestVersion.get(), this));
+                        return Optional.of(new ResolveLatestVersionResult(latestVersion.get(), this, null));
                     } else {
                         return Optional.empty();
                     }
                 case MAVEN_LATEST:
                     String latestMetadataVersion = resolver.getMetadataLatestVersion(groupId, artifactId);
-                    return Optional.of(new ResolveLatestVersionResult(latestMetadataVersion, this));
+                    return Optional.of(new ResolveLatestVersionResult(latestMetadataVersion, this, null));
                 case MAVEN_RELEASE:
                     String releaseMetadataVersion = resolver.getMetadataReleaseVersion(groupId, artifactId);
-                    return Optional.of(new ResolveLatestVersionResult(releaseMetadataVersion, this));
+                    return Optional.of(new ResolveLatestVersionResult(releaseMetadataVersion, this, null));
                 default:
                     return Optional.empty();
             }
@@ -254,7 +256,7 @@ class ChannelImpl implements AutoCloseable {
         }
 
         if (foundVersion.isPresent()) {
-            return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this));
+            return Optional.of(new ResolveLatestVersionResult(foundVersion.get(), this, stream));
         }
         return Optional.empty();
     }
