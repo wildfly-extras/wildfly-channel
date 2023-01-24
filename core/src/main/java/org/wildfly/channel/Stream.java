@@ -18,10 +18,8 @@ package org.wildfly.channel;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -67,10 +65,7 @@ public class Stream implements Comparable<Stream> {
     private final Pattern versionPattern;
 
     /**
-     * VersionPattern of the stream.
-     * This is a regular expression that matches any version from this stream (e.g. "2\.2\..*").
-     *
-     * Only one of {@code version}, {@code versionPattern} must be set.
+     * Map of [classifier/]extension to SHA256 checksum.
      */
     private final Map<String, String> sha256Checksum;
 
@@ -185,7 +180,7 @@ public class Stream implements Comparable<Stream> {
                 ", version='" + version + '\'' +
                 ", versionPattern=" + versionPattern +
                 ", versionComparator=" + versionMatcher +
-                ", sha256Checksums" + sha256Checksum +
+                ", sha256Checksum" + sha256Checksum +
                 '}';
     }
 
