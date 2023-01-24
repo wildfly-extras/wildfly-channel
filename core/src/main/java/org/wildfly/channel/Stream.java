@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
 import org.wildfly.channel.version.FixedVersionMatcher;
 import org.wildfly.channel.version.VersionMatcher;
 import org.wildfly.channel.version.VersionPatternMatcher;
@@ -81,7 +82,7 @@ public class Stream implements Comparable<Stream> {
     public Stream(String groupId,
                   String artifactId,
                   String version) {
-        this(groupId, artifactId, version, null, emptyMap());
+        this(groupId, artifactId, version, null, null);
     }
 
     /**
@@ -90,7 +91,7 @@ public class Stream implements Comparable<Stream> {
     public Stream(String groupId,
                   String artifactId,
                   Pattern versionPattern) {
-        this(groupId, artifactId, null, versionPattern, emptyMap());
+        this(groupId, artifactId, null, versionPattern, null);
     }
 
     /**
@@ -114,7 +115,7 @@ public class Stream implements Comparable<Stream> {
         this.artifactId = artifactId;
         this.version = version;
         this.versionPattern = versionPattern;
-        this.sha256Checksum = sha256Checksum == null ? emptyMap() : sha256Checksum;
+        this.sha256Checksum = sha256Checksum == null ? new HashMap<>() : sha256Checksum;
         validate();
         initVersionMatcher();
     }
@@ -143,7 +144,7 @@ public class Stream implements Comparable<Stream> {
 
         if (!sha256Checksum.isEmpty() && version == null) {
             throw new IllegalArgumentException(
-                    String.format("Invalid stream. SHA-1 checksums can only be set when version is used."));
+                    String.format("Invalid stream. SHA-256 checksums can only be set when version is used."));
         }
     }
 

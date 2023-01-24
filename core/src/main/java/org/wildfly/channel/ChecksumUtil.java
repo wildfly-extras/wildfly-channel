@@ -52,7 +52,7 @@ public class ChecksumUtil {
         }
     }
 
-    static String computeSHA256(File file) throws IOException {
+    public static String computeSHA256(File file) throws IOException {
         requireNonNull(digest);
         requireNonNull(file);
 

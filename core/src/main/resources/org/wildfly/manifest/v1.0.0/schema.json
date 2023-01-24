@@ -75,6 +75,11 @@
           "versionPattern" : {
             "description": "VersionPattern of the stream. This is a regular expression that matches any version from this stream. Only one of version, versionPattern must be set.",
             "type": "string"
+          },
+          "sha256checksum" : {
+            "description": "Artifact checksums, valid only for a single version. A map of [classifier/]extension to checksum",
+            "type": "object",
+            "additionalProperties": { "type": "string" }
           }
         },
         "required": ["groupId", "artifactId"],

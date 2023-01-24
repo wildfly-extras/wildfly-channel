@@ -29,6 +29,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -82,6 +84,26 @@ public class ChannelManifestTestCase {
         Collection<Stream> streams = manifest.getStreams();
         assertEquals(1, streams.size());
         Stream stream = streams.iterator().next();
+        assertEquals("org.wildfly", stream.getGroupId());
+        assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
+        assertEquals("26.0.0.Final", stream.getVersion());
+    }
+    
+    @Test
+    public void manifesWithSha256Test() throws MalformedURLException {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        URL file = tccl.getResource("channels/sha256-manifest.yaml");
+
+        ChannelManifest manifest = ChannelManifestMapper.from(file);
+        Collection<Stream> streams = manifest.getStreams();
+        assertEquals(1, streams.size());
+        Stream stream = streams.iterator().next();
+        Map<String,String> m = new HashMap<>();
+        m.put("classifier/jar", "0");
+        m.put("jar", "1");
+        m.put("zip", "2");
+        m.put("foo", "3");
+        assertEquals(m, stream.getsha256Checksum());
         assertEquals("org.wildfly", stream.getGroupId());
         assertEquals("wildfly-ee-galleon-pack", stream.getArtifactId());
         assertEquals("26.0.0.Final", stream.getVersion());
