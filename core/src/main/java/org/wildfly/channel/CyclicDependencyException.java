@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Red Hat, Inc. and/or its affiliates
+ * Copyright 2023 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +16,8 @@
  */
 package org.wildfly.channel;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-
-class ChannelRecorder {
-    private ConcurrentHashMap<String, Stream> streams = new ConcurrentHashMap<>();
-
-    void recordStream(String groupId, String artifactId, String version) {
-        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null));
-    }
-
-    ChannelManifest getRecordedChannel() {
-        return new ChannelManifest(null, null, null, new ArrayList<Stream>(streams.values()));
+public class CyclicDependencyException extends RuntimeException {
+    public CyclicDependencyException(String msg) {
+        super(msg);
     }
 }

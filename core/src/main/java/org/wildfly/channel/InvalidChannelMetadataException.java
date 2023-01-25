@@ -18,10 +18,10 @@ package org.wildfly.channel;
 
 import java.util.List;
 
-public class InvalidChannelException extends RuntimeException {
+public class InvalidChannelMetadataException extends RuntimeException {
     private final List<String> messages;
 
-    public InvalidChannelException(String message, List<String> messages) {
+    public InvalidChannelMetadataException(String message, List<String> messages) {
         this.messages = messages;
     }
 

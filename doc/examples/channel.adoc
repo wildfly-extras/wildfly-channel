@@ -1,0 +1,161 @@
+# Example channels
+
+## Simple channel definition
+
+Open channel uses streams with version patterns and resolve-if-no-stream to define content.
+
+The first step to create a channel is the definition file:
+
+[source, yaml, title="test-channel.yaml"]
+----
+schemaVersion: "2.0.0"
+name: "test-channel"  #<1>
+resolve-if-no-stream: latest #<2>
+repositories: #<3>
+  - id: "central"
+    url: "https://repo1.maven.org/maven2/"
+----
+<1> human readable channel name
+<2> `latest` strategy means that if channel cannot find a stream matching the requested artifact, it will attempt to find the latest version in its repositories
+<3> the repository channel is allowed to use to resolve requested artifacts.
+
+In this form channel will be able to resolve any artifact in `central` repository. It will always return the "latest" available version according to rules defined in spec.
+
+## Limiting available versions
+
+In most channels, the version resolution will need to be limited in some way. Channels provide a number of mechanism to achieve that.
+
+### Streams with concrete versions
+
+If the channel should only allow one, specific version of artifact to be resolved, a new stream can be added to the manifest:
+
+[source, yaml, title="test-manifest.yaml"]
+----
+schemaVersion: "1.0.0"
+name: "test-manifest"
+streams: #<1>
+- groupId: "org.test"
+  artifactId: "artifact-one"
+  version: "1.2.3.Final"
+----
+<1> a list of curated artifact streams
+
+This manifest needs to referenced in the Channel. Let's say that to make it available, we publish it in an internal Maven repository with classifier `manifest` - e.g. as `org.test.channel:test:manifest:yaml:1.0.0.Final`. The channel definition will have to modified as follows:
+
+[source, yaml, title="test-channel.yaml"]
+----
+schemaVersion: "2.0.0"
+name: "test-channel"
+resolve-if-no-stream: latest
+manifest:
+  maven: #<1>
+    groupId: "org.test.channel"
+    artifactId: "test"
+repositories:
+  - id: "central"
+    url: "https://repo1.maven.org/maven2/"
+  - id: "internal" #<2>
+    url: "https://internal.org/repository"
+----
+<1> Instruct the channel to resolve the latest available version of `org.test.channel:test:manifest:yaml`
+<2> Add an internal maven repository to the channel
+
+Now, when resolving artifact `org.test:artifact-one`, the channel will always return version `1.2.3.Final`.
+
+For anny other artifact, the latest available version will still be resolved. Note that since a new repository was added to the channel, the artifacts will be resolved in both `central` and `internal` repository.
+
+### Streams with version patterns
+
+Sometimes the artifact version needs to be limited to a certain version range - e.g. based on a minor or a version suffix. In such cases, it might be possible to utilize streams with `versionPattern`:
+
+[source, yaml, title="test-manifest.yaml"]
+----
+schemaVersion: "1.0.0"
+name: "test-manifest"
+streams:
+  - groupId: "org.test"
+    artifactId: "artifact-one"
+    version: "1.2.3.Final"
+  - groupId: "org.test"
+    artifactId: "artifact-two"
+    versionPattern: "1.2.*" #<1>
+...
+----
+<1> allow only versions starting with "1.2" for "artifact-two"
+
+The modified `test-manifest.yaml` needs to be published with a new version - e.g. as `org.test.channel:test:manifest:yaml:1.0.1.Final`. The channel will automatically resolve the latest available version of the manifest.
+
+Assuming the Maven repositories contain two versions of the `artifact-two` - `1.2.1.Final` and `1.3.0.Final`. Because the stream allows only versions matching `1.2.*` pattern, the former version will return, even though `1.3.0.Final` would normally be considered "later".
+
+If a new version `1.2.2.Final` is added to the repository, the Channel will resolve it instead as it's considered "later" then `1.2.1.Final` and matches the version pattern.
+
+### Block versions
+
+Blocklist allows to exclude a concrete version of an artifact from resolution while maintaining the "latest" resolution strategy. To block an artifact version we need to create a new file called `test-blocklist.yaml`:
+
+[source, yaml, title="test-blocklist.yaml"]
+----
+schemaVersion: "1.0.0"
+name: "test-blocklist"
+blocks:
+  - groupId: "org.test"
+    artifactId: "artifact-three" #<1>
+    version: #<1>
+    - "1.0.1.Final"
+...
+----
+<1> if the block rules should apply to all artifact without a `groupId` a wildcard `*` can be used
+<2> the blocks list can include multiple versions of artifact
+
+Again the new file needs to published in a Maven repository, this time with classifier `blocklist` - e.g. as `org.test.channel:test:blocklist:yaml:1.0.1.Final`, and included in the channel definition:
+
+[source, yaml, title="test-channel.yaml"]
+----
+schemaVersion: "2.0.0"
+name: "test-channel"
+resolve-if-no-stream: latest
+manifest:
+  maven:
+    groupId: "org.test.channel"
+    artifactId: "test"
+blocklist:
+  maven: #<1>
+    groupId: "org.test.channel"
+    artifactId: "test"
+repositories:
+  - id: "central"
+    url: "https://repo1.maven.org/maven2/"
+  - id: "internal"
+    url: "https://internal.org/repository"
+----
+<1> added blocklist definition
+
+Let's say the Maven repositories currently contain versions 1.0.0.Final and 1.0.1.Final of `org.test.artifact-three`. When `artifact-three` is resolved from the Channel, the `1.0.1.Final` version will be blocked, and instead `1.0.0.Final` will be used.
+
+When a new version, `1.0.3.Final`, is made available, the channel will instead resolve that version and the blocklist will have no effect.
+
+## Fix manifest and blocklist versions
+
+So far the channel has been using the latest available versions of manifest and blocklist. If required this can be changed to either use a specific Maven version or a file URL:
+
+[source, yaml, title="test-channel.yaml"]
+----
+schemaVersion: "2.0.0"
+name: "test-channel"
+resolve-if-no-stream: latest
+manifest:
+  maven:
+    groupId: "org.test.channel"
+    artifactId: "test"
+    version: "1.0.1.Final" #<1>
+blocklist:
+  url: "http://internal.org/test-blocklist.yaml" #<2>
+repositories:
+  - id: "central"
+    url: "https://repo1.maven.org/maven2/"
+  - id: "internal"
+    url: "https://internal.org/repository"
+----
+<1> The channel will always use version `1.0.1.Final` of the manifest, even if newer verisons are available.
+<2> The channel will download the blocklist from `http://internal.org/test-blocklist.yaml` instead of resolving it from Maven repositories.
+

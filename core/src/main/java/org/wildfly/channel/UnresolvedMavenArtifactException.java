@@ -38,6 +38,11 @@ public class UnresolvedMavenArtifactException extends RuntimeException {
         this.unresolvedArtifacts = unresolvedArtifacts;
     }
 
+    public <E> UnresolvedMavenArtifactException(String message, Set<ArtifactCoordinate> unresolvedArtifacts) {
+        super(message);
+        this.unresolvedArtifacts = unresolvedArtifacts;
+    }
+
     public Set<ArtifactCoordinate> getUnresolvedArtifacts() {
         return unresolvedArtifacts;
     }

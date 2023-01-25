@@ -19,23 +19,37 @@ package org.wildfly.channel.maven;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.metadata.DefaultMetadata;
+import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.MetadataRequest;
+import org.eclipse.aether.resolution.MetadataResult;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
@@ -43,6 +57,8 @@ import org.eclipse.aether.version.Version;
 import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
+import org.wildfly.channel.ChannelMetadataCoordinate;
+import org.wildfly.channel.Repository;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
@@ -52,22 +68,39 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
 
     private static final Logger LOG = Logger.getLogger(VersionResolverFactory.class);
 
+    public static final RepositoryPolicy DEFAULT_REPOSITORY_POLICY = new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_ALWAYS, RepositoryPolicy.CHECKSUM_POLICY_FAIL);
+    public static final Function<Repository, RemoteRepository> DEFAULT_REPOSITORY_MAPPER = r -> new RemoteRepository.Builder(r.getId(), "default", r.getUrl())
+            .setPolicy(DEFAULT_REPOSITORY_POLICY)
+            .build();
+
     private final RepositorySystem system;
     private final RepositorySystemSession session;
-    private final List<RemoteRepository> repositories;
+    private final Function<Repository, RemoteRepository> repositoryFactory;
 
     public VersionResolverFactory(RepositorySystem system,
+                                  RepositorySystemSession session) {
+        this(system, session, DEFAULT_REPOSITORY_MAPPER);
+    }
+    public VersionResolverFactory(RepositorySystem system,
                                   RepositorySystemSession session,
-                                  List<RemoteRepository> repositories) {
+                                  Function<Repository, RemoteRepository> repositoryFactory) {
         this.system = system;
         this.session = session;
-        this.repositories = repositories;
+        this.repositoryFactory = repositoryFactory;
     }
 
     @Override
-    public MavenVersionsResolver create() {
-        MavenVersionsResolver res = new MavenResolverImpl(system, session, repositories);
-        return res;
+    public MavenVersionsResolver create(Collection<Repository> repositories) {
+        Objects.requireNonNull(repositories);
+
+        final List<RemoteRepository> mvnRepositories = repositories.stream()
+                .map(repositoryFactory::apply)
+                .collect(Collectors.toList());
+        return create(mvnRepositories);
+    }
+
+    private MavenResolverImpl create(List<RemoteRepository> mvnRepositories) {
+        return new MavenResolverImpl(system, session, mvnRepositories);
     }
 
     private class MavenResolverImpl implements MavenVersionsResolver {
@@ -160,6 +193,96 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex, failed);
             }
         }
+
+        @Override
+        public List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> coords) throws UnresolvedMavenArtifactException {
+            requireNonNull(coords);
+
+            List<URL> channels = new ArrayList<>();
+
+            for (ChannelMetadataCoordinate coord : coords) {
+                if (coord.getUrl() != null) {
+                    LOG.infof("Resolving channel metadata at %s", coord.getUrl());
+                    channels.add(coord.getUrl());
+                    continue;
+                }
+
+                String version = coord.getVersion();
+                if (version == null) {
+                    Set<String> versions = getAllVersions(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier());
+                    Optional<String> latestVersion = VersionMatcher.getLatestVersion(versions);
+                    version = latestVersion.orElseThrow(() -> {
+                        throw new UnresolvedMavenArtifactException(String.format("Unable to resolve the latest version of channel metadata %s:%s", coord.getGroupId(), coord.getArtifactId()));
+                    });
+                }
+                LOG.infof("Resolving channel metadata from Maven artifact %s:%s:%s", coord.getGroupId(), coord.getArtifactId(), version);
+                File channelArtifact = resolveArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), version);
+                try {
+                    channels.add(channelArtifact.toURI().toURL());
+                } catch (MalformedURLException e) {
+                    throw new UnresolvedMavenArtifactException("Unable to resolve channel metadata.", e,
+                            Set.of(new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(),
+                                    coord.getExtension(), coord.getClassifier(), coord.getVersion())));
+                }
+            }
+            return channels;
+        }
+
+        @Override
+        public String getMetadataReleaseVersion(String groupId, String artifactId) {
+            requireNonNull(groupId);
+            requireNonNull(artifactId);
+
+            final List<MetadataResult> metadataResults = getMavenMetadata(groupId, artifactId);
+
+            final Function<org.apache.maven.artifact.repository.metadata.Metadata, String> getVersion = m -> m.getVersioning().getRelease();
+            return findLatestMetadataVersion(metadataResults, getVersion, groupId, artifactId);
+        }
+
+        @Override
+        public String getMetadataLatestVersion(String groupId, String artifactId) {
+            requireNonNull(groupId);
+            requireNonNull(artifactId);
+
+            final List<MetadataResult> metadataResults = getMavenMetadata(groupId, artifactId);
+
+            return findLatestMetadataVersion(metadataResults, m -> m.getVersioning().getLatest(), groupId, artifactId);
+        }
+
+        private String findLatestMetadataVersion(List<MetadataResult> metadataResults,
+                                                 Function<org.apache.maven.artifact.repository.metadata.Metadata, String> getVersion,
+                                                 String groupId, String artifactId) {
+            final MetadataXpp3Reader reader = new MetadataXpp3Reader();
+            return metadataResults.stream()
+                    .filter(r -> r.getMetadata() != null)
+                    .map(m -> m.getMetadata().getFile())
+                    .map(f -> {
+                        try {
+                            return reader.read(new FileReader(f));
+                        } catch (IOException | XmlPullParserException e) {
+                            final ArtifactCoordinate requestedArtifact = new ArtifactCoordinate(groupId, artifactId, null, null, "*");
+                            throw new UnresolvedMavenArtifactException(e.getLocalizedMessage(), e, Set.of(requestedArtifact));
+                        }
+                    })
+                    .filter(m->m.getVersioning() != null)
+                    .map(getVersion)
+                    .filter(s->s!=null&&!s.isEmpty())
+                    .max(COMPARATOR)
+                    .orElseThrow(()->new UnresolvedMavenArtifactException("No versioning information found in metadata.",
+                            Set.of(new ArtifactCoordinate(groupId, artifactId, null, null, "*"))));
+        }
+
+        private List<MetadataResult> getMavenMetadata(String groupId, String artifactId) {
+            final DefaultMetadata metadata = new DefaultMetadata(groupId, artifactId, "maven-metadata.xml", Metadata.Nature.RELEASE);
+            final List<MetadataRequest> requests = repositories.stream().map(r -> {
+                final MetadataRequest metadataRequest = new MetadataRequest();
+                metadataRequest.setMetadata(metadata);
+                metadataRequest.setRepository(r);
+                return metadataRequest;
+            }).collect(Collectors.toList());
+            final List<MetadataResult> metadataResults = system.resolveMetadata(session, requests);
+            return metadataResults;
+        }
     }
 
     /**
@@ -174,35 +297,14 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
      * @throws UnresolvedMavenArtifactException if the channels can not be resolved
      * @throws MalformedURLException if the channel's rul is not properly formed
      */
-    public List<Channel> resolveChannels(List<ChannelCoordinate> channelCoords) throws UnresolvedMavenArtifactException, MalformedURLException {
+    public List<Channel> resolveChannels(List<ChannelCoordinate> channelCoords, List<RemoteRepository> repositories) throws UnresolvedMavenArtifactException, MalformedURLException {
         requireNonNull(channelCoords);
 
-        List<Channel> channels = new ArrayList<>();
-        try (MavenVersionsResolver resolver = create()) {
-
-            for (ChannelCoordinate channelCoord : channelCoords) {
-                if (channelCoord.getUrl() != null) {
-                    Channel channel = ChannelMapper.from(channelCoord.getUrl());
-                    LOG.infof("Resolving channel at %s", channelCoord.getUrl());
-                    channels.add(channel);
-                    continue;
-                }
-
-                String version = channelCoord.getVersion();
-                if (version == null) {
-                    Set<String> versions = resolver.getAllVersions(channelCoord.getGroupId(), channelCoord.getArtifactId(), channelCoord.getExtension(), channelCoord.getClassifier());
-                    Optional<String> latestVersion = VersionMatcher.getLatestVersion(versions);
-                    version = latestVersion.orElseThrow(() -> {
-                        throw new UnresolvedMavenArtifactException(String.format("Unable to resolve the latest version of channel %s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId()));
-                    });
-                }
-                LOG.infof("Resolving channel from Maven artifact %s:%s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId(), version);
-                File channelArtifact = resolver.resolveArtifact(channelCoord.getGroupId(), channelCoord.getArtifactId(), channelCoord.getExtension(), channelCoord.getClassifier(), version);
-                Channel channel = ChannelMapper.from(channelArtifact.toURI().toURL());
-                channels.add(channel);
-            }
+        try (MavenVersionsResolver resolver = create(repositories)) {
+            return resolver.resolveChannelMetadata(channelCoords).stream()
+                    .map(ChannelMapper::from)
+                    .collect(Collectors.toList());
         }
-        return channels;
     }
 }
 

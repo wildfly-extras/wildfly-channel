@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Red Hat, Inc. and/or its affiliates
+ * Copyright 2023 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,19 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.wildfly.channel;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+public class UnresolvedRequiredManifestException extends RuntimeException {
 
-class ChannelRecorder {
-    private ConcurrentHashMap<String, Stream> streams = new ConcurrentHashMap<>();
+    private final String missingID;
 
-    void recordStream(String groupId, String artifactId, String version) {
-        streams.putIfAbsent(groupId + ":" + artifactId + ":" + version, new Stream(groupId, artifactId, version, null));
+    public UnresolvedRequiredManifestException(String msg, String missingID) {
+        super(msg);
+        this.missingID = missingID;
     }
 
-    ChannelManifest getRecordedChannel() {
-        return new ChannelManifest(null, null, null, new ArrayList<Stream>(streams.values()));
+    public UnresolvedRequiredManifestException(String msg, String missingID, UnresolvedMavenArtifactException cause) {
+        super(msg, cause);
+        this.missingID = missingID;
+    }
+
+    public String getMissingID() {
+        return missingID;
     }
 }

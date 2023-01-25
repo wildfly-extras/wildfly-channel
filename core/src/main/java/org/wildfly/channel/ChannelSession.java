@@ -21,9 +21,12 @@ import static java.util.Objects.requireNonNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
@@ -32,24 +35,34 @@ import org.wildfly.channel.version.VersionMatcher;
  * A ChannelSession is used to install and resolve Maven Artifacts inside a single scope.
  */
 public class ChannelSession implements AutoCloseable {
-    private final List<Channel> channels;
+    private final List<ChannelImpl> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
-    private final MavenVersionsResolver resolver;
+    // resolver used for direct dependencies only. Uses combination of all repositories in the channels.
+    private final MavenVersionsResolver combinedResolver;
 
     /**
      * Create a ChannelSession.
      *
-     * @param channels the list of channels to resolve Maven artifact
+     * @param channelDefinitions the list of channels to resolve Maven artifact
      * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
+     * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
+     * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
-    public ChannelSession(List<Channel> channels, MavenVersionsResolver.Factory factory) {
-        requireNonNull(channels);
+    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory) {
+        requireNonNull(channelDefinitions);
         requireNonNull(factory);
-        this.resolver = factory.create();
-        this.channels = channels;
-        for (Channel channel : channels) {
-            channel.init(factory);
+
+        final Set<Repository> repositories = channelDefinitions.stream().flatMap(c -> c.getRepositories().stream()).collect(Collectors.toSet());
+        this.combinedResolver = factory.create(repositories);
+
+        List<ChannelImpl> channelList = channelDefinitions.stream().map(ChannelImpl::new).collect(Collectors.toList());
+        for (ChannelImpl channel : channelList) {
+            channel.init(factory, channelList);
         }
+        // filter out channels marked as dependency, so that resolution starts only at top level channels
+        this.channels = channelList.stream().filter(c->!c.isDependency()).collect(Collectors.toList());
+
+        validateNoDuplicatedManifests();
     }
 
     /**
@@ -75,11 +88,11 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(artifactId);
         // baseVersion is not used at the moment but will provide essential to support advanced use cases to determine multiple streams of the same Maven component.
 
-        Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
+        ChannelImpl.ResolveLatestVersionResult result = findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
         String latestVersion = result.version;
-        Channel channel = result.channel;
+        ChannelImpl channel = result.channel;
 
-        Channel.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
+        ChannelImpl.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
         recorder.recordStream(groupId, artifactId, latestVersion);
         return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
     }
@@ -101,12 +114,12 @@ public class ChannelSession implements AutoCloseable {
     public List<MavenArtifact> resolveMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         requireNonNull(coordinates);
 
-        Map<Channel, List<ArtifactCoordinate>> channelMap = splitArtifactsPerChannel(coordinates);
+        Map<ChannelImpl, List<ArtifactCoordinate>> channelMap = splitArtifactsPerChannel(coordinates);
 
         final ArrayList<MavenArtifact> res = new ArrayList<>();
-        for (Channel channel : channelMap.keySet()) {
+        for (ChannelImpl channel : channelMap.keySet()) {
             final List<ArtifactCoordinate> requests = channelMap.get(channel);
-            final List<Channel.ResolveArtifactResult> resolveArtifactResults = channel.resolveArtifacts(requests);
+            final List<ChannelImpl.ResolveArtifactResult> resolveArtifactResults = channel.resolveArtifacts(requests);
             for (int i = 0; i < requests.size(); i++) {
                 final ArtifactCoordinate request = requests.get(i);
                 final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), resolveArtifactResults.get(i).file);
@@ -136,7 +149,7 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(artifactId);
         requireNonNull(version);
 
-        File file = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
+        File file = combinedResolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
         recorder.recordStream(groupId, artifactId, version);
         return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
     }
@@ -156,7 +169,7 @@ public class ChannelSession implements AutoCloseable {
             requireNonNull(c.getArtifactId());
             requireNonNull(c.getVersion());
         });
-        final List<File> files = resolver.resolveArtifacts(coordinates);
+        final List<File> files = combinedResolver.resolveArtifacts(coordinates);
 
         final ArrayList<MavenArtifact> res = new ArrayList<>();
         for (int i = 0; i < coordinates.size(); i++) {
@@ -187,10 +200,10 @@ public class ChannelSession implements AutoCloseable {
 
     @Override
     public void close()  {
-        for (Channel channel : channels) {
+        for (ChannelImpl channel : channels) {
             channel.close();
         }
-        resolver.close();
+        combinedResolver.close();
     }
 
     /**
@@ -201,17 +214,24 @@ public class ChannelSession implements AutoCloseable {
      *
      * @return a synthetic Channel.
      */
-    public Channel getRecordedChannel() {
+    public ChannelManifest getRecordedChannel() {
         return recorder.getRecordedChannel();
     }
 
-    private Channel.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+    private void validateNoDuplicatedManifests() {
+        final List<String> manifestIds = this.channels.stream().map(c -> c.getManifest().getId()).filter(id -> id != null).collect(Collectors.toList());
+        if (manifestIds.size() != new HashSet<>(manifestIds).size()) {
+            throw new RuntimeException("The same manifest is provided by one or more channels");
+        }
+    }
+
+    private ChannelImpl.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
-        Map<String, Channel.ResolveLatestVersionResult> foundVersions = new HashMap<>();
-        for (Channel channel : channels) {
-            Optional<Channel.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier);
+        Map<String, ChannelImpl.ResolveLatestVersionResult> foundVersions = new HashMap<>();
+        for (ChannelImpl channel : channels) {
+            Optional<ChannelImpl.ResolveLatestVersionResult> result = channel.resolveLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
             if (result.isPresent()) {
                 foundVersions.put(result.get().version, result.get());
             }
@@ -224,13 +244,13 @@ public class ChannelSession implements AutoCloseable {
         }));
     }
 
-    private Map<Channel, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<ArtifactCoordinate> coordinates) {
-        Map<Channel, List<ArtifactCoordinate>> channelMap = new HashMap<>();
+    private Map<ChannelImpl, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<ArtifactCoordinate> coordinates) {
+        Map<ChannelImpl, List<ArtifactCoordinate>> channelMap = new HashMap<>();
         for (ArtifactCoordinate coord : coordinates) {
-            Channel.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(), coord.getArtifactId(),
+            ChannelImpl.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(), coord.getArtifactId(),
                                                                                      coord.getExtension(), coord.getClassifier(), coord.getVersion());
             ArtifactCoordinate query = new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), result.version);
-            Channel channel = result.channel;
+            ChannelImpl channel = result.channel;
             if (!channelMap.containsKey(channel)) {
                 channelMap.put(channel, new ArrayList<>());
             }

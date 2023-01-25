@@ -27,12 +27,12 @@ public class Vendor {
     /**
      * Name of the vendor.
      */
-    private final String name;
+    private String name;
 
     /**
      * Support level provided by the vendor.
      */
-    private final Support support;
+    private Support support;
 
     /**
      * Vendor resource
@@ -44,6 +44,9 @@ public class Vendor {
     public Vendor(@JsonProperty(value = "name", required = true) String name, @JsonProperty(value = "support", required = true) Support support) {
         this.name = name;
         this.support = support;
+    }
+
+    public Vendor() {
     }
 
     public String getName() {
