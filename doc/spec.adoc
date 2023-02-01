@@ -183,7 +183,8 @@ If no stream that matches the artifact have been found, version is resolved usin
 An error is returned to the caller if:
 
 * the fallback strategy is `none`
-* the fallback strategy is `latest`, `maven-latest` or `maven-release` but underlying Maven repository contains no metadata for artifacts with required `groupId` and `artifactId`
+* the fallback strategy is `latest`, `maven-latest` or `maven-release` but underlying Maven repository contains no metadata for artifacts 
+with required `groupId` and `artifactId`. In such a case, no integrity check is done against the resolved artifact.
 
 If the stream defines a `version`, the artifact will be resolved based on this version. If that version of the artifact can not be pulled
 from the Maven repositories, an error is returned to the caller.
