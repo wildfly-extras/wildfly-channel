@@ -103,10 +103,15 @@ public class ChannelSession implements AutoCloseable {
     }
 
     private String verifySHA256Checksum(Stream stream, File artifactFile, String extension, String classifier) {
-        if (stream == null) {
-            return null;
+        String sha256;
+        try {
+            sha256 = computeSHA256(artifactFile);
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Unable to compute the SHA-256 checksum of %s", artifactFile));
         }
-        String sha256 = null;
+        if (stream == null) {
+            return sha256;
+        }
         if (extension != null) {
             String key = extension;
             if (classifier != null && !classifier.isEmpty()) {
@@ -114,11 +119,6 @@ public class ChannelSession implements AutoCloseable {
             }
             if (stream.getsha256Checksum().containsKey(key)) {
                 String expectedsha256 = stream.getsha256Checksum().get(key);
-                try {
-                    sha256 = computeSHA256(artifactFile);
-                } catch (IOException e) {
-                    throw new RuntimeException(String.format("Unable to compute the SHA-256 checksum of %s", artifactFile));
-                }
                 if (!sha256.equalsIgnoreCase(expectedsha256)) {
                     throw new RuntimeException(String.format("Integrity of the file %s is not correct, SHA-256 sum does not match (expected: %s, computed: %s)",
                             artifactFile.getAbsolutePath(), expectedsha256, sha256));
