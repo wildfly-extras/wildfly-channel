@@ -17,7 +17,9 @@
 package org.wildfly.channel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.util.List;
@@ -38,6 +40,7 @@ public class ChannelMapperTestCase {
 
         final Channel channel1 = ChannelMapper.fromString(yaml).get(0);
         assertEquals(Vendor.Support.COMMUNITY, channel1.getVendor().getSupport());
+        assertFalse(yaml.contains("manifestCoordinate:"));
     }
 
     @Test
