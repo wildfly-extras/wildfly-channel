@@ -411,11 +411,11 @@ public class ChannelWithBlocklistTestCase {
     @Test
     public void testFindLatestMavenArtifactVersionInRequiredChannel() throws Exception {
         List<Channel> channels =List.of(
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setManifestCoordinate("org.test", "base-manifest", "1.0.0")
                         .addRepository("test", "test")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setManifestCoordinate("org.test", "required-manifest", "1.0.0")
                         .addRepository("test", "test")
                         .setBlocklist("org.wildfly", "wildfly-blocklist", "1.2.3")

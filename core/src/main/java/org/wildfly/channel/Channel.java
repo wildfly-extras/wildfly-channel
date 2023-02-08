@@ -2,10 +2,12 @@ package org.wildfly.channel;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.version.VersionMatcher;
 
+import java.net.URL;
 import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
@@ -150,5 +152,71 @@ public class Channel {
         MAVEN_RELEASE,
         @JsonProperty("none")
         NONE
+    }
+
+    /**
+     * Builder for channel class
+     */
+    public static class Builder {
+        private String name;
+        private List<Repository> repositories = new ArrayList<>();
+        private ChannelManifestCoordinate manifestCoordinate;
+        private BlocklistCoordinate blocklistCoordinate;
+        private NoStreamStrategy strategy;
+        private String description;
+        private Vendor vendor;
+
+        public Channel build() {
+            return new Channel(name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy);
+        }
+
+        public Builder setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder setVendor(Vendor vendor) {
+            this.vendor = vendor;
+            return this;
+        }
+
+        public Builder addRepository(String repoId, String url) {
+            repositories.add(new Repository(repoId, url));
+            return this;
+        }
+
+        public Builder setManifestCoordinate(String groupId, String artifactId, String version) {
+            this.manifestCoordinate = new ChannelManifestCoordinate(groupId, artifactId, version);
+            return this;
+        }
+
+        public Builder setManifestUrl(URL url) {
+            this.manifestCoordinate = new ChannelManifestCoordinate(url);
+            return this;
+        }
+
+        public Builder setManifestCoordinate(ChannelManifestCoordinate coordinate) {
+            this.manifestCoordinate = coordinate;
+            return this;
+        }
+
+        public Builder setBlocklist(String groupId, String artifactId, String version) {
+            if (version == null) {
+                this.blocklistCoordinate = new BlocklistCoordinate(groupId, artifactId);
+            } else {
+                this.blocklistCoordinate = new BlocklistCoordinate(groupId, artifactId, version);
+            }
+            return this;
+        }
+
+        public Builder setResolveStrategy(NoStreamStrategy strategy) {
+            this.strategy = strategy;
+            return this;
+        }
     }
 }

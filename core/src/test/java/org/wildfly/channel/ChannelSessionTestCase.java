@@ -88,7 +88,7 @@ public class ChannelSessionTestCase {
     public static List<Channel> mockChannel(MavenVersionsResolver resolver, Path tempDir, Channel.NoStreamStrategy strategy, String... manifests) throws IOException {
         List<Channel> channels = new ArrayList<>();
         for (int i = 0; i < manifests.length; i++) {
-            channels.add(new ChannelBuilder()
+            channels.add(new Channel.Builder()
                             .setManifestCoordinate("org.channels", "channel" + i, "1.0.0")
                             .setResolveStrategy(strategy)
                             .build());
