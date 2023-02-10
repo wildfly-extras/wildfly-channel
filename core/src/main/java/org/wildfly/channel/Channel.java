@@ -121,6 +121,7 @@ public class Channel {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("manifest")
     public ChannelManifestCoordinate getManifestCoordinate() {
         return manifestCoordinate;
     }
