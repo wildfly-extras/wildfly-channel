@@ -346,7 +346,7 @@ public class ChannelWithRequirementsTestCase {
                         "      version: 1.0.0";
         mockManifest(resolver, manifest, "org.channels:base-manifest:1.0.0");
 
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                 .setName("root level requiring channel")
                 .addRepository("test", "test")
                 .setManifestCoordinate("org.channels", "base-manifest", "1.0.0")
@@ -596,7 +596,7 @@ public class ChannelWithRequirementsTestCase {
 
         // strict NoStreamStrategy should result in no matches
         List<Channel> channels = List.of(
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setResolveStrategy(Channel.NoStreamStrategy.NONE)
                         .setManifestCoordinate("org.test", "base-manifest", "1.0.0")
                         .addRepository("test", "test")

@@ -66,12 +66,12 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest", "1.0.0")
@@ -101,7 +101,7 @@ public class ChannelSessionInitTestCase {
                 .build();
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
@@ -124,7 +124,7 @@ public class ChannelSessionInitTestCase {
         when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test.channels", "i-dont-exist", "1.0.0"))))
                 .thenThrow(UnresolvedMavenArtifactException.class);
 
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
@@ -155,12 +155,12 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest", "1.0.0")
@@ -193,12 +193,12 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest", "1.0.0")
@@ -232,17 +232,17 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel two")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest-two", "1.0.0")
@@ -264,7 +264,7 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
@@ -304,22 +304,22 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel two")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest-two", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("required channel three")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest-three", "1.0.0")
@@ -345,12 +345,12 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new ChannelBuilder()
+        List<Channel> channels = List.of(new Channel.Builder()
                         .setName("channel one")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
                         .build(),
-                new ChannelBuilder()
+                new Channel.Builder()
                         .setName("channel two")
                         .addRepository("test", "test")
                         .setManifestCoordinate("test.channels", "required-manifest", "1.0.0")
