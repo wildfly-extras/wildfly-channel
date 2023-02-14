@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +39,48 @@ import org.wildfly.channel.version.VersionMatcher;
  */
 class ChannelImpl implements AutoCloseable {
 
+    class ManifestArtifactChecker implements ArtifactChecker {
+
+        @Override
+        public void check(URL url) throws SignatureException {
+            if (channelDefinition.getPublicKey() == null) {
+                return;
+            }
+            try {
+                URL signatureURL = new URL(url.getProtocol(), url.getHost(), url.getPort(), url.getFile() + ".asc");
+                SignatureUtil.verifySignature(url, signatureURL, channelDefinition.getPublicKey());
+            } catch (MalformedURLException ex) {
+                throw new SignatureException(ex.getLocalizedMessage(), ex);
+            }
+        }
+
+        @Override
+        public void check(ChannelMetadataCoordinate coord, String version, File resolved, MavenVersionsResolver resolver) throws SignatureException {
+            if (channelDefinition.getPublicKey() == null) {
+                return;
+            }
+            try {
+                File channelArtifactSignature = resolver.resolveArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getExtension() + ".asc", coord.getClassifier(), version);
+                SignatureUtil.verifySignature(resolved.toURI().toURL(), channelArtifactSignature.toURI().toURL(), channelDefinition.getPublicKey());
+            } catch (MalformedURLException ex) {
+                throw new SecurityException(ex.getLocalizedMessage(), ex);
+            }
+        }
+
+    }
+
+    class NoCheckArtifactChecker implements ArtifactChecker {
+
+        @Override
+        public void check(URL url) throws SignatureException {
+
+        }
+
+        @Override
+        public void check(ChannelMetadataCoordinate coord, String version, File resolved, MavenVersionsResolver resolver) throws SignatureException {
+
+        }
+    }
     private Channel channelDefinition;
 
     private List<ChannelImpl> requiredChannels = Collections.emptyList();
@@ -92,7 +135,7 @@ class ChannelImpl implements AutoCloseable {
 
         if (channelDefinition.getBlocklistCoordinate() != null) {
             BlocklistCoordinate blocklistCoordinate = channelDefinition.getBlocklistCoordinate();
-            final List<URL> urls = resolver.resolveChannelMetadata(List.of(blocklistCoordinate));
+            final List<URL> urls = resolver.resolveChannelMetadata(List.of(blocklistCoordinate), new NoCheckArtifactChecker());
             this.blocklist = urls.stream()
                     .map(Blocklist::from)
                     .findFirst();
@@ -136,7 +179,7 @@ class ChannelImpl implements AutoCloseable {
         }
         final ChannelImpl requiredChannel = new ChannelImpl(new Channel(null, null, null, channelDefinition.getRepositories(),
                 new ChannelManifestCoordinate(groupId, artifactId, version), null,
-                Channel.NoStreamStrategy.NONE));
+                Channel.NoStreamStrategy.NONE, channelDefinition.getPublicKey()));
         try {
             requiredChannel.init(factory, channels);
         } catch (UnresolvedMavenArtifactException e) {
@@ -189,7 +232,7 @@ class ChannelImpl implements AutoCloseable {
     }
 
     private ChannelManifest resolveManifest(ChannelManifestCoordinate manifestCoordinate) throws UnresolvedMavenArtifactException {
-        return resolver.resolveChannelMetadata(List.of(manifestCoordinate))
+        return resolver.resolveChannelMetadata(List.of(manifestCoordinate), new ManifestArtifactChecker())
                 .stream()
                 .map(ChannelManifestMapper::from)
                 .findFirst().orElseThrow();

@@ -194,7 +194,7 @@ public class VersionResolverFactoryTest {
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
         MavenVersionsResolver resolver = factory.create(Collections.emptyList());
 
-        List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate(new URL("http://test.channel"))));
+        List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate(new URL("http://test.channel"))), null);
         assertEquals(new URL("http://test.channel"), resolvedURL.get(0));
     }
 
@@ -224,7 +224,7 @@ public class VersionResolverFactoryTest {
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
         MavenVersionsResolver resolver = factory.create(Collections.emptyList());
 
-        List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel")));
+        List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel")), null);
         assertEquals(artifactFile.toURI().toURL(), resolvedURL.get(0));
         assertEquals("1.1.1", artifactRequestArgumentCaptor.getAllValues().get(0).getArtifact().getVersion());
     }
@@ -246,7 +246,7 @@ public class VersionResolverFactoryTest {
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
         MavenVersionsResolver resolver = factory.create(Collections.emptyList());
 
-        List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel", "1.0.0")));
+        List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel", "1.0.0")), null);
         assertEquals(artifactFile.toURI().toURL(), resolvedURL.get(0));
         assertEquals("1.0.0", artifactRequestArgumentCaptor.getAllValues().get(0).getArtifact().getVersion());
     }

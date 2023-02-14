@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.wildfly.channel.ChannelImpl.ManifestArtifactChecker;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelWithRequirementsTestCase {
@@ -74,7 +75,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(Set.of("1.0.0.Final, 1.1.0.Final", "1.2.0.Final"));
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
-        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
+        when(resolver.resolveChannelMetadata(any(), any())).thenReturn(List.of(resolvedRequiredManifestURL));
 
         String baseManifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My manifest\n" +
@@ -128,7 +129,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolver);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
-        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
+        when(resolver.resolveChannelMetadata(any(), any())).thenReturn(List.of(resolvedRequiredManifestURL));
 
         String baseManifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My manifest\n" +
@@ -196,7 +197,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolvedArtifactFile120Final);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
                 .thenReturn(resolvedArtifactFile200Final);
-        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test.channels", "required-manifest", "1.0.0")))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test.channels", "required-manifest", "1.0.0"))), any()))
                 .thenReturn(List.of(resolvedRequiredManifestURL));
 
         // The requiring channel requires newer version of foo-bar artifact
@@ -587,7 +588,7 @@ public class ChannelWithRequirementsTestCase {
         File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))), any(ManifestArtifactChecker.class)))
                 .thenReturn(List.of(resolvedRequiredManifestURL));
 
         when(factory.create(any()))
@@ -626,7 +627,7 @@ public class ChannelWithRequirementsTestCase {
     private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
+        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav))), any(ManifestArtifactChecker.class)))
                 .thenReturn(List.of(manifestUrl));
     }
 }

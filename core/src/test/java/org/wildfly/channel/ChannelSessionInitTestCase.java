@@ -127,7 +127,7 @@ public class ChannelSessionInitTestCase {
                 .build();
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test.channels", "i-dont-exist", "1.0.0"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test.channels", "i-dont-exist", "1.0.0"))), any()))
                 .thenThrow(UnresolvedMavenArtifactException.class);
 
         List<Channel> channels = List.of(new Channel.Builder()
@@ -379,7 +379,7 @@ public class ChannelSessionInitTestCase {
     private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
+        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav))), any()))
                 .thenReturn(List.of(manifestUrl));
     }
 }

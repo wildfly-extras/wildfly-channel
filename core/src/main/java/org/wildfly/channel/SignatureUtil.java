@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPException;
@@ -40,15 +42,17 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPContentVerifierBuilderProv
 
 public class SignatureUtil {
 
-    static void verifySignature(
-            Path dataFile,
-            Path signatureFile,
+    public static void verifySignature(
+            URL dataFile,
+            URL signatureFile,
             URL publicKey)
-            throws SignatureException, IOException {
+            throws SignatureException {
         try (InputStream keyIn = publicKey.openStream();
-                InputStream signIn = new FileInputStream(signatureFile.toFile());
-                InputStream dataFileIn = new FileInputStream(dataFile.toFile())) {
+                InputStream signIn = signatureFile.openStream();
+                InputStream dataFileIn = dataFile.openStream()) {
             verifySignature(dataFileIn, signIn, keyIn);
+        } catch (IOException ex) {
+            throw new SignatureException(ex.getLocalizedMessage(), ex);
         }
     }
 

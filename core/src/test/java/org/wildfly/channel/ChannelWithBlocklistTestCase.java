@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -86,10 +87,10 @@ public class ChannelWithBlocklistTestCase {
                 "  - groupId: org.wildfly\n" +
                 "    artifactId: wildfly-ee-galleon-pack\n" +
                 "    versionPattern: .*");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
         when(factory.create(any())).thenReturn(resolver);
@@ -131,10 +132,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: '*'\n" +
                         "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(Collections.emptyList());
 
         when(factory.create(any())).thenReturn(resolver);
@@ -178,10 +179,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: '*'\n" +
                         "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist-with-wildcards.yaml")));
 
         when(factory.create(any())).thenReturn(resolver);
@@ -223,10 +224,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: '*'\n" +
                         "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
         when(factory.create(any())).thenReturn(resolver);
@@ -271,10 +272,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: '*'\n" +
                         "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
         File resolvedArtifactFile = emptyFile;
@@ -326,10 +327,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: '*'\n" +
                         "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
         when(factory.create(any())).thenReturn(resolver);
@@ -377,10 +378,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: wildfly-cli\n" +
                         "    version: \"26.0.0.Final\"");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
         File resolvedArtifactFile1 = emptyFile;
@@ -440,7 +441,7 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: wildfly-ee-galleon-pack\n" +
                         "    versionPattern: \".*\"");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))), any()))
                 .thenReturn(List.of(tempDir.resolve("required-manifest.yaml").toUri().toURL()));
 
         Files.writeString(tempDir.resolve("manifest.yaml"),
@@ -450,10 +451,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: wildfly-ee-galleon-pack\n" +
                         "    versionPattern: \".*\"");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("org.test", "base-manifest", "1.0.0"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.test", "base-manifest", "1.0.0"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist", "1.2.3"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist", "1.2.3"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
 
         when(factory.create(any())).thenReturn(resolver);
@@ -495,10 +496,10 @@ public class ChannelWithBlocklistTestCase {
                         "  - groupId: org.wildfly\n" +
                         "    artifactId: '*'\n" +
                         "    versionPattern: '25\\.\\d+\\.\\d+.Final'");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test", "test.manifest"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test", "test.manifest"))), any()))
                 .thenReturn(List.of(tempDir.resolve("manifest.yaml").toUri().toURL()));
 
-        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))), any()))
                 .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/invalid-blocklist.yaml")));
 
         when(factory.create(any())).thenReturn(resolver);
