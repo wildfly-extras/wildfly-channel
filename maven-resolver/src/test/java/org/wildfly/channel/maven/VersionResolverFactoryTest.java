@@ -43,6 +43,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
@@ -344,6 +345,36 @@ public class VersionResolverFactoryTest {
         Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
             resolver.getMetadataLatestVersion("org.foo", "bar");
         });
+    }
+
+    // when resolving versions, ignore artifacts that were installed in local cache rather being cached
+    // channels should only resolve versions from their repositories
+    @Test
+    public void testIgnoreResultsFromLocalCache() throws VersionRangeResolutionException {
+
+        RepositorySystem system = mock(RepositorySystem.class);
+        RepositorySystemSession session = mock(RepositorySystemSession.class);
+
+        VersionRangeResult versionRangeResult = new VersionRangeResult(new VersionRangeRequest());
+        Version v100 = mock(Version.class);
+        when(v100.toString()).thenReturn("1.0.0");
+        Version v110 = mock(Version.class);
+        when(v110.toString()).thenReturn("1.1.0");
+        Version v111 = mock(Version.class);
+        when(v111.toString()).thenReturn("1.1.1");
+        versionRangeResult.setVersions(asList(v100, v110, v111));
+        versionRangeResult.setRepository(v100, mock(RemoteRepository.class));
+        versionRangeResult.setRepository(v110, mock(LocalRepository.class));
+        versionRangeResult.setRepository(v111, mock(RemoteRepository.class));
+        when(system.resolveVersionRange(eq(session), any(VersionRangeRequest.class))).thenReturn(versionRangeResult);
+
+        VersionResolverFactory factory = new VersionResolverFactory(system, session);
+        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+
+        Set<String> allVersions = resolver.getAllVersions("org.foo", "bar", null, null);
+        assertEquals(2, allVersions.size());
+        assertTrue(allVersions.contains("1.0.0"));
+        assertTrue(allVersions.contains("1.1.1"));
     }
 
     private MetadataResult getMetadataResult(String releaseVersion, String latestVersion) throws IOException {
