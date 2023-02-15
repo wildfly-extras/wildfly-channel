@@ -28,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -129,13 +130,19 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
             versionRangeRequest.setArtifact(artifact);
+            final Set<RemoteRepository> repos;
             if (repositories != null) {
                 versionRangeRequest.setRepositories(repositories);
+                repos = new HashSet<>(repositories);
+            } else {
+                repos = null;
             }
 
             try {
                 VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
-                Set<String> versions = versionRangeResult.getVersions().stream().map(Version::toString).collect(Collectors.toSet());
+                Set<String> versions = versionRangeResult.getVersions().stream()
+                        .filter(v -> repos != null && repos.contains(versionRangeResult.getRepository(v)))
+                        .map(Version::toString).collect(Collectors.toSet());
                 return versions;
             } catch (VersionRangeResolutionException e) {
                 return emptySet();
