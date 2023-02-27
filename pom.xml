@@ -30,8 +30,8 @@
         <version.junit5>5.9.2</version.junit5>
         <version.org.jboss.logging>3.5.0.Final</version.org.jboss.logging>
         <version.release.plugin>2.5.3</version.release.plugin>
-        <version.aether-api>1.1.0</version.aether-api>
-        <version.maven-aether-provider>3.3.9</version.maven-aether-provider>
+        <version.maven.resolver-api>1.9.4</version.maven.resolver-api>
+        <version.maven.repository.metadata>3.3.9</version.maven.repository.metadata>
     </properties>
 
     <dependencyManagement>
@@ -52,15 +52,15 @@
                 <version>${version.com.networknt.json-schema-validator}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.aether</groupId>
-                <artifactId>aether-api</artifactId>
-                <version>${version.aether-api}</version>
+                <groupId>org.apache.maven.resolver</groupId>
+                <artifactId>maven-resolver-api</artifactId>
+                <version>${version.maven.resolver-api}</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
-                <artifactId>maven-aether-provider</artifactId>
-                <version>${version.maven-aether-provider}</version>
+                <artifactId>maven-repository-metadata</artifactId>
+                <version>${version.maven.repository.metadata}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
