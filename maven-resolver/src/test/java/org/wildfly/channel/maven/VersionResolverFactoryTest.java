@@ -43,6 +43,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
@@ -80,10 +81,13 @@ public class VersionResolverFactoryTest {
         Version v111 = mock(Version.class);
         when(v111.toString()).thenReturn("1.1.1");
         versionRangeResult.setVersions(asList(v100, v110, v111));
+        final Repository testRepository = new Repository("test", "file://test");
+        final ArtifactRepository testArtifactRepository = VersionResolverFactory.DEFAULT_REPOSITORY_MAPPER.apply(testRepository);
+        for (Version v : versionRangeResult.getVersions()) versionRangeResult.setRepository(v, testArtifactRepository);
         when(system.resolveVersionRange(eq(session), any(VersionRangeRequest.class))).thenReturn(versionRangeResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(Collections.singletonList(testRepository));
 
         Set<String> allVersions = resolver.getAllVersions("org.foo", "bar", null, null);
         assertEquals(3, allVersions.size());
@@ -217,12 +221,15 @@ public class VersionResolverFactoryTest {
         Version v111 = mock(Version.class);
         when(v111.toString()).thenReturn("1.1.1");
         versionRangeResult.setVersions(asList(v100, v110, v111));
+        final Repository testRepository = new Repository("test", "file://test");
+        final ArtifactRepository testArtifactRepository = VersionResolverFactory.DEFAULT_REPOSITORY_MAPPER.apply(testRepository);
+        for (Version v : versionRangeResult.getVersions()) versionRangeResult.setRepository(v, testArtifactRepository);
         when(system.resolveVersionRange(eq(session), any())).thenReturn(versionRangeResult);
         final ArgumentCaptor<ArtifactRequest> artifactRequestArgumentCaptor = ArgumentCaptor.forClass(ArtifactRequest.class);
         when(system.resolveArtifact(eq(session), artifactRequestArgumentCaptor.capture())).thenReturn(artifactResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(Collections.singletonList(testRepository));
 
         List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel")));
         assertEquals(artifactFile.toURI().toURL(), resolvedURL.get(0));
