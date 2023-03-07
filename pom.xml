@@ -31,7 +31,7 @@
         <version.org.jboss.logging>3.5.0.Final</version.org.jboss.logging>
         <version.release.plugin>2.5.3</version.release.plugin>
         <version.maven.resolver-api>1.9.6</version.maven.resolver-api>
-        <version.maven.repository.metadata>3.3.9</version.maven.repository.metadata>
+        <version.maven.repository.metadata>3.6.3</version.maven.repository.metadata>
     </properties>
 
     <dependencyManagement>
