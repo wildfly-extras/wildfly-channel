@@ -16,34 +16,33 @@
  */
 package org.wildfly.channel;
 
-import java.util.Collections;
 import java.util.Set;
 
 public class UnresolvedMavenArtifactException extends RuntimeException {
 
-    private Set<ArtifactCoordinate> unresolvedArtifacts = Collections.emptySet();
-
-    public UnresolvedMavenArtifactException(String message) {
-        super(message);
-    }
-
-    public UnresolvedMavenArtifactException() {
-        super();
-    }
+    private final Set<ArtifactCoordinate> unresolvedArtifacts;
+    private final Set<Repository> attemptedRepositories;
 
     public UnresolvedMavenArtifactException(String localizedMessage,
                                             Throwable cause,
-                                            Set<ArtifactCoordinate> unresolvedArtifacts) {
+                                            Set<ArtifactCoordinate> unresolvedArtifacts,
+                                            Set<Repository> attemptedRepositories) {
         super(localizedMessage, cause);
         this.unresolvedArtifacts = unresolvedArtifacts;
+        this.attemptedRepositories = attemptedRepositories;
     }
 
-    public <E> UnresolvedMavenArtifactException(String message, Set<ArtifactCoordinate> unresolvedArtifacts) {
+    public <E> UnresolvedMavenArtifactException(String message, Set<ArtifactCoordinate> unresolvedArtifacts, Set<Repository> attemptedRepositories) {
         super(message);
         this.unresolvedArtifacts = unresolvedArtifacts;
+        this.attemptedRepositories = attemptedRepositories;
     }
 
     public Set<ArtifactCoordinate> getUnresolvedArtifacts() {
         return unresolvedArtifacts;
+    }
+
+    public Set<Repository> getAttemptedRepositories() {
+        return attemptedRepositories;
     }
 }

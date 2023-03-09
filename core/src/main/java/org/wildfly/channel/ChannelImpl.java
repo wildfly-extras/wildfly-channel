@@ -176,6 +176,9 @@ class ChannelImpl implements AutoCloseable {
         return dependency;
     }
 
+    Channel getChannelDefinition() {
+        return channelDefinition;
+    }
 
     static class ResolveLatestVersionResult {
         final String version;

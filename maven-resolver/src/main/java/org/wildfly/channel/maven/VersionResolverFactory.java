@@ -167,7 +167,9 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             try {
                 result = system.resolveArtifact(session, request);
             } catch (ArtifactResolutionException ex) {
-                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex, singleton(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)));
+                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex,
+                        singleton(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)),
+                        attemptedRepositories());
             }
             return result.getArtifact().getFile();
         }
@@ -201,7 +203,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                    .map(res->res.getRequest().getArtifact())
                    .map(a->new ArtifactCoordinate(a.getGroupId(), a.getArtifactId(), a.getExtension(), a.getClassifier(), a.getVersion()))
                    .collect(Collectors.toSet());
-                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex, failed);
+                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex, failed, attemptedRepositories());
             }
         }
 
@@ -222,18 +224,20 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 if (version == null) {
                     Set<String> versions = getAllVersions(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier());
                     Optional<String> latestVersion = VersionMatcher.getLatestVersion(versions);
-                    version = latestVersion.orElseThrow(() -> {
-                        throw new UnresolvedMavenArtifactException(String.format("Unable to resolve the latest version of channel metadata %s:%s", coord.getGroupId(), coord.getArtifactId()));
-                    });
+                    version = latestVersion.orElseThrow(() ->
+                        new UnresolvedMavenArtifactException(String.format("Unable to resolve the latest version of channel metadata %s:%s", coord.getGroupId(), coord.getArtifactId()),
+                                singleton(new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), "")),
+                                attemptedRepositories()));
                 }
                 LOG.infof("Resolving channel metadata from Maven artifact %s:%s:%s", coord.getGroupId(), coord.getArtifactId(), version);
                 File channelArtifact = resolveArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), version);
                 try {
                     channels.add(channelArtifact.toURI().toURL());
                 } catch (MalformedURLException e) {
-                    throw new UnresolvedMavenArtifactException("Unable to resolve channel metadata.", e,
-                            Set.of(new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(),
-                                    coord.getExtension(), coord.getClassifier(), coord.getVersion())));
+                    throw new UnresolvedMavenArtifactException(String.format("Unable to resolve the latest version of channel metadata %s:%s", coord.getGroupId(), coord.getArtifactId()), e,
+                            singleton(new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(),
+                                    coord.getExtension(), coord.getClassifier(), coord.getVersion())),
+                            attemptedRepositories());
                 }
             }
             return channels;
@@ -272,15 +276,17 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                             return reader.read(new FileReader(f));
                         } catch (IOException | XmlPullParserException e) {
                             final ArtifactCoordinate requestedArtifact = new ArtifactCoordinate(groupId, artifactId, null, null, "*");
-                            throw new UnresolvedMavenArtifactException(e.getLocalizedMessage(), e, Set.of(requestedArtifact));
+                            throw new UnresolvedMavenArtifactException(e.getLocalizedMessage(), e, singleton(requestedArtifact),
+                                    attemptedRepositories());
                         }
                     })
                     .filter(m->m.getVersioning() != null)
                     .map(getVersion)
                     .filter(s->s!=null&&!s.isEmpty())
                     .max(COMPARATOR)
-                    .orElseThrow(()->new UnresolvedMavenArtifactException("No versioning information found in metadata.",
-                            Set.of(new ArtifactCoordinate(groupId, artifactId, null, null, "*"))));
+                    .orElseThrow(()-> new UnresolvedMavenArtifactException("No versioning information found in metadata.",
+                        singleton(new ArtifactCoordinate(groupId, artifactId, null, null, "*")),
+                            attemptedRepositories()));
         }
 
         private List<MetadataResult> getMavenMetadata(String groupId, String artifactId) {
@@ -293,6 +299,12 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             }).collect(Collectors.toList());
             final List<MetadataResult> metadataResults = system.resolveMetadata(session, requests);
             return metadataResults;
+        }
+
+        private Set<Repository> attemptedRepositories() {
+            return repositories.stream()
+                    .map(r -> new Repository(r.getId(), r.getUrl()))
+                    .collect(Collectors.toSet());
         }
     }
 

@@ -26,6 +26,7 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
@@ -100,6 +101,10 @@ public class ChannelManifestMapper {
             }
             ChannelManifest channelManifest = OBJECT_MAPPER.readValue(manifestURL, ChannelManifest.class);
             return channelManifest;
+        } catch (FileNotFoundException e) {
+            final InvalidChannelMetadataException ice = new InvalidChannelMetadataException("Unable to resolve manifest.", List.of(manifestURL.toString()));
+            ice.initCause(e);
+            throw ice;
         } catch (IOException | URISyntaxException e) {
             throw wrapException(e);
         }
