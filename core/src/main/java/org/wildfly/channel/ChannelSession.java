@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -240,7 +241,14 @@ public class ChannelSession implements AutoCloseable {
         // find the latest version from all the channels that defined the stream.
         Optional<String> foundLatestVersionInChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
         return foundVersions.get(foundLatestVersionInChannels.orElseThrow(() -> {
-            throw new UnresolvedMavenArtifactException(String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier));
+            final ArtifactCoordinate coord = new ArtifactCoordinate(groupId, artifactId, extension, classifier, "");
+            final Set<Repository> repositories = channels.stream()
+                    .map(ChannelImpl::getChannelDefinition)
+                    .flatMap(d -> d.getRepositories().stream())
+                    .collect(Collectors.toSet());
+            throw new UnresolvedMavenArtifactException(
+                    String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier),
+                    Collections.singleton(coord), repositories);
         }));
     }
 
