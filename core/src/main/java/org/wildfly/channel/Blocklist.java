@@ -130,11 +130,11 @@ public class Blocklist {
       JsonNode schemaVersion = node.path("schemaVersion");
       String version = schemaVersion.asText();
       if (version == null || version.isEmpty()) {
-         throw new RuntimeException("The blocklist does not specify a schemaVersion.");
+         throw new InvalidChannelMetadataException("Invalid Manifest", List.of("The manifest does not specify a schemaVersion."));
       }
       JsonSchema schema = SCHEMAS.get(version);
       if (schema == null) {
-         throw new RuntimeException("Unknown schema version " + schemaVersion);
+         throw new InvalidChannelMetadataException("Invalid Manifest", List.of("Unknown schema version " + schemaVersion));
       }
       return schema;
    }
