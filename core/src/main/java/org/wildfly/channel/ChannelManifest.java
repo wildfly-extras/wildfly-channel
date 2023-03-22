@@ -180,4 +180,16 @@ public class ChannelManifest {
         stream = streams.stream().filter(s -> s.getGroupId().equals(groupId) && s.getArtifactId().equals("*")).findFirst();
         return stream;
     }
+
+    @Override
+    public String toString() {
+        return "ChannelManifest{" +
+                "schemaVersion='" + schemaVersion + '\'' +
+                ", name='" + name + '\'' +
+                ", id='" + id + '\'' +
+                ", description='" + description + '\'' +
+                ", streams=" + streams +
+                ", manifestRequirements=" + manifestRequirements +
+                '}';
+    }
 }

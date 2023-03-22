@@ -155,6 +155,20 @@ public class Channel {
         NONE
     }
 
+    @Override
+    public String toString() {
+        return "Channel{" +
+                "schemaVersion='" + schemaVersion + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", vendor=" + vendor +
+                ", repositories=" + repositories +
+                ", blocklistCoordinate=" + blocklistCoordinate +
+                ", manifestCoordinate=" + manifestCoordinate +
+                ", noStreamStrategy=" + noStreamStrategy +
+                '}';
+    }
+
     /**
      * Builder for channel class
      */

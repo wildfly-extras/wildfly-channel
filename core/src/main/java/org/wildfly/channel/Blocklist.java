@@ -138,4 +138,12 @@ public class Blocklist {
       }
       return schema;
    }
+
+   @Override
+   public String toString() {
+      return "Blocklist{" +
+              "schemaVersion='" + schemaVersion + '\'' +
+              ", entries=" + entries +
+              '}';
+   }
 }
