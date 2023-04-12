@@ -22,10 +22,24 @@ public class InvalidChannelMetadataException extends RuntimeException {
     private final List<String> messages;
 
     public InvalidChannelMetadataException(String message, List<String> messages) {
+        super(message);
         this.messages = messages;
     }
 
     public List<String> getValidationMessages() {
         return messages;
+    }
+
+    @Override
+    public String getMessage() {
+        final StringBuilder sb = new StringBuilder(super.getMessage());
+        sb.append(System.lineSeparator());
+        if (!messages.isEmpty()) {
+            sb.append("caused by:").append(System.lineSeparator());
+            for (String message : messages) {
+                sb.append(" ").append(message).append(System.lineSeparator());
+            }
+        }
+        return sb.toString();
     }
 }
