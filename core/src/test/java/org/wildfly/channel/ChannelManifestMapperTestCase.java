@@ -16,11 +16,14 @@
  */
 package org.wildfly.channel;
 
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,5 +86,51 @@ public class ChannelManifestMapperTestCase {
         assertEquals("org.test", m1.getManifestRequirements().get(0).getGroupId());
         assertEquals("required", m1.getManifestRequirements().get(0).getArtifactId());
         assertEquals("1.0.0", m1.getManifestRequirements().get(0).getVersion());
+    }
+
+    @Test
+    public void testReadWriteSHA256() throws Exception {
+        Map<String, String> sha = new HashMap<>();
+        sha.put("jar", "1");
+        final Stream stream = new Stream("org.bar", "example", "1.2.3", null, sha);
+        final ChannelManifest manifest = new ChannelManifest("test_name_1", null, "test_desc", Arrays.asList(stream));
+        final String yaml = ChannelManifestMapper.toYaml(manifest);
+
+        System.out.println(yaml);
+
+        final ChannelManifest m = ChannelManifestMapper.fromString(yaml);
+        assertEquals(manifest.getName(), m.getName());
+        assertEquals(1, m.getStreams().size());
+        assertEquals(sha, m.getStreams().stream().findFirst().get().getsha256Checksum());
+    }
+    
+    @Test
+    public void testReadWriteMultiSHA256() throws Exception {
+        Map<String, String> sha = new HashMap<>();
+        sha.put("jar", "1");
+        sha.put("classifier/jar", "0");
+        final Stream stream = new Stream("org.bar", "example", "1.2.3", null, sha);
+        final ChannelManifest manifest = new ChannelManifest("test_name_1", null, "test_desc", Arrays.asList(stream));
+        final String yaml = ChannelManifestMapper.toYaml(manifest);
+
+        System.out.println(yaml);
+
+        final ChannelManifest m = ChannelManifestMapper.fromString(yaml);
+        assertEquals(manifest.getName(), m.getName());
+        assertEquals(1, m.getStreams().size());
+        assertEquals(sha, m.getStreams().stream().findFirst().get().getsha256Checksum());
+    }
+    
+    @Test
+    public void testInvalidPatternWithSHA256() throws Exception {
+        Map<String, String> sha = new HashMap<>();
+        sha.put("jar", "1");
+        sha.put("zip", "0");
+        try {
+            final Stream stream = new Stream("org.bar", "example", null, Pattern.compile(".*"), sha);
+            throw new IOException("Should have failed");
+        } catch(IllegalArgumentException ex) {
+            // XXX Ex[ected.
+        }
     }
 }

@@ -64,6 +64,7 @@ import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
 import org.jboss.logging.Logger;
+import org.wildfly.channel.ArtifactChecker;
 
 public class VersionResolverFactory implements MavenVersionsResolver.Factory {
 
@@ -208,7 +209,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
         }
 
         @Override
-        public List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> coords) throws UnresolvedMavenArtifactException {
+        public List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> coords, ArtifactChecker checker) throws UnresolvedMavenArtifactException {
             requireNonNull(coords);
 
             List<URL> channels = new ArrayList<>();
@@ -216,6 +217,9 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             for (ChannelMetadataCoordinate coord : coords) {
                 if (coord.getUrl() != null) {
                     LOG.infof("Resolving channel metadata at %s", coord.getUrl());
+                    if (checker != null) {
+                        checker.check(coord.getUrl());
+                    }
                     channels.add(coord.getUrl());
                     continue;
                 }
@@ -231,6 +235,9 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 }
                 LOG.infof("Resolving channel metadata from Maven artifact %s:%s:%s", coord.getGroupId(), coord.getArtifactId(), version);
                 File channelArtifact = resolveArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), version);
+                if (checker != null) {
+                    checker.check(coord, version, channelArtifact, this);
+                }
                 try {
                     channels.add(channelArtifact.toURI().toURL());
                 } catch (MalformedURLException e) {
@@ -324,7 +331,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
         requireNonNull(channelCoords);
 
         try (MavenVersionsResolver resolver = create(repositories)) {
-            return resolver.resolveChannelMetadata(channelCoords).stream()
+            return resolver.resolveChannelMetadata(channelCoords, null).stream()
                     .map(ChannelMapper::from)
                     .collect(Collectors.toList());
         }

@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.wildfly.channel.ArtifactChecker;
 
 import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.ChannelMetadataCoordinate;
@@ -85,12 +86,13 @@ public interface MavenVersionsResolver extends Closeable {
     * The order of returned URLs is the same as order of coordinates.
     *
     * @param manifestCoords - list of ChannelMetadataCoordinate.
+    * @param checker The artifact checker.
     *
     * @return a list of URLs to the metadata files
     *
     * @throws UnresolvedMavenArtifactException if any artifacts can not be resolved.
     */
-   List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> manifestCoords) throws UnresolvedMavenArtifactException;
+   List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> manifestCoords, ArtifactChecker checker) throws UnresolvedMavenArtifactException;
 
    /**
     * Returns the {@code <release>} version according to the repositories' Maven metadata. If multiple repositories

@@ -2,7 +2,6 @@ package org.wildfly.channel;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wildfly.channel.version.VersionMatcher;
@@ -15,7 +14,14 @@ import java.util.ArrayList;
 import static java.util.Collections.emptyList;
 
 public class Channel {
+    static class PublicKeyFilter {
+        // Return true if filtering out (excluding), false to include
 
+        @Override
+        public boolean equals(Object o) {
+            return true;
+        }
+    }
     public static final String CLASSIFIER="channel";
     public static final String EXTENSION="yaml";
 
@@ -45,6 +51,7 @@ public class Channel {
     private BlocklistCoordinate blocklistCoordinate;
     private ChannelManifestCoordinate manifestCoordinate;
     private NoStreamStrategy noStreamStrategy = NoStreamStrategy.NONE;
+    private URL publicKey;
 
     // no-arg constructor for maven plugins
     public Channel() {
@@ -62,7 +69,8 @@ public class Channel {
                    List<Repository> repositories,
                    ChannelManifestCoordinate manifestCoordinate,
                    BlocklistCoordinate blocklistCoordinate,
-                   NoStreamStrategy noStreamStrategy){
+                   NoStreamStrategy noStreamStrategy,
+                   URL publicKey){
         this(ChannelMapper.CURRENT_SCHEMA_VERSION,
                 name,
                 description,
@@ -70,7 +78,8 @@ public class Channel {
                 repositories,
                 manifestCoordinate,
                 blocklistCoordinate,
-                noStreamStrategy);
+                noStreamStrategy,
+                publicKey);
     }
 
     @JsonCreator
@@ -82,7 +91,8 @@ public class Channel {
                                  @JsonInclude(NON_EMPTY) List<Repository> repositories,
                    @JsonProperty(value = "manifest") ChannelManifestCoordinate manifestCoordinate,
                    @JsonProperty(value = "blocklist") @JsonInclude(NON_EMPTY) BlocklistCoordinate blocklistCoordinate,
-                   @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy) {
+                   @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy,
+                   @JsonProperty(value="public-key") URL publicKey) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
@@ -91,6 +101,13 @@ public class Channel {
         this.blocklistCoordinate = blocklistCoordinate;
         this.manifestCoordinate = manifestCoordinate;
         this.noStreamStrategy = (noStreamStrategy != null) ? noStreamStrategy: NoStreamStrategy.NONE;
+        this.publicKey = publicKey;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM,
+     valueFilter = PublicKeyFilter.class)
+    public URL getPublicKey() {
+        return publicKey;
     }
 
     public String getSchemaVersion() {
@@ -166,9 +183,15 @@ public class Channel {
         private NoStreamStrategy strategy;
         private String description;
         private Vendor vendor;
+        private URL publicKey;
 
         public Channel build() {
-            return new Channel(name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy);
+            return new Channel(name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy, publicKey);
+        }
+        
+        public Builder setPublicKey(URL publicKey) {
+            this.publicKey = publicKey;
+            return this;
         }
 
         public Builder setName(String name) {

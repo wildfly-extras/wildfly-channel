@@ -45,6 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
@@ -55,6 +56,12 @@ public class ChannelSessionTestCase {
 
     @TempDir
     private Path tempDir;
+    private static File emptyFile;
+
+    @BeforeAll
+    static void setup() throws IOException {
+        emptyFile = File.createTempFile("ChannelWithRequirementsTestCase", ".jar");
+    }
 
     @Test
     public void testFindLatestMavenArtifactVersion() throws Exception {
@@ -95,7 +102,7 @@ public class ChannelSessionTestCase {
             String manifest = manifests[i];
             Path manifestFile = Files.writeString(tempDir.resolve("manifest" + i +".yaml"), manifest);
 
-            when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.channels", "channel" + i, "1.0.0")))))
+            when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.channels", "channel" + i, "1.0.0"))), any()))
                     .thenReturn(List.of(manifestFile.toUri().toURL()));
         }
         return channels;
@@ -139,7 +146,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = File.createTempFile("resolvedArtifactFile", ".jar");
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(Set.of("25.0.0.Final", "25.0.1.Final"));
@@ -202,7 +209,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = File.createTempFile("resolvedArtifactFile", ".jar");
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact("org.bar", "bar", null, null, "1.0.0.Final")).thenReturn(resolvedArtifactFile);
@@ -243,8 +250,8 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile1 = mock(File.class);
-        File resolvedArtifactFile2 = mock(File.class);
+        File resolvedArtifactFile1 = File.createTempFile("resolvedArtifactFile1", ".jar");
+        File resolvedArtifactFile2 = File.createTempFile("resolvedArtifactFile2", ".jar");
 
         when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
@@ -292,13 +299,13 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile1 = mock(File.class);
-        File resolvedArtifactFile2 = mock(File.class);
+        File resolvedArtifactFile1 = File.createTempFile("resolvedArtifactFile1", ".jar");
+        File resolvedArtifactFile2 = File.createTempFile("resolvedArtifactFile2", ".jar");
 
         when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
-           new ArtifactCoordinate("org.foo", "foo", null, null, "1.0.0"),
-           new ArtifactCoordinate("org.bar", "bar", null, null, "1.0.0"));
+           new ArtifactCoordinate("org.foo", "foo", "jar", null, "1.0.0"),
+           new ArtifactCoordinate("org.bar", "bar", "jar", null, "1.0.0"));
         when(resolver.resolveArtifacts(any()))
            .then(new Answer<List<File>>() {
                @Override
@@ -323,8 +330,8 @@ public class ChannelSessionTestCase {
             assertNotNull(resolved);
 
             final List<MavenArtifact> expected = asList(
-               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
-               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+               new MavenArtifact("org.foo", "foo", "jar", null, "25.0.0.Final", resolvedArtifactFile1),
+               new MavenArtifact("org.bar", "bar", "jar", null, "26.0.0.Final", resolvedArtifactFile2)
             );
             assertContainsAll(expected, resolved);
 
@@ -349,8 +356,8 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile1 = mock(File.class);
-        File resolvedArtifactFile2 = mock(File.class);
+        File resolvedArtifactFile1 = File.createTempFile("resolvedArtifactFile1", ".txt");
+        File resolvedArtifactFile2 = File.createTempFile("resolvedArtifactFile2", ".txt");
 
         when(factory.create(any())).thenReturn(resolver);
         final List<ArtifactCoordinate> coordinates = asList(
@@ -398,7 +405,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = File.createTempFile("resolvedArtifactFile", ".jar");
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact(eq("org.foo"), eq("foo"), eq(null), eq(null), anyString())).thenReturn(resolvedArtifactFile);
@@ -430,7 +437,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.LATEST, manifest);
 
@@ -501,7 +508,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.MAVEN_RELEASE, manifest);
 
@@ -526,7 +533,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.MAVEN_LATEST, manifest);
 
@@ -551,7 +558,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.NONE, manifest);
 
@@ -576,7 +583,7 @@ public class ChannelSessionTestCase {
 
         MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("1.0.0.Final"))).thenReturn(resolvedArtifactFile);

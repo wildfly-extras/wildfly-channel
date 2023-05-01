@@ -16,9 +16,11 @@
  */
 package org.wildfly.channel;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static java.util.Objects.requireNonNull;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -26,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
 import org.wildfly.channel.version.FixedVersionMatcher;
 import org.wildfly.channel.version.VersionMatcher;
 import org.wildfly.channel.version.VersionPatternMatcher;
@@ -61,24 +64,29 @@ public class Stream implements Comparable<Stream> {
      */
     private final Pattern versionPattern;
 
+    /**
+     * Map of [classifier/]extension to SHA256 checksum.
+     */
+    private final Map<String, String> sha256Checksum;
+
     private VersionMatcher versionMatcher;
 
     /**
-     * @see #Stream(String, String, String, Pattern)
+     * @see #Stream(String, String, String, Pattern, Map)
      */
     public Stream(String groupId,
                   String artifactId,
                   String version) {
-        this(groupId, artifactId, version, null);
+        this(groupId, artifactId, version, null, null);
     }
 
     /**
-     * @see #Stream(String, String, String, Pattern)
+     * @see #Stream(String, String, String, Pattern, Map)
      */
     public Stream(String groupId,
                   String artifactId,
                   Pattern versionPattern) {
-        this(groupId, artifactId, null, versionPattern);
+        this(groupId, artifactId, null, versionPattern, null);
     }
 
     /**
@@ -88,6 +96,7 @@ public class Stream implements Comparable<Stream> {
      * @param artifactId artifactId of the Maven coordinate - required
      * @param version version of the Maven coordinate - can be {@code null}
      * @param versionPattern version patter to determine the latest version of the resource - can be {@code null}
+     * @param sha256Checksum the SHA-256 checksum of the artifacts from this stream - can be {@code null}
      *
      * Either {@code version} or {@code versionPattern} must be defined.
      */
@@ -95,11 +104,13 @@ public class Stream implements Comparable<Stream> {
     public Stream(@JsonProperty(value = "groupId", required = true) String groupId,
            @JsonProperty(value = "artifactId", required = true) String artifactId,
            @JsonProperty("version") String version,
-           @JsonProperty("versionPattern") Pattern versionPattern) {
+           @JsonProperty("versionPattern") Pattern versionPattern,
+           @JsonProperty("sha256checksum") Map<String, String> sha256Checksum) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
         this.versionPattern = versionPattern;
+        this.sha256Checksum = sha256Checksum == null ? new HashMap<>() : sha256Checksum;
         validate();
         initVersionMatcher();
     }
@@ -124,6 +135,11 @@ public class Stream implements Comparable<Stream> {
                 (version == null && versionPattern == null )) {
             throw new IllegalArgumentException(
                     String.format("Invalid stream. Only one of version, versionPattern field must be set"));
+        }
+
+        if (!sha256Checksum.isEmpty() && version == null) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid stream. SHA-256 checksums can only be set when version is used."));
         }
     }
 
@@ -150,6 +166,12 @@ public class Stream implements Comparable<Stream> {
         return versionMatcher;
     }
 
+    @JsonProperty("sha256checksum")
+    @JsonInclude(NON_EMPTY)
+    public Map<String, String> getsha256Checksum() {
+        return sha256Checksum;
+    }
+
     @Override
     public String toString() {
         return "Stream{" +
@@ -158,6 +180,7 @@ public class Stream implements Comparable<Stream> {
                 ", version='" + version + '\'' +
                 ", versionPattern=" + versionPattern +
                 ", versionComparator=" + versionMatcher +
+                ", sha256Checksum" + sha256Checksum +
                 '}';
     }
 
@@ -180,11 +203,11 @@ public class Stream implements Comparable<Stream> {
         if (o == null || getClass() != o.getClass())
             return false;
         Stream stream = (Stream) o;
-        return groupId.equals(stream.groupId) && artifactId.equals(stream.artifactId) && version.equals(stream.version) && Objects.equals(versionPattern, stream.versionPattern);
+        return groupId.equals(stream.groupId) && artifactId.equals(stream.artifactId) && version.equals(stream.version) && Objects.equals(versionPattern, stream.versionPattern) && Objects.equals(sha256Checksum, stream.sha256Checksum);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(groupId, artifactId, version, versionPattern);
+        return Objects.hash(groupId, artifactId, version, versionPattern, sha256Checksum);
     }
 }

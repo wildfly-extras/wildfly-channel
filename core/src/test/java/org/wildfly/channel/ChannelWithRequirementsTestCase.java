@@ -34,14 +34,22 @@ import java.util.Set;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.wildfly.channel.ChannelImpl.ManifestArtifactChecker;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 
 public class ChannelWithRequirementsTestCase {
 
     @TempDir
     private Path tempDir;
+    private static File emptyFile;
+
+    @BeforeAll
+    static void setup() throws IOException {
+        emptyFile = File.createTempFile("ChannelWithRequirementsTestCase", ".jar");
+    }
 
     /**
      * Test that newest version of required channel is used when required channel version is not specified
@@ -53,7 +61,7 @@ public class ChannelWithRequirementsTestCase {
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
 
@@ -67,7 +75,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(Set.of("1.0.0.Final, 1.1.0.Final", "1.2.0.Final"));
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
-        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
+        when(resolver.resolveChannelMetadata(any(), any())).thenReturn(List.of(resolvedRequiredManifestURL));
 
         String baseManifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My manifest\n" +
@@ -113,7 +121,7 @@ public class ChannelWithRequirementsTestCase {
 
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
 
@@ -121,7 +129,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolver);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
-        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
+        when(resolver.resolveChannelMetadata(any(), any())).thenReturn(List.of(resolvedRequiredManifestURL));
 
         String baseManifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My manifest\n" +
@@ -174,9 +182,9 @@ public class ChannelWithRequirementsTestCase {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
 
-        File resolvedArtifactFile120Final = mock(File.class);
-        File resolvedArtifactFile200Final = mock(File.class);
-        File resolvedArtifactFile100Final = mock(File.class);
+        File resolvedArtifactFile120Final = emptyFile;
+        File resolvedArtifactFile200Final = emptyFile;
+        File resolvedArtifactFile100Final = emptyFile;
 
         when(factory.create(any()))
                 .thenReturn(resolver);
@@ -189,7 +197,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolvedArtifactFile120Final);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
                 .thenReturn(resolvedArtifactFile200Final);
-        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test.channels", "required-manifest", "1.0.0")))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test.channels", "required-manifest", "1.0.0"))), any()))
                 .thenReturn(List.of(resolvedRequiredManifestURL));
 
         // The requiring channel requires newer version of foo-bar artifact
@@ -322,19 +330,19 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-second-level", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-second-level", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
 
         String manifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                         "name: root level requiring manifest\n"+
@@ -465,15 +473,15 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "1.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
         when(resolver.resolveArtifact("org.example", "im-only-in-required-channel", null, null, "2.0.0.Final"))
-                .thenReturn(mock(File.class));
+                .thenReturn(emptyFile);
 
         mockManifest(resolver, resolvedRequiredManifestURL, "test.channels:required-manifest:1.0.0");
         mockManifest(resolver, resolvedRequiredManifestURL2, "test.channels:required-manifest-2:1.0.0");
@@ -577,10 +585,10 @@ public class ChannelWithRequirementsTestCase {
 
         // the default strategy is ORIGINAL
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        File resolvedArtifactFile = mock(File.class);
+        File resolvedArtifactFile = emptyFile;
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))))
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))), any(ManifestArtifactChecker.class)))
                 .thenReturn(List.of(resolvedRequiredManifestURL));
 
         when(factory.create(any()))
@@ -619,7 +627,7 @@ public class ChannelWithRequirementsTestCase {
     private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
+        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav))), any(ManifestArtifactChecker.class)))
                 .thenReturn(List.of(manifestUrl));
     }
 }
