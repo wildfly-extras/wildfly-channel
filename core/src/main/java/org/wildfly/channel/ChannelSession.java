@@ -25,10 +25,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 
+import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
 
@@ -36,10 +41,15 @@ import org.wildfly.channel.version.VersionMatcher;
  * A ChannelSession is used to install and resolve Maven Artifacts inside a single scope.
  */
 public class ChannelSession implements AutoCloseable {
+
+    private static final Logger LOG = Logger.getLogger(ChannelSession.class);
+    private static final int DEFAULT_SPLIT_ARTIFACT_PARALLELISM = 10;
+
     private final List<ChannelImpl> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
     // resolver used for direct dependencies only. Uses combination of all repositories in the channels.
     private final MavenVersionsResolver combinedResolver;
+    private final int versionResolutionParallelism;
 
     /**
      * Create a ChannelSession.
@@ -50,6 +60,19 @@ public class ChannelSession implements AutoCloseable {
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
     public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory) {
+        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM);
+    }
+
+    /**
+     * Create a ChannelSession.
+     *
+     * @param channels the list of channels to resolve Maven artifact
+     * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
+     * @param versionResolutionParallelism Number of threads to use when resolving available artifact versions.
+     * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
+     * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
+     */
+    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory, int versionResolutionParallelism) {
         requireNonNull(channelDefinitions);
         requireNonNull(factory);
 
@@ -62,13 +85,14 @@ public class ChannelSession implements AutoCloseable {
         }
         // filter out channels marked as dependency, so that resolution starts only at top level channels
         this.channels = channelList.stream().filter(c->!c.isDependency()).collect(Collectors.toList());
+        this.versionResolutionParallelism = versionResolutionParallelism;
 
         validateNoDuplicatedManifests();
     }
 
     /**
      * Resolve the Maven artifact according to the session's channels.
-     *
+     * <p>
      * In order to find the stream corresponding to the Maven artifact, the channels are searched depth-first, starting
      * with the first channel in the list and into their respective required channels.
      * Once the first stream that matches the {@code groupId} and {@artifactId} parameters is found, the Maven artifact
@@ -100,12 +124,12 @@ public class ChannelSession implements AutoCloseable {
 
     /**
      * Resolve a list of Maven artifacts according to the session's channels.
-     *
+     * <p>
      * In order to find the stream corresponding to the Maven artifact, the channels are searched depth-first, starting
      * with the first channel in the list and into their respective required channels.
      * Once the first stream that matches the {@code groupId} and {@artifactId} parameters is found, the Maven artifact
      * will be resolved with the version determined by this stream.
-     *
+     * <p>
      * The returned list of resolved artifacts does not maintain ordering of requested coordinates
      *
      * @param coordinates list of ArtifactCoordinates to resolve
@@ -134,7 +158,7 @@ public class ChannelSession implements AutoCloseable {
 
     /**
      * Resolve the Maven artifact with a specific version without checking the channels.
-     *
+     * <p>
      * If the artifact is resolved, a stream for it is added to the {@code getRecordedChannel}.
      *
      * @param groupId - required
@@ -157,7 +181,7 @@ public class ChannelSession implements AutoCloseable {
 
     /**
      * Resolve a list of Maven artifacts with a specific version without checking the channels.
-     *
+     * <p>
      * If the artifact is resolved, a stream for it is added to the {@code getRecordedChannel}.
      *
      * @param coordinates - list of ArtifactCoordinates to check
@@ -165,7 +189,7 @@ public class ChannelSession implements AutoCloseable {
      * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
      */
     public List<MavenArtifact> resolveDirectMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
-        coordinates.stream().forEach(c->{
+        coordinates.forEach(c -> {
             requireNonNull(c.getGroupId());
             requireNonNull(c.getArtifactId());
             requireNonNull(c.getVersion());
@@ -210,7 +234,7 @@ public class ChannelSession implements AutoCloseable {
     /**
      * Returns a synthetic Channel where each resolved artifacts (either with exact or latest version)
      * is defined in a {@code Stream} with a {@code version} field.
-     *
+     * <p>
      * This channel can be used to reproduce the same resolution in another ChannelSession.
      *
      * @return a synthetic Channel.
@@ -220,7 +244,7 @@ public class ChannelSession implements AutoCloseable {
     }
 
     private void validateNoDuplicatedManifests() {
-        final List<String> manifestIds = this.channels.stream().map(c -> c.getManifest().getId()).filter(id -> id != null).collect(Collectors.toList());
+        final List<String> manifestIds = this.channels.stream().map(c -> c.getManifest().getId()).filter(Objects::nonNull).collect(Collectors.toList());
         if (manifestIds.size() != new HashSet<>(manifestIds).size()) {
             throw new RuntimeException("The same manifest is provided by one or more channels");
         }
@@ -239,7 +263,7 @@ public class ChannelSession implements AutoCloseable {
         }
 
         // find the latest version from all the channels that defined the stream.
-        Optional<String> foundLatestVersionInChannels = foundVersions.keySet().stream().sorted(VersionMatcher.COMPARATOR.reversed()).findFirst();
+        Optional<String> foundLatestVersionInChannels = foundVersions.keySet().stream().max(VersionMatcher.COMPARATOR);
         return foundVersions.get(foundLatestVersionInChannels.orElseThrow(() -> {
             final ArtifactCoordinate coord = new ArtifactCoordinate(groupId, artifactId, extension, classifier, "");
             final Set<Repository> repositories = channels.stream()
@@ -253,17 +277,40 @@ public class ChannelSession implements AutoCloseable {
     }
 
     private Map<ChannelImpl, List<ArtifactCoordinate>> splitArtifactsPerChannel(List<ArtifactCoordinate> coordinates) {
+        long start = System.currentTimeMillis();
         Map<ChannelImpl, List<ArtifactCoordinate>> channelMap = new HashMap<>();
-        for (ArtifactCoordinate coord : coordinates) {
+
+        ForkJoinPool customThreadPool = new ForkJoinPool(versionResolutionParallelism);
+        ForkJoinTask<?> task = customThreadPool.submit(() -> coordinates.parallelStream().forEach(coord -> {
             ChannelImpl.ResolveLatestVersionResult result = findChannelWithLatestVersion(coord.getGroupId(), coord.getArtifactId(),
-                                                                                     coord.getExtension(), coord.getClassifier(), coord.getVersion());
+                    coord.getExtension(), coord.getClassifier(), coord.getVersion());
             ArtifactCoordinate query = new ArtifactCoordinate(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), result.version);
             ChannelImpl channel = result.channel;
-            if (!channelMap.containsKey(channel)) {
-                channelMap.put(channel, new ArrayList<>());
+            synchronized (ChannelSession.this) {
+                if (!channelMap.containsKey(channel)) {
+                    channelMap.put(channel, new ArrayList<>());
+                }
+                channelMap.get(channel).add(query);
             }
-            channelMap.get(channel).add(query);
+        }));
+
+        try {
+            task.get();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof UnresolvedMavenArtifactException) {
+                // rethrow the UnresolvedMavenArtifactException if it's the cause
+                throw (UnresolvedMavenArtifactException) e.getCause();
+            }
+            throw new RuntimeException("Unable to resolve latest artifact versions.", e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Unable to resolve latest artifact versions: interrupted", e);
+        } finally {
+            customThreadPool.shutdown();
         }
+
+        float total = (System.currentTimeMillis() - start) / 1000f;
+        LOG.debugf("Splitting artifacts per channels took %.2f seconds", total);
+
         return channelMap;
     }
 }
