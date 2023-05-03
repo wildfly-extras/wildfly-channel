@@ -74,4 +74,12 @@ public class Repository {
     public int hashCode() {
         return Objects.hash(id, url);
     }
+
+    @Override
+    public String toString() {
+        return "Repository{" +
+                "id='" + id + '\'' +
+                ", url='" + url + '\'' +
+                '}';
+    }
 }

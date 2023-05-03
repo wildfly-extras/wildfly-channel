@@ -48,4 +48,13 @@ public class BlocklistEntry {
    public Set<String> getVersions() {
       return versions;
    }
+
+   @Override
+   public String toString() {
+      return "BlocklistEntry{" +
+              "groupId='" + groupId + '\'' +
+              ", artifactId='" + artifactId + '\'' +
+              ", versions=" + versions +
+              '}';
+   }
 }

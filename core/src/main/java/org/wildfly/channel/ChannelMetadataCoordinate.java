@@ -106,4 +106,16 @@ public class ChannelMetadataCoordinate {
     public int hashCode() {
         return Objects.hash(groupId, artifactId, version, classifier, extension, url);
     }
+
+    @Override
+    public String toString() {
+        return "ChannelMetadataCoordinate{" +
+                "groupId='" + groupId + '\'' +
+                ", artifactId='" + artifactId + '\'' +
+                ", version='" + version + '\'' +
+                ", classifier='" + classifier + '\'' +
+                ", extension='" + extension + '\'' +
+                ", url=" + url +
+                '}';
+    }
 }
