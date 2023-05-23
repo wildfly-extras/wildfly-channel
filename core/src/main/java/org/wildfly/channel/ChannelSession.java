@@ -105,10 +105,12 @@ public class ChannelSession implements AutoCloseable {
      * @param baseVersion - can be null. The base version is required when the stream for the component specifies multiple versions and needs the base version to
      *                    determine the appropriate version to resolve.
      * @return the Maven Artifact (with a file corresponding to the artifact).
-     * @throws UnresolvedMavenArtifactException if the latest version can not be resolved or the artifact itself can not be resolved.
+     * @throws NoStreamFoundException if none of the channels in the {@code ChannelSession} provides the artifact
+     * @throws ArtifactTransferException if the artifact is provided by the {@code ChannelSession}, but the resolution failed
      *
      */
-    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+    public MavenArtifact resolveMavenArtifact(String groupId, String artifactId, String extension, String classifier, String baseVersion)
+            throws NoStreamFoundException, ArtifactTransferException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         // baseVersion is not used at the moment but will provide essential to support advanced use cases to determine multiple streams of the same Maven component.
@@ -134,7 +136,8 @@ public class ChannelSession implements AutoCloseable {
      *
      * @param coordinates list of ArtifactCoordinates to resolve
      * @return a list of resolved MavenArtifacts with resolved versions asnd files
-     * @throws UnresolvedMavenArtifactException
+     * @throws NoStreamFoundException if one or more of the artifact is not provided by any of the channels in the {@code ChannelSession}
+     * @throws ArtifactTransferException if one or more of the artifacts is provided by the {@code ChannelSession}, but the resolution failed
      */
     public List<MavenArtifact> resolveMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         requireNonNull(coordinates);
@@ -167,9 +170,9 @@ public class ChannelSession implements AutoCloseable {
      * @param classifier - can be null
      * @param version - required
      * @return the Maven Artifact (with a file corresponding to the artifact).
-     * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
+     * @throws ArtifactTransferException if the artifact can not be resolved
      */
-    public MavenArtifact resolveDirectMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
+    public MavenArtifact resolveDirectMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws ArtifactTransferException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
         requireNonNull(version);
@@ -186,9 +189,9 @@ public class ChannelSession implements AutoCloseable {
      *
      * @param coordinates - list of ArtifactCoordinates to check
      * @return the Maven Artifact (with a file corresponding to the artifact).
-     * @throws UnresolvedMavenArtifactException if the artifact can not be resolved
+     * @throws ArtifactTransferException if the artifact can not be resolved
      */
-    public List<MavenArtifact> resolveDirectMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
+    public List<MavenArtifact> resolveDirectMavenArtifacts(List<ArtifactCoordinate> coordinates) throws ArtifactTransferException {
         coordinates.forEach(c -> {
             requireNonNull(c.getGroupId());
             requireNonNull(c.getArtifactId());
@@ -217,9 +220,9 @@ public class ChannelSession implements AutoCloseable {
      * @param baseVersion - can be null. The base version is required when the stream for the component specifies multiple versions and needs the base version to
      *                    determine the appropriate version to resolve.
      * @return the latest version if a Maven artifact
-     * @throws UnresolvedMavenArtifactException if the latest version cannot be established
+     * @throws NoStreamFoundException if the latest version cannot be established
      */
-    public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+    public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws NoStreamFoundException {
         return findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion).version;
     }
 
@@ -250,7 +253,7 @@ public class ChannelSession implements AutoCloseable {
         }
     }
 
-    private ChannelImpl.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws UnresolvedMavenArtifactException {
+    private ChannelImpl.ResolveLatestVersionResult findChannelWithLatestVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws NoStreamFoundException {
         requireNonNull(groupId);
         requireNonNull(artifactId);
 
@@ -270,7 +273,7 @@ public class ChannelSession implements AutoCloseable {
                     .map(ChannelImpl::getChannelDefinition)
                     .flatMap(d -> d.getRepositories().stream())
                     .collect(Collectors.toSet());
-            throw new UnresolvedMavenArtifactException(
+            throw new NoStreamFoundException(
                     String.format("Can not resolve latest Maven artifact (no stream found) : %s:%s:%s:%s", groupId, artifactId, extension, classifier),
                     Collections.singleton(coord), repositories);
         }));

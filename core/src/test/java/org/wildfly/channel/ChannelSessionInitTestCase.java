@@ -122,7 +122,7 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
         when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test.channels", "i-dont-exist", "1.0.0"))))
-                .thenThrow(UnresolvedMavenArtifactException.class);
+                .thenThrow(ArtifactTransferException.class);
 
         List<Channel> channels = List.of(new Channel.Builder()
                         .setName("root level requiring channel")

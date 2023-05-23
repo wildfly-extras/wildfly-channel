@@ -18,7 +18,7 @@ package org.wildfly.channel;
 
 import java.util.Set;
 
-public class UnresolvedMavenArtifactException extends RuntimeException {
+public abstract class UnresolvedMavenArtifactException extends RuntimeException {
 
     private final Set<ArtifactCoordinate> unresolvedArtifacts;
     private final Set<Repository> attemptedRepositories;
@@ -32,7 +32,7 @@ public class UnresolvedMavenArtifactException extends RuntimeException {
         this.attemptedRepositories = attemptedRepositories;
     }
 
-    public <E> UnresolvedMavenArtifactException(String message, Set<ArtifactCoordinate> unresolvedArtifacts, Set<Repository> attemptedRepositories) {
+    public UnresolvedMavenArtifactException(String message, Set<ArtifactCoordinate> unresolvedArtifacts, Set<Repository> attemptedRepositories) {
         super(message);
         this.unresolvedArtifacts = unresolvedArtifacts;
         this.attemptedRepositories = attemptedRepositories;
