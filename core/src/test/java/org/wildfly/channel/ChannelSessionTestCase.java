@@ -73,8 +73,8 @@ public class ChannelSessionTestCase {
         final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            String version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
-            assertEquals("25.0.0.Final", version);
+            VersionResult version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
+            assertEquals("25.0.0.Final", version.getVersion());
         }
 
         verify(resolver, times(2)).close();
@@ -88,6 +88,7 @@ public class ChannelSessionTestCase {
         List<Channel> channels = new ArrayList<>();
         for (int i = 0; i < manifests.length; i++) {
             channels.add(new Channel.Builder()
+                            .setName("channel-" + i)
                             .setManifestCoordinate("org.channels", "channel" + i, "1.0.0")
                             .setResolveStrategy(strategy)
                             .build());
@@ -157,6 +158,7 @@ public class ChannelSessionTestCase {
             assertNull(artifact.getClassifier());
             assertEquals("25.0.1.Final", artifact.getVersion());
             assertEquals(resolvedArtifactFile, artifact.getFile());
+            assertEquals("channel-0", artifact.getChannelName().get());
         }
 
         verify(resolver, times(2)).close();
@@ -224,6 +226,7 @@ public class ChannelSessionTestCase {
             Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
             assertTrue(stream.isPresent());
             assertEquals("1.0.0.Final", stream.get().getVersion());
+            assertEquals(Optional.empty(), artifact.getChannelName(), "The channel name should be null when resolving version directly");
         }
 
         verify(resolver, times(2)).close();
@@ -245,8 +248,8 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile1 = mock(File.class);
         File resolvedArtifactFile2 = mock(File.class);
         final List<MavenArtifact> expectedArtifacts = asList(
-                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
-                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+                new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1, "channel-0"),
+                new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2, "channel-0")
         );
 
         when(factory.create(any())).thenReturn(resolver);
@@ -324,8 +327,8 @@ public class ChannelSessionTestCase {
             assertNotNull(resolved);
 
             final List<MavenArtifact> expected = asList(
-               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
-               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1, "channel-0"),
+               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2, "channel-1")
             );
             assertContainsAll(expected, resolved);
 

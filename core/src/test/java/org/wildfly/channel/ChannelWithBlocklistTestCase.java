@@ -90,8 +90,8 @@ public class ChannelWithBlocklistTestCase {
            .thenReturn(new HashSet<>(Arrays.asList("25.0.0.Final", "25.0.1.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            String version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
-            assertEquals("25.0.0.Final", version);
+            VersionResult version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
+            assertEquals("25.0.0.Final", version.getVersion());
         }
 
         verify(resolver, times(2)).close();
@@ -137,8 +137,8 @@ public class ChannelWithBlocklistTestCase {
            .thenReturn(new HashSet<>(Arrays.asList("25.0.0.Final", "25.0.1.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            String version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
-            assertEquals("25.0.1.Final", version);
+            VersionResult version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
+            assertEquals("25.0.1.Final", version.getVersion());
         }
 
         verify(resolver, times(2)).close();
@@ -182,8 +182,8 @@ public class ChannelWithBlocklistTestCase {
            .thenReturn(new HashSet<>(Arrays.asList("25.0.0.Final", "25.0.1.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            String version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
-            assertEquals("25.0.0.Final", version);
+            VersionResult version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
+            assertEquals("25.0.0.Final", version.getVersion());
         }
 
         verify(resolver, times(2)).close();
@@ -457,8 +457,8 @@ public class ChannelWithBlocklistTestCase {
            .thenReturn(new HashSet<>(Arrays.asList("25.0.0.Final", "25.0.1.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
-            String version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
-            assertEquals("25.0.0.Final", version);
+            VersionResult version = session.findLatestMavenArtifactVersion("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.0.Final");
+            assertEquals("25.0.0.Final", version.getVersion());
         }
 
         verify(resolver, times(3)).close();
