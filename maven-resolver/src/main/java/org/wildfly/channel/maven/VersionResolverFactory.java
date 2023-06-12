@@ -75,6 +75,8 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
      * The way checksum verification should be handled. It can be "fail", "warn", "ignore" or null
      */
     private static final String checksumPolicy = System.getProperty("org.wildfly.channel.maven.policy.checksum", RepositoryPolicy.CHECKSUM_POLICY_FAIL);
+    private static final int MAX_RESOLVER_RETRIES = Integer.getInteger("org.wildfly.channel.maven.resolve.retry.max", 5);
+    private static final long TIMEOUT_RESOLVER_RETRIES = Long.getLong("org.wildfly.channel.maven.resolve.retry.timeout", 0);
     public static final RepositoryPolicy DEFAULT_REPOSITORY_POLICY = new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_ALWAYS, checksumPolicy);
     public static final Function<Repository, RemoteRepository> DEFAULT_REPOSITORY_MAPPER = r -> new RemoteRepository.Builder(r.getId(), "default", r.getUrl())
             .setPolicy(DEFAULT_REPOSITORY_POLICY)
@@ -115,6 +117,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
         private final RepositorySystem system;
         private final RepositorySystemSession session;
         private final List<RemoteRepository> repositories;
+        private final RetryHandler retryingResolver;
 
         MavenResolverImpl(RepositorySystem system,
                           RepositorySystemSession session,
@@ -122,6 +125,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             this.system = system;
             this.session = session;
             this.repositories = repositories;
+            this.retryingResolver = new RetryHandler(MAX_RESOLVER_RETRIES, TIMEOUT_RESOLVER_RETRIES);
         }
 
         @Override
@@ -165,15 +169,9 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 request.setRepositories(repositories);
             }
 
-            ArtifactResult result;
-            try {
-                result = system.resolveArtifact(session, request);
-            } catch (ArtifactResolutionException ex) {
-                throw new ArtifactTransferException(ex.getLocalizedMessage(), ex,
-                        singleton(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)),
-                        attemptedRepositories());
-            }
-            return result.getArtifact().getFile();
+            return retryingResolver.attemptResolve(()->List.of(system.resolveArtifact(session, request).getArtifact().getFile()),
+                    (ex)->singleton(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)),
+                    attemptedRepositories()).get(0);
         }
 
         @Override
@@ -192,21 +190,23 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 requests.add(request);
             }
 
-            try {
+            final RetryHandler.Supplier artifactQuery = () -> {
                 final List<ArtifactResult> artifactResults = system.resolveArtifacts(session, requests);
                 // results are in the same order as requests
                 return artifactResults.stream()
-                   .map(ArtifactResult::getArtifact)
-                   .map(Artifact::getFile)
-                   .collect(Collectors.toList());
-            } catch (ArtifactResolutionException ex) {
-                Set<ArtifactCoordinate> failed = ex.getResults().stream()
-                   .filter(r->r.getArtifact() == null)
-                   .map(res->res.getRequest().getArtifact())
-                   .map(a->new ArtifactCoordinate(a.getGroupId(), a.getArtifactId(), a.getExtension(), a.getClassifier(), a.getVersion()))
-                   .collect(Collectors.toSet());
-                throw new ArtifactTransferException(ex.getLocalizedMessage(), ex, failed, attemptedRepositories());
-            }
+                        .map(ArtifactResult::getArtifact)
+                        .map(Artifact::getFile)
+                        .collect(Collectors.toList());
+            };
+            final Function<ArtifactResolutionException, Set<ArtifactCoordinate>> exceptionMaper = (ex) -> ex.getResults().stream()
+                    .filter(r -> r.getArtifact() == null)
+                    .map(res -> res.getRequest().getArtifact())
+                    .map(a -> new ArtifactCoordinate(a.getGroupId(), a.getArtifactId(), a.getExtension(), a.getClassifier(), a.getVersion()))
+                    .collect(Collectors.toSet());
+
+            return retryingResolver.attemptResolve(artifactQuery,
+                    exceptionMaper,
+                    attemptedRepositories());
         }
 
         @Override
