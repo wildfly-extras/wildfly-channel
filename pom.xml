@@ -30,7 +30,7 @@
         <version.junit5>5.9.3</version.junit5>
         <version.org.jboss.logging>3.5.0.Final</version.org.jboss.logging>
         <version.release.plugin>3.0.1</version.release.plugin>
-        <version.maven.resolver-api>1.9.10</version.maven.resolver-api>
+        <version.maven.resolver-api>1.9.12</version.maven.resolver-api>
         <version.maven.repository.metadata>3.6.3</version.maven.repository.metadata>
     </properties>
 
