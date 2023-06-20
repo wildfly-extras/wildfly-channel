@@ -121,7 +121,7 @@ public class ChannelSession implements AutoCloseable {
 
         ChannelImpl.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
         recorder.recordStream(groupId, artifactId, latestVersion);
-        return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file);
+        return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file, artifact.channel.getChannelDefinition().getName());
     }
 
     /**
@@ -150,7 +150,10 @@ public class ChannelSession implements AutoCloseable {
             final List<ChannelImpl.ResolveArtifactResult> resolveArtifactResults = channel.resolveArtifacts(requests);
             for (int i = 0; i < requests.size(); i++) {
                 final ArtifactCoordinate request = requests.get(i);
-                final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), resolveArtifactResults.get(i).file);
+                final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(),
+                        request.getExtension(), request.getClassifier(), request.getVersion(),
+                        resolveArtifactResults.get(i).file,
+                        resolveArtifactResults.get(i).channel.getChannelDefinition().getName());
 
                 recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion());
                 res.add(resolvedArtifact);
@@ -222,8 +225,9 @@ public class ChannelSession implements AutoCloseable {
      * @return the latest version if a Maven artifact
      * @throws NoStreamFoundException if the latest version cannot be established
      */
-    public String findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws NoStreamFoundException {
-        return findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion).version;
+    public VersionResult findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws NoStreamFoundException {
+        final ChannelImpl.ResolveLatestVersionResult channelWithLatestVersion = findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
+        return new VersionResult(channelWithLatestVersion.version, channelWithLatestVersion.channel.getChannelDefinition().getName());
     }
 
     @Override

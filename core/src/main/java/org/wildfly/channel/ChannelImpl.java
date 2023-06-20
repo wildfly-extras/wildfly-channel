@@ -262,33 +262,6 @@ class ChannelImpl implements AutoCloseable {
         return Optional.empty();
     }
 
-    MavenArtifact resolveDirectMavenArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
-        requireNonNull(groupId);
-        requireNonNull(artifactId);
-        requireNonNull(version);
-
-        File file = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
-        return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
-    }
-
-    List<MavenArtifact> resolveDirectMavenArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
-        coordinates.stream().forEach(c->{
-            requireNonNull(c.getGroupId());
-            requireNonNull(c.getArtifactId());
-            requireNonNull(c.getVersion());
-        });
-        final List<File> files = resolver.resolveArtifacts(coordinates);
-
-        final ArrayList<MavenArtifact> res = new ArrayList<>();
-        for (int i = 0; i < coordinates.size(); i++) {
-            final ArtifactCoordinate request = coordinates.get(i);
-            final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), files.get(i));
-
-            res.add(resolvedArtifact);
-        }
-        return res;
-    }
-
     static class ResolveArtifactResult {
         File file;
         ChannelImpl channel;
