@@ -30,6 +30,7 @@ import org.wildfly.channel.ArtifactTransferException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +41,7 @@ class RetryHandlerTest {
     private RetryHandler resolver;
     @BeforeEach
     public void setUp() {
-        resolver = new RetryHandler(5, 0);
+        resolver = new RetryHandler(5, 0, TimeUnit.MILLISECONDS);
     }
 
     @Test

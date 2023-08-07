@@ -16,7 +16,6 @@
  */
 package org.wildfly.channel.maven;
 
-import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
@@ -33,6 +32,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -75,8 +75,14 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
      * The way checksum verification should be handled. It can be "fail", "warn", "ignore" or null
      */
     private static final String checksumPolicy = System.getProperty("org.wildfly.channel.maven.policy.checksum", RepositoryPolicy.CHECKSUM_POLICY_FAIL);
+    /**
+     * maximum number of retries to perform on each artifact
+     */
     private static final int MAX_RESOLVER_RETRIES = Integer.getInteger("org.wildfly.channel.maven.resolve.retry.max", 5);
-    private static final long TIMEOUT_RESOLVER_RETRIES = Long.getLong("org.wildfly.channel.maven.resolve.retry.timeout", 0);
+    /**
+     * delay between retry attempts in milliseconds
+     */
+    private static final long TIMEOUT_RESOLVER_RETRIES = Long.getLong("org.wildfly.channel.maven.resolve.retry.timeout", 500);
     public static final RepositoryPolicy DEFAULT_REPOSITORY_POLICY = new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_ALWAYS, checksumPolicy);
     public static final Function<Repository, RemoteRepository> DEFAULT_REPOSITORY_MAPPER = r -> new RemoteRepository.Builder(r.getId(), "default", r.getUrl())
             .setPolicy(DEFAULT_REPOSITORY_POLICY)
@@ -125,7 +131,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             this.system = system;
             this.session = session;
             this.repositories = repositories;
-            this.retryingResolver = new RetryHandler(MAX_RESOLVER_RETRIES, TIMEOUT_RESOLVER_RETRIES);
+            this.retryingResolver = new RetryHandler(MAX_RESOLVER_RETRIES, TIMEOUT_RESOLVER_RETRIES, TimeUnit.MILLISECONDS);
         }
 
         @Override
@@ -144,15 +150,20 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 repos = null;
             }
 
-            try {
-                VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
-                Set<String> versions = versionRangeResult.getVersions().stream()
-                        .filter(v -> repos != null && repos.contains(versionRangeResult.getRepository(v)))
-                        .map(Version::toString).collect(Collectors.toSet());
-                return versions;
-            } catch (VersionRangeResolutionException e) {
-                return emptySet();
-            }
+            VersionRangeResult versionRangeResult = retryingResolver.attemptResolveMetadata(() -> {
+                try {
+                    return system.resolveVersionRange(session, versionRangeRequest);
+                } catch (VersionRangeResolutionException e) {
+                    // thrown only if unable to parse version range
+                    // we use hardcoded version range, so this should not happen
+                    throw new RuntimeException(e);
+                }
+            }, attemptedRepositories());
+
+            return versionRangeResult.getVersions().stream()
+                    .filter(v -> repos != null && repos.contains(versionRangeResult.getRepository(v)))
+                    .map(Version::toString).collect(Collectors.toSet());
+
         }
 
         @Override
