@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -105,5 +106,25 @@ public class ChannelMapperTestCase {
 
         Channel readChannel = ChannelMapper.fromString(yaml).get(0);
         assertEquals(Channel.NoStreamStrategy.NONE, readChannel.getNoStreamStrategy());
+    }
+
+    @Test
+    public void setGpgCheck() throws Exception {
+        verifyGpgCheck(false);
+        verifyGpgCheck(true);
+        verifyGpgCheck(null);
+    }
+
+    private static void verifyGpgCheck(Boolean value) throws IOException {
+        Channel.Builder channel = new Channel.Builder()
+                .addRepository("test", "https://test.org/repository");
+        if (value != null) {
+            channel.setGpgCheck(value);
+        }
+
+        final String yaml = ChannelMapper.toYaml(channel.build());
+
+        Channel readChannel = ChannelMapper.fromString(yaml).get(0);
+        assertEquals(value, readChannel.isGpgCheck());
     }
 }

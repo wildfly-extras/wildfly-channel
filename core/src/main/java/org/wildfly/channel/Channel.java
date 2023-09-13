@@ -12,6 +12,7 @@ import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import java.util.ArrayList;
+
 import static java.util.Collections.emptyList;
 
 public class Channel {
@@ -45,6 +46,8 @@ public class Channel {
     private BlocklistCoordinate blocklistCoordinate;
     private ChannelManifestCoordinate manifestCoordinate;
     private NoStreamStrategy noStreamStrategy = NoStreamStrategy.NONE;
+    private Boolean gpgCheck;
+    private String gpgUrl;
 
     // no-arg constructor for maven plugins
     public Channel() {
@@ -54,7 +57,7 @@ public class Channel {
     /**
      * Representation of a Channel resource using the current schema version.
      *
-     * @see #Channel(String, String, String, Vendor, List, ChannelManifestCoordinate, BlocklistCoordinate, NoStreamStrategy)
+     * @see #Channel(String, String, String, Vendor, List, ChannelManifestCoordinate, BlocklistCoordinate, NoStreamStrategy, Boolean, String)
      */
     public Channel(String name,
                    String description,
@@ -70,7 +73,8 @@ public class Channel {
                 repositories,
                 manifestCoordinate,
                 blocklistCoordinate,
-                noStreamStrategy);
+                noStreamStrategy,
+                null, null);
     }
 
     @JsonCreator
@@ -82,7 +86,9 @@ public class Channel {
                                  @JsonInclude(NON_EMPTY) List<Repository> repositories,
                    @JsonProperty(value = "manifest") ChannelManifestCoordinate manifestCoordinate,
                    @JsonProperty(value = "blocklist") @JsonInclude(NON_EMPTY) BlocklistCoordinate blocklistCoordinate,
-                   @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy) {
+                   @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy,
+                   @JsonProperty(value = "gpg-check") Boolean gpgCheck,
+                   @JsonProperty(value = "gpg-key") String gpgUrl) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
@@ -91,6 +97,8 @@ public class Channel {
         this.blocklistCoordinate = blocklistCoordinate;
         this.manifestCoordinate = manifestCoordinate;
         this.noStreamStrategy = (noStreamStrategy != null) ? noStreamStrategy: NoStreamStrategy.NONE;
+        this.gpgCheck = gpgCheck;
+        this.gpgUrl = gpgUrl;
     }
 
     public String getSchemaVersion() {
@@ -133,6 +141,22 @@ public class Channel {
     @JsonProperty("resolve-if-no-stream")
     public NoStreamStrategy getNoStreamStrategy() {
         return noStreamStrategy;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public Boolean isGpgCheck() {
+        return gpgCheck;
+    }
+
+    @JsonIgnore
+    public boolean requiresGpgCheck() {
+        return gpgCheck!=null?gpgCheck:false;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("gpg-url")
+    public String getGpgUrl() {
+        return gpgUrl;
     }
 
     /**
@@ -182,9 +206,11 @@ public class Channel {
         private NoStreamStrategy strategy;
         private String description;
         private Vendor vendor;
+        private Boolean gpgCheck;
+        private String gpgUrl;
 
         public Channel build() {
-            return new Channel(name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy);
+            return new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy, gpgCheck, gpgUrl);
         }
 
         public Builder setName(String name) {
@@ -233,6 +259,16 @@ public class Channel {
 
         public Builder setResolveStrategy(NoStreamStrategy strategy) {
             this.strategy = strategy;
+            return this;
+        }
+
+        public Builder setGpgCheck(boolean gpgCheck) {
+            this.gpgCheck = gpgCheck;
+            return this;
+        }
+
+        public Builder setGpgUrl(String gpgUrl) {
+            this.gpgUrl = gpgUrl;
             return this;
         }
     }

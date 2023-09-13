@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.spi.SignatureValidator;
 import org.wildfly.channel.version.VersionMatcher;
 
 /**
@@ -53,6 +54,7 @@ class ChannelImpl implements AutoCloseable {
     private boolean dependency = false;
 
     public Optional<Blocklist> blocklist = Optional.empty();
+    private SignatureValidator signatureValidator;
 
     public ChannelManifest getManifest() {
         return channelManifest;
@@ -70,11 +72,12 @@ class ChannelImpl implements AutoCloseable {
      * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
-    void init(MavenVersionsResolver.Factory factory, List<ChannelImpl> channels) {
+    void init(MavenVersionsResolver.Factory factory, List<ChannelImpl> channels, SignatureValidator signatureValidator) {
         if (resolver != null) {
             //already initialized
             return;
         }
+        this.signatureValidator = signatureValidator;
 
         resolver = factory.create(channelDefinition.getRepositories());
 
@@ -106,7 +109,7 @@ class ChannelImpl implements AutoCloseable {
         ChannelImpl foundChannel = null;
         for (ChannelImpl c: channels) {
             if (c.getManifest() == null) {
-                c.init(factory, channels);
+                c.init(factory, channels, signatureValidator);
             }
             if (manifestRequirement.getId().equals(c.getManifest().getId())) {
                 foundChannel = c;
@@ -141,7 +144,7 @@ class ChannelImpl implements AutoCloseable {
                 new ChannelManifestCoordinate(groupId, artifactId, version), null,
                 Channel.NoStreamStrategy.NONE));
         try {
-            requiredChannel.init(factory, channels);
+            requiredChannel.init(factory, channels, signatureValidator);
         } catch (UnresolvedMavenArtifactException e) {
             throw new UnresolvedRequiredManifestException("Manifest with ID " + manifestRequirement.getId() + " is not available", manifestRequirement.getId(), e);
         }
@@ -314,11 +317,29 @@ class ChannelImpl implements AutoCloseable {
             }
         }
 
-        return new ResolveArtifactResult(resolver.resolveArtifact(groupId, artifactId, extension, classifier, version), this);
+        final File artifact = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
+        if (channelDefinition.requiresGpgCheck()) {
+            final File signature = resolver.resolveArtifact(groupId, artifactId, extension + ".asc", classifier, version);
+            signatureValidator.validateSignature(artifact, signature, channelDefinition.getGpgUrl());
+        }
+        return new ResolveArtifactResult(artifact, this);
     }
 
     List<ResolveArtifactResult> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         final List<File> resolvedArtifacts = resolver.resolveArtifacts(coordinates);
+
+        if (channelDefinition.requiresGpgCheck()) {
+            final List<File> signatures = resolver.resolveArtifacts(coordinates.stream()
+                    .map(c->new ArtifactCoordinate(c.getGroupId(), c.getArtifactId(), c.getExtension() + ".asc",
+                            c.getClassifier(), c.getVersion()))
+                    .collect(Collectors.toList()));
+            for (int i = 0; i < resolvedArtifacts.size(); i++) {
+                final File artifact = resolvedArtifacts.get(i);
+                final File signature = signatures.get(i);
+                signatureValidator.validateSignature(artifact, signature, channelDefinition.getGpgUrl());
+            }
+        }
+
         return resolvedArtifacts.stream().map(f->new ResolveArtifactResult(f, this)).collect(Collectors.toList());
     }
 
