@@ -42,6 +42,7 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import org.wildfly.channel.proxy.HttpProxy;
 
 /**
  * Mapper class to transform YAML content (from URL or String) to Channel objects (and vice versa).
@@ -65,6 +66,7 @@ public class ChannelMapper {
     private static final Map<String, JsonSchema> SCHEMAS = new HashMap<>();
 
     static {
+        HttpProxy.setup();
         SCHEMAS.put(SCHEMA_VERSION_1_0_0, SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_1_0_0_FILE)));
         SCHEMAS.put(SCHEMA_VERSION_2_0_0, SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_2_0_0_FILE)));
     }
