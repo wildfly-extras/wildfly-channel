@@ -202,6 +202,11 @@ class ChannelImpl implements AutoCloseable {
         requireNonNull(artifactId);
         requireNonNull(resolver);
 
+        Set<String> blocklistedVersions = Collections.emptySet();
+        if (this.blocklist.isPresent()) {
+            blocklistedVersions = this.blocklist.get().getVersionsFor(groupId, artifactId);
+        }
+
         // first we find if there is a stream for that given (groupId, artifactId).
         Optional<Stream> foundStream = channelManifest.findStreamFor(groupId, artifactId);
         // no stream for this artifact, let's look into the required channel
@@ -214,6 +219,7 @@ class ChannelImpl implements AutoCloseable {
                     foundVersions.put(found.get().version, found.get().channel);
                 }
             }
+            foundVersions.keySet().removeAll(blocklistedVersions);
             Optional<String> foundVersionInRequiredChannels = foundVersions.keySet().stream().sorted(COMPARATOR.reversed()).findFirst();
             if (foundVersionInRequiredChannels.isPresent()) {
                 return Optional.of(new ResolveLatestVersionResult(foundVersionInRequiredChannels.get(), foundVersions.get(foundVersionInRequiredChannels.get())));
@@ -223,6 +229,7 @@ class ChannelImpl implements AutoCloseable {
             switch (channelDefinition.getNoStreamStrategy()) {
                 case LATEST:
                     Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
+                    versions.removeAll(blocklistedVersions);
                     final Optional<String> latestVersion = versions.stream().sorted(COMPARATOR.reversed()).findFirst();
                     if (latestVersion.isPresent()) {
                         return Optional.of(new ResolveLatestVersionResult(latestVersion.get(), this));
@@ -231,9 +238,15 @@ class ChannelImpl implements AutoCloseable {
                     }
                 case MAVEN_LATEST:
                     String latestMetadataVersion = resolver.getMetadataLatestVersion(groupId, artifactId);
+                    if (blocklistedVersions.contains(latestMetadataVersion)) {
+                        return Optional.empty();
+                    }
                     return Optional.of(new ResolveLatestVersionResult(latestMetadataVersion, this));
                 case MAVEN_RELEASE:
                     String releaseMetadataVersion = resolver.getMetadataReleaseVersion(groupId, artifactId);
+                    if (blocklistedVersions.contains(releaseMetadataVersion)) {
+                        return Optional.empty();
+                    }
                     return Optional.of(new ResolveLatestVersionResult(releaseMetadataVersion, this));
                 default:
                     return Optional.empty();
@@ -245,14 +258,13 @@ class ChannelImpl implements AutoCloseable {
         // there is a stream, let's now check its version
         if (stream.getVersion() != null) {
             foundVersion = Optional.of(stream.getVersion());
+            if (foundVersion.isPresent() && blocklistedVersions.contains(foundVersion.get())) {
+                return Optional.empty();
+            }
         } else if (stream.getVersionPattern() != null) {
             // if there is a version pattern, we resolve all versions from Maven to find the latest one
             Set<String> versions = resolver.getAllVersions(groupId, artifactId, extension, classifier);
-            if (this.blocklist.isPresent()) {
-                final Set<String> blocklistedVersions = this.blocklist.get().getVersionsFor(groupId, artifactId);
-
-                versions.removeAll(blocklistedVersions);
-            }
+            versions.removeAll(blocklistedVersions);
             foundVersion = foundStream.get().getVersionComparator().matches(versions);
         }
 

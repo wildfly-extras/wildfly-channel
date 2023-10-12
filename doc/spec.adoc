@@ -231,10 +231,7 @@ A blocklist applies only to the channel that defined it, not its required channe
 
 #### Resolving artifact version
 
-During artifact version resolution, a stream matching artifact GA is located in the channel. If the stream uses concrete versions, that version of the artifact is resolved and returned to the user.
-If the stream uses `versionPattern`, the blocklist is checked for excluded versions. The excluded versions are removed from the set of available artifact versions before the latest remaining version matching the stream’s pattern is used to resolve the artifact.
-If the blocklist excludes all available artifact versions, `UnresolvedMavenArtifactException` is thrown.
-The blocklist is ignored when using `resolveDirectMavenArtifact` method.
+During artifact version resolution, a stream matching artifact GA is located in the channel. The blocklist is always checked for excluded versions, except when using `resolveDirectMavenArtifact` method. The excluded versions are removed from the set of available artifact versions before the latest remaining version matching the stream’s pattern is used to resolve the artifact. If the blocklist excludes all available artifact versions, `UnresolvedMavenArtifactException` is thrown.
 
 ### Changelog
 
