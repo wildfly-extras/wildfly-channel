@@ -38,10 +38,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -142,7 +143,7 @@ public class ChannelSessionTestCase {
         File resolvedArtifactFile = mock(File.class);
 
         when(factory.create(any())).thenReturn(resolver);
-        when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(Set.of("25.0.0.Final", "25.0.1.Final"));
+        when(resolver.getAllVersions("org.wildfly", "wildfly-ee-galleon-pack", null, null)).thenReturn(new HashSet<>(Arrays.asList("25.0.0.Final", "25.0.1.Final")));
         when(resolver.resolveArtifact("org.wildfly", "wildfly-ee-galleon-pack", null, null, "25.0.1.Final")).thenReturn(resolvedArtifactFile);
 
         final List<Channel> channels = mockChannel(resolver, tempDir, manifest);
@@ -440,7 +441,7 @@ public class ChannelSessionTestCase {
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.2.Final"))).thenReturn(resolvedArtifactFile);
-        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.2.Final", "25.0.1.Final", "25.0.0.Final"));
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(new HashSet<>(Arrays.asList("25.0.2.Final", "25.0.1.Final", "25.0.0.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final");
@@ -463,7 +464,7 @@ public class ChannelSessionTestCase {
         final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.LATEST, manifest);
 
         when(factory.create(any())).thenReturn(resolver);
-        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of());
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(new HashSet<>(Arrays.asList()));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
@@ -486,7 +487,7 @@ public class ChannelSessionTestCase {
         final List<Channel> channels = mockChannel(resolver, tempDir, Channel.NoStreamStrategy.LATEST, manifest);
 
         when(factory.create(any())).thenReturn(resolver);
-        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("1.0.0"));
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(new HashSet<>(Arrays.asList("1.0.0")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
@@ -512,7 +513,7 @@ public class ChannelSessionTestCase {
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.getMetadataReleaseVersion(eq("org.foo"), eq("bar"))).thenReturn("25.0.1.Final");
         when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.1.Final"))).thenReturn(resolvedArtifactFile);
-        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.1.Final", "25.0.0.Final"));
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(new HashSet<>(Arrays.asList("25.0.1.Final", "25.0.0.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final");
@@ -537,7 +538,7 @@ public class ChannelSessionTestCase {
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.getMetadataLatestVersion(eq("org.foo"), eq("bar"))).thenReturn("25.0.1.Final");
         when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.1.Final"))).thenReturn(resolvedArtifactFile);
-        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.1.Final", "25.0.0.Final"));
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(new HashSet<>(Arrays.asList("25.0.1.Final", "25.0.0.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             MavenArtifact resolvedArtifact = session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final");
@@ -561,7 +562,7 @@ public class ChannelSessionTestCase {
 
         when(factory.create(any())).thenReturn(resolver);
         when(resolver.resolveArtifact(eq("org.foo"), eq("bar"), eq(null), eq(null), eq("25.0.1.Final"))).thenReturn(resolvedArtifactFile);
-        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(Set.of("25.0.1.Final", "25.0.0.Final"));
+        when(resolver.getAllVersions("org.foo", "bar", null, null)).thenReturn(new HashSet<>(Arrays.asList("25.0.1.Final", "25.0.0.Final")));
 
         try (ChannelSession session = new ChannelSession(channels, factory)) {
             Assertions.assertThrows(UnresolvedMavenArtifactException.class, () ->
