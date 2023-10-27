@@ -66,7 +66,9 @@ public class ChannelMapper {
     private static final Map<String, JsonSchema> SCHEMAS = new HashMap<>();
 
     static {
-        HttpProxy.setup();
+        if (Boolean.getBoolean("org.wildfly.channel.enable-proxy")) {
+            HttpProxy.setup();
+        }
         SCHEMAS.put(SCHEMA_VERSION_1_0_0, SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_1_0_0_FILE)));
         SCHEMAS.put(SCHEMA_VERSION_2_0_0, SCHEMA_FACTORY.getSchema(ChannelMapper.class.getClassLoader().getResourceAsStream(SCHEMA_2_0_0_FILE)));
     }
