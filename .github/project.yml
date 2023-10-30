@@ -2,5 +2,5 @@ name: WildFly Channels
 # Open the PR to do the PR from
 # the wildfly-extras/wildfly-channel repository
 release:
-  current-version: 1.0.4.Final
-  next-version: 1.0.5.Final-SNAPSHOT
+  current-version: 1.0.5.Final
+  next-version: 1.0.6.Final-SNAPSHOT
