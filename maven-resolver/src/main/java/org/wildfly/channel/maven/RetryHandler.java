@@ -95,6 +95,13 @@ class RetryHandler {
         while (true) {
             final VersionRangeResult versionRangeResult = supplier.get();
 
+            if (LOG.isDebugEnabled()) {
+                for (Exception exception : versionRangeResult.getExceptions()) {
+                    LOG.debug(String.format("Error resolving maven artifact %s: %s", versionRangeResult.getRequest().getArtifact(),exception.getMessage()),
+                            exception);
+                }
+            }
+
             final Optional<Exception> transferException = versionRangeResult.getExceptions().stream()
                     .filter(e -> e.getClass().equals(MetadataTransferException.class))
                     .findFirst();

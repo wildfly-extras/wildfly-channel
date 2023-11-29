@@ -188,8 +188,10 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
 
             return retryingResolver.attemptResolve(()->{
                         final ArtifactResult artifactResult = system.resolveArtifact(session, request);
-                        for (Exception exception : artifactResult.getExceptions()) {
-                            LOG.info("Error resolving maven artifact: " + artifactResult.getRequest().getArtifact() + ": " + exception.getMessage(), exception);
+                        if (LOG.isDebugEnabled()) {
+                            for (Exception exception : artifactResult.getExceptions()) {
+                                LOG.debug(String.format("Error resolving maven artifact %s: %s", artifactResult.getRequest().getArtifact(),exception.getMessage()), exception);
+                            }
                         }
                         return List.of(artifactResult.getArtifact().getFile());
             },
@@ -215,6 +217,13 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
 
             final RetryHandler.Supplier artifactQuery = () -> {
                 final List<ArtifactResult> artifactResults = system.resolveArtifacts(session, requests);
+                for (ArtifactResult artifactResult : artifactResults) {
+                    if (LOG.isDebugEnabled()) {
+                        for (Exception exception : artifactResult.getExceptions()) {
+                            LOG.debug(String.format("Error resolving maven artifact %s: %s", artifactResult.getRequest().getArtifact(), exception.getMessage()), exception);
+                        }
+                    }
+                }
                 // results are in the same order as requests
                 return artifactResults.stream()
                         .map(ArtifactResult::getArtifact)
@@ -323,6 +332,16 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 return metadataRequest;
             }).collect(Collectors.toList());
             final List<MetadataResult> metadataResults = system.resolveMetadata(session, requests);
+
+            if (LOG.isDebugEnabled()) {
+                for (MetadataResult metadataResult : metadataResults) {
+                    if (metadataResult.getException() != null) {
+                        LOG.debug(String.format("Error resolving maven artifact %s:%s %s", groupId, artifactId, metadataResult.getException().getMessage()),
+                                metadataResult.getException());
+                    }
+                }
+            }
+
             return metadataResults;
         }
 
