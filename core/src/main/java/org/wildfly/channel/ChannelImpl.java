@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.version.VersionMatcher;
 
@@ -37,6 +38,8 @@ import org.wildfly.channel.version.VersionMatcher;
  * Java representation of a Channel.
  */
 class ChannelImpl implements AutoCloseable {
+
+    private static final Logger LOG = Logger.getLogger(ChannelImpl.class);
 
     private Channel channelDefinition;
 
@@ -237,17 +240,29 @@ class ChannelImpl implements AutoCloseable {
                         return Optional.empty();
                     }
                 case MAVEN_LATEST:
-                    String latestMetadataVersion = resolver.getMetadataLatestVersion(groupId, artifactId);
-                    if (blocklistedVersions.contains(latestMetadataVersion)) {
+                    try {
+                        String latestMetadataVersion = resolver.getMetadataLatestVersion(groupId, artifactId);
+                        if (blocklistedVersions.contains(latestMetadataVersion)) {
+                            return Optional.empty();
+                        }
+                        return Optional.of(new ResolveLatestVersionResult(latestMetadataVersion, this));
+                    } catch (NoStreamFoundException e) {
+                        LOG.debugf(e, "Metadata resolution for %s:%s failed in channel %s",
+                                groupId, artifactId, this.getChannelDefinition().getName());
                         return Optional.empty();
                     }
-                    return Optional.of(new ResolveLatestVersionResult(latestMetadataVersion, this));
                 case MAVEN_RELEASE:
-                    String releaseMetadataVersion = resolver.getMetadataReleaseVersion(groupId, artifactId);
-                    if (blocklistedVersions.contains(releaseMetadataVersion)) {
+                    try {
+                        String releaseMetadataVersion = resolver.getMetadataReleaseVersion(groupId, artifactId);
+                        if (blocklistedVersions.contains(releaseMetadataVersion)) {
+                            return Optional.empty();
+                        }
+                        return Optional.of(new ResolveLatestVersionResult(releaseMetadataVersion, this));
+                    } catch (NoStreamFoundException e) {
+                        LOG.debugf(e, "Metadata resolution for %s:%s failed in channel %s",
+                                groupId, artifactId, this.getChannelDefinition().getName());
                         return Optional.empty();
                     }
-                    return Optional.of(new ResolveLatestVersionResult(releaseMetadataVersion, this));
                 default:
                     return Optional.empty();
             }
