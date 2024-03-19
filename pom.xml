@@ -36,7 +36,7 @@
         <version.org.wiremock>3.0.4</version.org.wiremock>
         <version.org.assertj>3.24.2</version.org.assertj>
         <version.release.plugin>3.0.1</version.release.plugin>
-        <version.maven.resolver-api>1.9.10</version.maven.resolver-api>
+        <version.maven.resolver-api>1.9.18</version.maven.resolver-api>
         <version.maven.repository.metadata>3.6.3</version.maven.repository.metadata>
     </properties>
 
