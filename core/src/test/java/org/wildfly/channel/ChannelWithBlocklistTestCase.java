@@ -503,7 +503,7 @@ public class ChannelWithBlocklistTestCase {
             fail("InvalidChannelException should have been thrown.");
         } catch (InvalidChannelMetadataException e) {
             assertEquals(1, e.getValidationMessages().size());
-            assertTrue(e.getValidationMessages().get(0).contains("versions: is missing"), e.getValidationMessages().get(0));
+            assertTrue(e.getValidationMessages().get(0).contains("required property 'versions' not found"), e.getValidationMessages().get(0));
         }
     }
 
