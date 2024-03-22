@@ -59,7 +59,7 @@ public class ChannelManifestMapper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY)
             .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(ORDER_MAP_ENTRIES_BY_KEYS, true);
-    private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909)).objectMapper(OBJECT_MAPPER).build();
+    private static final JsonSchemaFactory SCHEMA_FACTORY = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909)).jsonMapper(OBJECT_MAPPER).build();
     private static final Map<String, JsonSchema> SCHEMAS = new HashMap<>();
 
     static {
