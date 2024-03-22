@@ -81,6 +81,7 @@ public class VersionResolverFactoryTest {
         Version v111 = mock(Version.class);
         when(v111.toString()).thenReturn("1.1.1");
         versionRangeResult.setVersions(asList(v100, v110, v111));
+        versionRangeResult.getRequest().setRepositories(List.of(new RemoteRepository.Builder("test", "default", "file://test").build()));
         final Repository testRepository = new Repository("test", "file://test");
         final ArtifactRepository testArtifactRepository = VersionResolverFactory.DEFAULT_REPOSITORY_MAPPER.apply(testRepository);
         for (Version v : versionRangeResult.getVersions()) versionRangeResult.setRepository(v, testArtifactRepository);
@@ -221,6 +222,7 @@ public class VersionResolverFactoryTest {
         Version v111 = mock(Version.class);
         when(v111.toString()).thenReturn("1.1.1");
         versionRangeResult.setVersions(asList(v100, v110, v111));
+        versionRangeResult.getRequest().setRepositories(List.of(new RemoteRepository.Builder("test", "default", "file://test").build()));
         final Repository testRepository = new Repository("test", "file://test");
         final ArtifactRepository testArtifactRepository = VersionResolverFactory.DEFAULT_REPOSITORY_MAPPER.apply(testRepository);
         for (Version v : versionRangeResult.getVersions()) versionRangeResult.setRepository(v, testArtifactRepository);
