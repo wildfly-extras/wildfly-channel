@@ -30,10 +30,11 @@ import static org.wildfly.channel.ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -78,7 +79,7 @@ public class ChannelRecorderTestCase {
         when(resolver.getAllVersions(eq("org.wildfly.core"), anyString(), eq(null), eq(null)))
                 .thenReturn(singleton("18.0.0.Final"));
         when(resolver.getAllVersions(eq("io.undertow"), anyString(), eq(null), eq(null)))
-                .thenReturn(Set.of("2.1.0.Final", "2.2.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("2.1.0.Final", "2.2.0.Final")));
         when(resolver.resolveArtifact(anyString(), anyString(), eq(null), eq(null), anyString()))
                 .thenReturn(mock(File.class));
 

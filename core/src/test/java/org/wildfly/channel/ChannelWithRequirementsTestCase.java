@@ -29,8 +29,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
@@ -60,11 +61,11 @@ public class ChannelWithRequirementsTestCase {
         when(factory.create(any()))
                 .thenReturn(resolver);
         when(resolver.getAllVersions("test.channels", "required-manifest", "yaml", "manifest"))
-                .thenReturn(Set.of("1", "2", "3"));
+                .thenReturn(new HashSet<>(Arrays.asList("1", "2", "3")));
         when(resolver.resolveArtifact("org.example", "required-manifest", "yaml", "manifest", "3"))
                 .thenReturn(resolvedArtifactFile);
         when(resolver.getAllVersions("org.example", "foo-bar", null, null))
-                .thenReturn(Set.of("1.0.0.Final, 1.1.0.Final", "1.2.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final, 1.1.0.Final", "1.2.0.Final")));
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
         when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
@@ -182,7 +183,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolver);
         // There are 2 version of foo-bar
         when(resolver.getAllVersions("org.example", "foo-bar", null, null))
-                .thenReturn(Set.of("1.0.0.Final", "1.2.0.Final", "2.0.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final", "1.2.0.Final", "2.0.0.Final")));
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
                 .thenReturn(resolvedArtifactFile100Final);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
@@ -315,11 +316,11 @@ public class ChannelWithRequirementsTestCase {
         // 2 versions of im-only-in-required-channel
         // 2 versions of im-only-in-second-level
         when(resolver.getAllVersions("org.example", "foo-bar", null, null))
-                .thenReturn(Set.of("1.0.0.Final", "1.2.0.Final", "2.0.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final", "1.2.0.Final", "2.0.0.Final")));
         when(resolver.getAllVersions("org.example", "im-only-in-required-channel", null, null))
-                .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final", "2.0.0.Final")));
         when(resolver.getAllVersions("org.example", "im-only-in-second-level", null, null))
-                .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final", "2.0.0.Final")));
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
                 .thenReturn(mock(File.class));
@@ -460,9 +461,9 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolver);
 
         when(resolver.getAllVersions("org.example", "foo-bar", null, null))
-                .thenReturn(Set.of("1.0.0.Final", "1.2.0.Final", "2.0.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final", "1.2.0.Final", "2.0.0.Final")));
         when(resolver.getAllVersions("org.example", "im-only-in-required-channel", null, null))
-                .thenReturn(Set.of("1.0.0.Final", "2.0.0.Final"));
+                .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final", "2.0.0.Final")));
 
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.0.0.Final"))
                 .thenReturn(mock(File.class));
@@ -586,11 +587,11 @@ public class ChannelWithRequirementsTestCase {
         when(factory.create(any()))
            .thenReturn(resolver);
         when(resolver.getAllVersions("org.foo", "required-channel", "yaml", "channel"))
-           .thenReturn(Set.of("1", "2", "3"));
+           .thenReturn(new HashSet<>(Arrays.asList("1", "2", "3")));
         when(resolver.resolveArtifact("org.foo", "required-channel", "yaml", "channel", "1.2.0.Final"))
            .thenReturn(resolvedArtifactFile);
         when(resolver.getAllVersions("org.example", "foo-bar", null, null))
-           .thenReturn(Set.of("1.0.0.Final, 1.1.0.Final", "1.2.0.Final"));
+           .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final, 1.1.0.Final", "1.2.0.Final")));
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
            .thenReturn(resolvedArtifactFile);
 

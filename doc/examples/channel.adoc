@@ -91,7 +91,7 @@ If a new version `1.2.2.Final` is added to the repository, the Channel will reso
 
 ### Block versions
 
-Blocklist allows to exclude a concrete version of an artifact from resolution while maintaining the "latest" resolution strategy. To block an artifact version we need to create a new file called `test-blocklist.yaml`:
+Blocklist allows to exclude a concrete version of an artifact from resolution while maintaining the "latest" resolution strategy. If the resolution strategy is "maven-latest" or "maven-release" and that version is in the blocklist, this will cause the artifact to be removed from the channel. To block an artifact version we need to create a new file called `test-blocklist.yaml`:
 
 [source, yaml, title="test-blocklist.yaml"]
 ----
@@ -100,7 +100,7 @@ name: "test-blocklist"
 blocks:
   - groupId: "org.test"
     artifactId: "artifact-three" #<1>
-    versions: #<1>
+    versions: #<2>
     - "1.0.1.Final"
 ...
 ----
@@ -133,6 +133,8 @@ repositories:
 Let's say the Maven repositories currently contain versions 1.0.0.Final and 1.0.1.Final of `org.test.artifact-three`. When `artifact-three` is resolved from the Channel, the `1.0.1.Final` version will be blocked, and instead `1.0.0.Final` will be used.
 
 When a new version, `1.0.3.Final`, is made available, the channel will instead resolve that version and the blocklist will have no effect.
+
+If the Maven repositories contain only version 1.0.1.Final of `org.test.artifact-three`, the artifact will be removed from the channel because this version is in the blocklist.
 
 ## Fix manifest and blocklist versions
 
