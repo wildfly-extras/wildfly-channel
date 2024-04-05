@@ -12,6 +12,8 @@ import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import java.util.ArrayList;
+import java.util.Objects;
+
 import static java.util.Collections.emptyList;
 
 public class Channel {
@@ -169,6 +171,19 @@ public class Channel {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Channel channel = (Channel) o;
+        return Objects.equals(schemaVersion, channel.schemaVersion) && Objects.equals(name, channel.name) && Objects.equals(description, channel.description) && Objects.equals(vendor, channel.vendor) && Objects.equals(repositories, channel.repositories) && Objects.equals(blocklistCoordinate, channel.blocklistCoordinate) && Objects.equals(manifestCoordinate, channel.manifestCoordinate) && noStreamStrategy == channel.noStreamStrategy;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(schemaVersion, name, description, vendor, repositories, blocklistCoordinate, manifestCoordinate, noStreamStrategy);
+    }
+
     /**
      * Builder for channel class
      */
@@ -180,6 +195,19 @@ public class Channel {
         private NoStreamStrategy strategy;
         private String description;
         private Vendor vendor;
+
+        public Builder() {
+        }
+
+        public Builder(Channel from) {
+            this.name = from.getName();
+            this.repositories = new ArrayList<>(from.getRepositories());
+            this.manifestCoordinate = from.getManifestCoordinate();
+            this.blocklistCoordinate = from.getBlocklistCoordinate();
+            this.strategy = from.getNoStreamStrategy();
+            this.description = from.getDescription();
+            this.vendor = from.getVendor();
+        }
 
         public Channel build() {
             return new Channel(name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy);
@@ -195,6 +223,11 @@ public class Channel {
             return this;
         }
 
+        public Builder setRepositories(List<Repository> repositories) {
+            this.repositories = repositories;
+            return this;
+        }
+
         public Builder setVendor(Vendor vendor) {
             this.vendor = vendor;
             return this;
@@ -207,6 +240,11 @@ public class Channel {
 
         public Builder setManifestCoordinate(String groupId, String artifactId, String version) {
             this.manifestCoordinate = new ChannelManifestCoordinate(groupId, artifactId, version);
+            return this;
+        }
+
+        public Builder setManifestCoordinate(String groupId, String artifactId) {
+            this.manifestCoordinate = new ChannelManifestCoordinate(groupId, artifactId);
             return this;
         }
 
@@ -226,6 +264,11 @@ public class Channel {
             } else {
                 this.blocklistCoordinate = new BlocklistCoordinate(groupId, artifactId, version);
             }
+            return this;
+        }
+
+        public Builder setBlocklistCoordinate(BlocklistCoordinate blocklistCoordinate) {
+            this.blocklistCoordinate = blocklistCoordinate;
             return this;
         }
 
