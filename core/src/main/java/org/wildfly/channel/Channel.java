@@ -12,6 +12,8 @@ import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import java.util.ArrayList;
+import java.util.Objects;
+
 import static java.util.Collections.emptyList;
 
 public class Channel {
@@ -169,6 +171,19 @@ public class Channel {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Channel channel = (Channel) o;
+        return Objects.equals(schemaVersion, channel.schemaVersion) && Objects.equals(name, channel.name) && Objects.equals(description, channel.description) && Objects.equals(vendor, channel.vendor) && Objects.equals(repositories, channel.repositories) && Objects.equals(blocklistCoordinate, channel.blocklistCoordinate) && Objects.equals(manifestCoordinate, channel.manifestCoordinate) && noStreamStrategy == channel.noStreamStrategy;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(schemaVersion, name, description, vendor, repositories, blocklistCoordinate, manifestCoordinate, noStreamStrategy);
+    }
+
     /**
      * Builder for channel class
      */
@@ -207,6 +222,11 @@ public class Channel {
 
         public Builder setManifestCoordinate(String groupId, String artifactId, String version) {
             this.manifestCoordinate = new ChannelManifestCoordinate(groupId, artifactId, version);
+            return this;
+        }
+
+        public Builder setManifestCoordinate(String groupId, String artifactId) {
+            this.manifestCoordinate = new ChannelManifestCoordinate(groupId, artifactId);
             return this;
         }
 

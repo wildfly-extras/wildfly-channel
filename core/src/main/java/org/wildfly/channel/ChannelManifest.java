@@ -23,9 +23,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -191,5 +193,72 @@ public class ChannelManifest {
                 ", streams=" + streams +
                 ", manifestRequirements=" + manifestRequirements +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ChannelManifest that = (ChannelManifest) o;
+        return Objects.equals(schemaVersion, that.schemaVersion) && Objects.equals(name, that.name) && Objects.equals(id, that.id) && Objects.equals(description, that.description) && Objects.equals(streams, that.streams) && Objects.equals(manifestRequirements, that.manifestRequirements);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(schemaVersion, name, id, description, streams, manifestRequirements);
+    }
+
+    public static class Builder {
+        private String schemaVersion;
+        private String name;
+        private String id;
+        private String description;
+        private List<Stream> streams;
+        private List<ManifestRequirement> manifestRequirements;
+
+        public ChannelManifest build() {
+            return new ChannelManifest(
+                    schemaVersion,
+                    id,
+                    description,
+                    manifestRequirements,
+                    streams);
+        }
+
+        public Builder setSchemaVersion(String schemaVersion) {
+            this.schemaVersion = schemaVersion;
+            return this;
+        }
+
+        public Builder setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder addStreams(Stream... stream) {
+            if (this.streams == null) {
+                this.streams = new ArrayList<>();
+            }
+            this.streams.addAll(Arrays.asList(stream));
+            return this;
+        }
+
+        public Builder addManifestRequirements(ManifestRequirement... manifestRequirements) {
+            if (this.manifestRequirements == null) {
+                this.manifestRequirements = new ArrayList<>();
+            }
+            this.manifestRequirements.addAll(Arrays.asList(manifestRequirements));
+            return this;
+        }
     }
 }
