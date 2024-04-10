@@ -118,6 +118,7 @@ public class Channel {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("blocklist")
     public BlocklistCoordinate getBlocklistCoordinate() {
         return blocklistCoordinate;
     }
@@ -129,6 +130,7 @@ public class Channel {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("resolve-if-no-stream")
     public NoStreamStrategy getNoStreamStrategy() {
         return noStreamStrategy;
     }
