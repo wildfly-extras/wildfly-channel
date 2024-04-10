@@ -142,12 +142,8 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
             Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
             VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
             versionRangeRequest.setArtifact(artifact);
-            final Set<RemoteRepository> repos;
             if (repositories != null) {
                 versionRangeRequest.setRepositories(repositories);
-                repos = new HashSet<>(repositories);
-            } else {
-                repos = null;
             }
 
             VersionRangeResult versionRangeResult = retryingResolver.attemptResolveMetadata(() -> {
@@ -160,9 +156,19 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 }
             }, attemptedRepositories());
 
-            return versionRangeResult.getVersions().stream()
-                    .filter(v -> repos != null && repos.contains(versionRangeResult.getRepository(v)))
-                    .map(Version::toString).collect(Collectors.toSet());
+            final RemoteArtifactVersionsFilter remoteOnlyFilter = new RemoteArtifactVersionsFilter(session, versionRangeResult);
+            final List<Version> remoteVersions = versionRangeResult.getVersions().stream()
+                    .filter(remoteOnlyFilter::accept)
+                    .collect(Collectors.toList());
+
+            if (!versionRangeResult.getVersions().isEmpty() && remoteVersions.isEmpty()) {
+                LOG.warnf("Error resolving artifact %s:%s versions: the only available version was resolved from local repository, discarding!",
+                        artifact.getGroupId(), artifact.getArtifactId());
+            }
+
+            return remoteVersions.stream()
+                    .map(Version::toString)
+                    .collect(Collectors.toSet());
 
         }
 
@@ -180,7 +186,13 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                 request.setRepositories(repositories);
             }
 
-            return retryingResolver.attemptResolve(()->List.of(system.resolveArtifact(session, request).getArtifact().getFile()),
+            return retryingResolver.attemptResolve(()->{
+                        final ArtifactResult artifactResult = system.resolveArtifact(session, request);
+                        for (Exception exception : artifactResult.getExceptions()) {
+                            LOG.info("Error resolving maven artifact: " + artifactResult.getRequest().getArtifact() + ": " + exception.getMessage(), exception);
+                        }
+                        return List.of(artifactResult.getArtifact().getFile());
+            },
                     (ex)->singleton(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)),
                     attemptedRepositories()).get(0);
         }
