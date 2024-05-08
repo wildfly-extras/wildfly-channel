@@ -140,9 +140,9 @@ class ChannelImpl implements AutoCloseable {
             version = latest.orElseThrow(() -> new RuntimeException(String.format("Can not determine the latest version for Maven artifact %s:%s:%s:%s",
                     groupId, artifactId, ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER)));
         }
-        final ChannelImpl requiredChannel = new ChannelImpl(new Channel(null, null, null, channelDefinition.getRepositories(),
+        final ChannelImpl requiredChannel = new ChannelImpl(new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, null, null, null, channelDefinition.getRepositories(),
                 new ChannelManifestCoordinate(groupId, artifactId, version), null,
-                Channel.NoStreamStrategy.NONE));
+                Channel.NoStreamStrategy.NONE, channelDefinition.isGpgCheck(), channelDefinition.getGpgUrl()));
         try {
             requiredChannel.init(factory, channels, signatureValidator);
         } catch (UnresolvedMavenArtifactException e) {
