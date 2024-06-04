@@ -1,5 +1,8 @@
 package org.wildfly.channel.spi;
 
+import org.wildfly.channel.ArtifactCoordinate;
+import org.wildfly.channel.MavenArtifact;
+
 import java.io.File;
 
 public interface SignatureValidator {
@@ -7,9 +10,13 @@ public interface SignatureValidator {
         throw new SignatureException("Not implemented");
     };
 
-    void validateSignature(File artifact, File signature, String gpgUrl);
+    void validateSignature(MavenArtifact artifact, File signature, String gpgUrl);
 
     class SignatureException extends RuntimeException {
+
+        private ArtifactCoordinate artifact;
+        private String keyId;
+
         public SignatureException(String message) {
             super(message);
         }

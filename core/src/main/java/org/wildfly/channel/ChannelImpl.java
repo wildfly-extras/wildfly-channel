@@ -320,7 +320,8 @@ class ChannelImpl implements AutoCloseable {
         final File artifact = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
         if (channelDefinition.requiresGpgCheck()) {
             final File signature = resolver.resolveArtifact(groupId, artifactId, extension + ".asc", classifier, version);
-            signatureValidator.validateSignature(artifact, signature, channelDefinition.getGpgUrl());
+            final MavenArtifact mavenArtifact = new MavenArtifact(groupId, artifactId, extension, classifier, version, artifact);
+            signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrl());
         }
         return new ResolveArtifactResult(artifact, this);
     }
@@ -335,8 +336,11 @@ class ChannelImpl implements AutoCloseable {
                     .collect(Collectors.toList()));
             for (int i = 0; i < resolvedArtifacts.size(); i++) {
                 final File artifact = resolvedArtifacts.get(i);
+                final ArtifactCoordinate c = coordinates.get(i);
+                final MavenArtifact mavenArtifact = new MavenArtifact(c.getGroupId(), c.getArtifactId(),
+                        c.getExtension(), c.getClassifier(), c.getVersion(), artifact);
                 final File signature = signatures.get(i);
-                signatureValidator.validateSignature(artifact, signature, channelDefinition.getGpgUrl());
+                signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrl());
             }
         }
 
