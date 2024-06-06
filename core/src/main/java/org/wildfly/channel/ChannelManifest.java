@@ -60,6 +60,12 @@ public class ChannelManifest {
     private final String id;
 
     /**
+     * Optional human-readable version of the manifest.
+     * Alphanumeric version of manifest. Note, this version does *not* need to align with the Maven coordinate version.
+     */
+    private final String logicalVersion;
+
+    /**
      * Optional description of the manifest. It can use multiple lines.
      */
     private final String description;
@@ -86,6 +92,7 @@ public class ChannelManifest {
         this(ChannelManifestMapper.CURRENT_SCHEMA_VERSION,
                 name,
                 id,
+                null,
                 description,
                 Collections.emptyList(),
                 streams);
@@ -98,12 +105,14 @@ public class ChannelManifest {
      */
     public ChannelManifest(String name,
                            String id,
+                           String logicalVersion,
                            String description,
                            Collection<ManifestRequirement> manifestRequirements,
                            Collection<Stream> streams) {
         this(ChannelManifestMapper.CURRENT_SCHEMA_VERSION,
                 name,
                 id,
+                logicalVersion,
                 description,
                 manifestRequirements,
                 streams);
@@ -122,12 +131,14 @@ public class ChannelManifest {
     public ChannelManifest(@JsonProperty(value = "schemaVersion", required = true) String schemaVersion,
                            @JsonProperty(value = "name") String name,
                            @JsonProperty(value = "id") String id,
+                           @JsonProperty(value = "logical-version") String logicalVersion,
                            @JsonProperty(value = "description") String description,
                            @JsonProperty(value = "requires") Collection<ManifestRequirement> manifestRequirements,
                            @JsonProperty(value = "streams") Collection<Stream> streams) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.id = id;
+        this.logicalVersion = logicalVersion;
         this.description = description;
         this.manifestRequirements = new ArrayList<>();
         if (manifestRequirements != null) {
@@ -152,6 +163,11 @@ public class ChannelManifest {
     @JsonInclude(NON_NULL)
     public String getId() {
         return id;
+    }
+
+    @JsonInclude(NON_NULL)
+    public String getLogicalVersion() {
+        return logicalVersion;
     }
 
     @JsonInclude(NON_NULL)
