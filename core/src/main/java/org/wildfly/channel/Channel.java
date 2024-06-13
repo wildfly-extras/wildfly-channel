@@ -47,7 +47,7 @@ public class Channel {
     private ChannelManifestCoordinate manifestCoordinate;
     private NoStreamStrategy noStreamStrategy = NoStreamStrategy.NONE;
     private Boolean gpgCheck;
-    private String gpgUrl;
+    private List<String> gpgUrls;
 
     // no-arg constructor for maven plugins
     public Channel() {
@@ -88,7 +88,7 @@ public class Channel {
                    @JsonProperty(value = "blocklist") @JsonInclude(NON_EMPTY) BlocklistCoordinate blocklistCoordinate,
                    @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy,
                    @JsonProperty(value = "gpg-check") Boolean gpgCheck,
-                   @JsonProperty(value = "gpg-key") String gpgUrl) {
+                   @JsonProperty(value = "gpg-urls") List<String> gpgUrls) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
@@ -98,7 +98,7 @@ public class Channel {
         this.manifestCoordinate = manifestCoordinate;
         this.noStreamStrategy = (noStreamStrategy != null) ? noStreamStrategy: NoStreamStrategy.NONE;
         this.gpgCheck = gpgCheck;
-        this.gpgUrl = gpgUrl;
+        this.gpgUrls = (gpgUrls != null) ? gpgUrls : emptyList();
     }
 
     public String getSchemaVersion() {
@@ -153,10 +153,10 @@ public class Channel {
         return gpgCheck!=null?gpgCheck:false;
     }
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonProperty("gpg-url")
-    public String getGpgUrl() {
-        return gpgUrl;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @JsonProperty("gpg-urls")
+    public List<String> getGpgUrls() {
+        return gpgUrls;
     }
 
     /**
@@ -207,10 +207,10 @@ public class Channel {
         private String description;
         private Vendor vendor;
         private Boolean gpgCheck;
-        private String gpgUrl;
+        private List<String> gpgUrls;
 
         public Channel build() {
-            return new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy, gpgCheck, gpgUrl);
+            return new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy, gpgCheck, gpgUrls);
         }
 
         public Builder setName(String name) {
@@ -267,8 +267,8 @@ public class Channel {
             return this;
         }
 
-        public Builder setGpgUrl(String gpgUrl) {
-            this.gpgUrl = gpgUrl;
+        public Builder setGpgUrls(List<String> gpgUrls) {
+            this.gpgUrls = gpgUrls;
             return this;
         }
     }

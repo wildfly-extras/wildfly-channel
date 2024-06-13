@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,7 +143,7 @@ class ChannelImpl implements AutoCloseable {
         }
         final ChannelImpl requiredChannel = new ChannelImpl(new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, null, null, null, channelDefinition.getRepositories(),
                 new ChannelManifestCoordinate(groupId, artifactId, version), null,
-                Channel.NoStreamStrategy.NONE, channelDefinition.isGpgCheck(), channelDefinition.getGpgUrl()));
+                Channel.NoStreamStrategy.NONE, channelDefinition.isGpgCheck(), channelDefinition.getGpgUrls()));
         try {
             requiredChannel.init(factory, channels, signatureValidator);
         } catch (UnresolvedMavenArtifactException e) {
@@ -319,9 +320,15 @@ class ChannelImpl implements AutoCloseable {
 
         final File artifact = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
         if (channelDefinition.requiresGpgCheck()) {
-            final File signature = resolver.resolveArtifact(groupId, artifactId, extension + ".asc", classifier, version);
-            final MavenArtifact mavenArtifact = new MavenArtifact(groupId, artifactId, extension, classifier, version, artifact);
-            signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrl());
+            try {
+                final File signature = resolver.resolveArtifact(groupId, artifactId, extension + ".asc", classifier, version);
+                final MavenArtifact mavenArtifact = new MavenArtifact(groupId, artifactId, extension, classifier, version, artifact);
+                signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrls());
+            } catch (ArtifactTransferException e) {
+                throw new SignatureValidator.SignatureException("Unable to find required signature for " + e.getUnresolvedArtifacts().stream().findFirst().get());
+            } catch (IOException e) {
+                throw new SignatureValidator.SignatureException("Unable to read the signature data", e);
+            }
         }
         return new ResolveArtifactResult(artifact, this);
     }
@@ -330,17 +337,24 @@ class ChannelImpl implements AutoCloseable {
         final List<File> resolvedArtifacts = resolver.resolveArtifacts(coordinates);
 
         if (channelDefinition.requiresGpgCheck()) {
-            final List<File> signatures = resolver.resolveArtifacts(coordinates.stream()
-                    .map(c->new ArtifactCoordinate(c.getGroupId(), c.getArtifactId(), c.getExtension() + ".asc",
-                            c.getClassifier(), c.getVersion()))
-                    .collect(Collectors.toList()));
-            for (int i = 0; i < resolvedArtifacts.size(); i++) {
-                final File artifact = resolvedArtifacts.get(i);
-                final ArtifactCoordinate c = coordinates.get(i);
-                final MavenArtifact mavenArtifact = new MavenArtifact(c.getGroupId(), c.getArtifactId(),
-                        c.getExtension(), c.getClassifier(), c.getVersion(), artifact);
-                final File signature = signatures.get(i);
-                signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrl());
+            try {
+                final List<File> signatures = resolver.resolveArtifacts(coordinates.stream()
+                        .map(c->new ArtifactCoordinate(c.getGroupId(), c.getArtifactId(), c.getExtension() + ".asc",
+                                c.getClassifier(), c.getVersion()))
+                        .collect(Collectors.toList()));
+                for (int i = 0; i < resolvedArtifacts.size(); i++) {
+                    final File artifact = resolvedArtifacts.get(i);
+                    final ArtifactCoordinate c = coordinates.get(i);
+                    final MavenArtifact mavenArtifact = new MavenArtifact(c.getGroupId(), c.getArtifactId(),
+                            c.getExtension(), c.getClassifier(), c.getVersion(), artifact);
+                    final File signature = signatures.get(i);
+                    signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrls());
+                }
+            } catch (ArtifactTransferException e) {
+                final ArtifactCoordinate artifact = e.getUnresolvedArtifacts().stream().findFirst().get();
+                throw new SignatureValidator.SignatureException(String.format("Unable to find required signature for %s:%s:%s",artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()));
+            } catch (IOException e) {
+                throw new SignatureValidator.SignatureException("Unable to read signature file",e);
             }
         }
 
