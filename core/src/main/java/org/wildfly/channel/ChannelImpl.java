@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
 import org.wildfly.channel.version.VersionMatcher;
 
@@ -323,7 +324,10 @@ class ChannelImpl implements AutoCloseable {
             try {
                 final File signature = resolver.resolveArtifact(groupId, artifactId, extension + ".asc", classifier, version);
                 final MavenArtifact mavenArtifact = new MavenArtifact(groupId, artifactId, extension, classifier, version, artifact);
-                signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrls());
+                final SignatureResult signatureResult = signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrls());
+                if (signatureResult.getResult() != SignatureResult.Result.OK) {
+                    throw new SignatureValidator.SignatureException("Failed to verify an artifact signature", signatureResult);
+                }
             } catch (ArtifactTransferException e) {
                 throw new SignatureValidator.SignatureException("Unable to find required signature for " + e.getUnresolvedArtifacts().stream().findFirst().get());
             } catch (IOException e) {

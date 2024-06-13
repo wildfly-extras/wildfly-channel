@@ -18,6 +18,7 @@ public interface SignatureValidator {
 
         private ArtifactCoordinate artifact;
         private String keyId;
+        private SignatureResult signatureResult;
 
         public SignatureException(String message) {
             super(message);
@@ -25,6 +26,15 @@ public interface SignatureValidator {
 
         public SignatureException(String message, Throwable cause) {
             super(message, cause);
+        }
+
+        public SignatureException(String message, SignatureResult signatureResult) {
+            super(message);
+            this.signatureResult = signatureResult;
+        }
+
+        public SignatureResult getSignatureResult() {
+            return signatureResult;
         }
     }
 }
