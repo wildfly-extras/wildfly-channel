@@ -6,11 +6,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URLConnection;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +37,7 @@ import org.wildfly.channel.spi.SignatureValidator;
 public class GpgSignatureValidator implements SignatureValidator {
 
     private final GpgKeystore keystore;
+    private final Keyserver keyserver;
 
     private SignatureValidatorListener listener = new SignatureValidatorListener() {
 
@@ -45,7 +48,12 @@ public class GpgSignatureValidator implements SignatureValidator {
     };
 
     public GpgSignatureValidator(GpgKeystore keystore) {
+        this(keystore, new Keyserver(Collections.emptyList()));
+    }
+
+    public GpgSignatureValidator(GpgKeystore keystore, Keyserver keyserver) {
         this.keystore = keystore;
+        this.keyserver = keyserver;
     }
 
     public void addListener(SignatureValidatorListener listener) {
@@ -60,20 +68,34 @@ public class GpgSignatureValidator implements SignatureValidator {
         final PGPSignature pgpSignature = readSignatureFile(signature);
 
         final String keyID = Long.toHexString(pgpSignature.getKeyID()).toUpperCase(Locale.ROOT);
-        final String artifactGav = String.format("%s:%s:%s", artifact.getGroupId(), artifact.getArtifactId(),
-                artifact.getVersion());
 
         final PGPPublicKey publicKey;
         if (keystore.get(keyID) != null) {
             publicKey = keystore.get(keyID);
         } else {
-            PGPPublicKey key = null;
             List<PGPPublicKey> pgpPublicKeys = null;
-            for (String gpgUrl : gpgUrls) {
-                pgpPublicKeys = downloadPublicKey(gpgUrl);
-                if (pgpPublicKeys.stream().anyMatch(k -> k.getKeyID() == pgpSignature.getKeyID())) {
-                    key = pgpPublicKeys.stream().filter(k -> k.getKeyID() == pgpSignature.getKeyID()).findFirst().get();
-                    break;
+            PGPPublicKey key = null;
+            try {
+                final PGPPublicKeyRing keyRing = keyserver.downloadKey(keyID);
+                if (keyRing != null) {
+                    final Iterator<PGPPublicKey> publicKeys = keyRing.getPublicKeys();
+                    key = keyRing.getPublicKey(new BigInteger(keyID, 16).longValue());
+                    pgpPublicKeys = new ArrayList<>();
+                    while (publicKeys.hasNext()) {
+                        pgpPublicKeys.add(publicKeys.next());
+                    }
+                }
+            } catch (PGPException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (key == null) {
+                for (String gpgUrl : gpgUrls) {
+                    pgpPublicKeys = downloadPublicKey(gpgUrl);
+                    if (pgpPublicKeys.stream().anyMatch(k -> k.getKeyID() == pgpSignature.getKeyID())) {
+                        key = pgpPublicKeys.stream().filter(k -> k.getKeyID() == pgpSignature.getKeyID()).findFirst().get();
+                        break;
+                    }
                 }
             }
             if (key == null) {
