@@ -27,7 +27,9 @@ import org.bouncycastle.openpgp.PGPSignatureSubpacketVector;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
+import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.MavenArtifact;
+import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
 
 public class GpgSignatureValidator implements SignatureValidator {
@@ -51,7 +53,7 @@ public class GpgSignatureValidator implements SignatureValidator {
     }
 
     @Override
-    public void validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws IOException, SignatureException {
+    public SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws IOException, SignatureException {
         Objects.requireNonNull(artifact);
         Objects.requireNonNull(signature);
 
@@ -75,16 +77,14 @@ public class GpgSignatureValidator implements SignatureValidator {
                 }
             }
             if (key == null) {
-                throw new SignatureException(String.format(
-                        "No matching trusted certificate found to verify signature of artifact %s. Required key ID %s",
-                        artifactGav, keyID));
+                final ArtifactCoordinate coord = toArtifactCoordinate(artifact);
+                return SignatureResult.noMatchingCertificate(coord, keyID);
             } else {
                 if (keystore.add(pgpPublicKeys)) {
                     publicKey = key;
                 } else {
-                    throw new SignatureException(String.format(
-                            "No matching trusted certificate found to verify signature of artifact %s. Required key ID %s",
-                            artifactGav, keyID));
+                    final ArtifactCoordinate coord = toArtifactCoordinate(artifact);
+                    return SignatureResult.noMatchingCertificate(coord, keyID);
                 }
             }
         }
@@ -94,25 +94,18 @@ public class GpgSignatureValidator implements SignatureValidator {
             final PGPSignature subKey = subKeys.next();
             final PGPPublicKey masterKey = keystore.get(Long.toHexString(subKey.getKeyID()).toUpperCase(Locale.ROOT));
             if (masterKey.hasRevocation()) {
-                throw new SignatureException(String.format(
-                        "The certificate (key ID %s) used to sign artifact %s has been revoked " +
-                                "with message:%n %s.",
-                        artifactGav, keyID, getRevocationReason(masterKey)));
+                return SignatureResult.revoked(toArtifactCoordinate(artifact), keyID, getRevocationReason(publicKey));
             }
         }
 
         if (publicKey.hasRevocation()) {
-            throw new SignatureException(
-                    String.format("The certificate (key ID %s) used to sign artifact %s has been revoked with message:%n%s.",
-                            keyID, artifactGav, getRevocationReason(publicKey)));
+            return SignatureResult.revoked(toArtifactCoordinate(artifact), keyID, getRevocationReason(publicKey));
         }
 
         if (publicKey.getValidSeconds() > 0) {
             final Instant expiry = Instant.from(publicKey.getCreationTime().toInstant().plus(publicKey.getValidSeconds(), ChronoUnit.SECONDS));
             if (expiry.isBefore(Instant.now())) {
-                throw new SignatureException(
-                        String.format("The certificate (key ID %s) used to sign artifact %s has expired.",
-                                keyID, artifactGav));
+                return SignatureResult.expired(toArtifactCoordinate(artifact), keyID);
             }
         }
 
@@ -125,6 +118,13 @@ public class GpgSignatureValidator implements SignatureValidator {
         verifyFile(artifact, pgpSignature);
 
         listener.artifactSignatureCorrect(artifact, publicKey);
+
+        return SignatureResult.ok();
+    }
+
+    private static ArtifactCoordinate toArtifactCoordinate(MavenArtifact artifact) {
+        final ArtifactCoordinate coord = new ArtifactCoordinate(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier(), artifact.getVersion());
+        return coord;
     }
 
     private static String getRevocationReason(PGPPublicKey publicKey) {

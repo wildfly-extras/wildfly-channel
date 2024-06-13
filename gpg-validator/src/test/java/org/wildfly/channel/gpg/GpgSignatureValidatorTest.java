@@ -23,7 +23,9 @@ import org.pgpainless.key.generation.type.KeyType;
 import org.pgpainless.key.generation.type.rsa.RsaLength;
 import org.pgpainless.key.protection.UnprotectedKeysProtector;
 import org.pgpainless.key.util.RevocationAttributes;
+import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.MavenArtifact;
+import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
 
 import java.io.File;
@@ -78,25 +80,26 @@ public class GpgSignatureValidatorTest {
     public void validSignatureIsAccepted() throws Exception {
         keystore.using(pgpValidKeys);
 
-        validator.validateSignature(anArtifact, signatureFile, Collections.emptyList());
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.OK);
     }
 
     @Test
-    public void invalidSignatureThrowsException() throws Exception {
+    public void invalidSignatureReturnsErrorStatus() throws Exception {
         keystore.using(pgpValidKeys);
 
         final File signatureFile = signFile(anArtifact.getFile(), pgpAttackerKeys);
 
-        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
-                .isInstanceOf(SignatureValidator.SignatureException.class)
-                .hasMessageContaining("No matching trusted certificate");
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.NO_MATCHING_CERT)
+                .hasFieldOrPropertyWithValue("artifact", toCoord());
     }
 
     @Test
-    public void expiredSignatureThrowsException() throws Exception {
+    public void expiredSignatureReturnsError() throws Exception {
         keystore.using(pgpExpiredKeys);
 
-        // the certificate has to have an expiry date at least +1 second, otherwise it's treated as never-expiring
+        // the certificate has to have an expiry date at least now()+1 second, otherwise it's treated as never-expiring
         // wait for certificate to expire
         while (!isExpired(pgpExpiredKeys.getPublicKey())) {
             Thread.sleep(100);
@@ -104,13 +107,14 @@ public class GpgSignatureValidatorTest {
 
         final File signatureFile = signFile(anArtifact.getFile(), pgpExpiredKeys);
 
-        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
-                .isInstanceOf(SignatureValidator.SignatureException.class)
-                .hasMessageContainingAll("The certificate", toHex(pgpExpiredKeys.getPublicKey().getKeyID()), "has expired");
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.EXPIRED)
+                .hasFieldOrPropertyWithValue("artifact", toCoord())
+                .hasFieldOrPropertyWithValue("keyId", toHex(pgpExpiredKeys.getPublicKey().getKeyID()));
     }
 
     @Test
-    public void revokedSignatureThrowsException() throws Exception {
+    public void revokedSignatureReturnsError() throws Exception {
         // order of operations matter! sign artifact, revoke the key, init the keystore
         final PGPSecretKeyRing pgpExpiredKeys = PGPainless.modifyKeyRing(pgpValidKeys)
                 .revoke(new UnprotectedKeysProtector(),
@@ -121,9 +125,11 @@ public class GpgSignatureValidatorTest {
                 .done();
         keystore.using(pgpExpiredKeys);
 
-        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
-                .isInstanceOf(SignatureValidator.SignatureException.class)
-                .hasMessageContainingAll("key ID " + toHex(pgpValidKeys.getPublicKey().getKeyID()), "has been revoked", "The key is revoked");
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.REVOKED)
+                .hasFieldOrPropertyWithValue("artifact", toCoord())
+                .hasFieldOrPropertyWithValue("keyId", toHex(pgpValidKeys.getPublicKey().getKeyID()))
+                .hasFieldOrPropertyWithValue("message", "The key is revoked");
     }
 
     @Test
@@ -133,7 +139,8 @@ public class GpgSignatureValidatorTest {
         // export the public certificate
         final File publicCertFile = exportPublicCertificate(pgpValidKeys);
 
-        validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString()));
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.OK);
 
         Assertions.assertThat(keystore.getKeys().keySet())
                 .containsOnly(toHex(pgpValidKeys.getPublicKey().getKeyID()));
@@ -154,7 +161,7 @@ public class GpgSignatureValidatorTest {
     }
 
     @Test
-    public void invalidSignatureDownloadedThrowsException() throws Exception {
+    public void invalidSignatureDownloadedReturnsError() throws Exception {
         keystore.using(Collections.emptyList());
 
         final File signatureFile = signFile(anArtifact.getFile(), pgpAttackerKeys);
@@ -162,10 +169,10 @@ public class GpgSignatureValidatorTest {
         // export the public certificate
         final File publicCertFile = exportPublicCertificate(pgpValidKeys);
 
-        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
-                .isInstanceOf(SignatureValidator.SignatureException.class)
-                .hasMessageContainingAll("No matching trusted certificate found to verify signature of artifact",
-                        "Required key ID " + toHex(pgpAttackerKeys.getPublicKey().getKeyID()));
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.NO_MATCHING_CERT)
+                .hasFieldOrPropertyWithValue("artifact", toCoord())
+                .hasFieldOrPropertyWithValue("keyId", toHex(pgpAttackerKeys.getPublicKey().getKeyID()));
 
         // no certificates should have been imported
         Assertions.assertThat(keystore.getKeys().keySet())
@@ -173,19 +180,22 @@ public class GpgSignatureValidatorTest {
     }
 
     @Test
-    public void keystoreRejectingCertificateThrowsException() throws Exception {
+    public void keystoreRejectingCertificateReturnsError() throws Exception {
         final GpgKeystore rejectingKeystore = Mockito.mock(GpgKeystore.class);
         Mockito.when(rejectingKeystore.add(Mockito.anyList())).thenReturn(false);
         validator = new GpgSignatureValidator(rejectingKeystore);
 
-
-
         final File publicCertFile = exportPublicCertificate(pgpValidKeys);
 
-        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
-                .isInstanceOf(SignatureValidator.SignatureException.class)
-                .hasMessageContainingAll("No matching trusted certificate found to verify signature of artifact",
-                        "Required key ID " + toHex(pgpValidKeys.getPublicKey().getKeyID()));
+        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
+                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.NO_MATCHING_CERT)
+                .hasFieldOrPropertyWithValue("artifact", toCoord())
+                .hasFieldOrPropertyWithValue("keyId", toHex(pgpValidKeys.getPublicKey().getKeyID()));
+    }
+
+    private ArtifactCoordinate toCoord() {
+        return new ArtifactCoordinate(anArtifact.getGroupId(), anArtifact.getArtifactId(), anArtifact.getExtension(),
+                anArtifact.getClassifier(), anArtifact.getVersion());
     }
 
     private File exportPublicCertificate(PGPSecretKeyRing keyRing) throws IOException {

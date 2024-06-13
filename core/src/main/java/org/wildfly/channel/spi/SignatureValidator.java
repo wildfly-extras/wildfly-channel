@@ -12,7 +12,7 @@ public interface SignatureValidator {
         throw new SignatureException("Not implemented");
     };
 
-    void validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws IOException, SignatureException;
+    SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws IOException, SignatureException;
 
     class SignatureException extends RuntimeException {
 
