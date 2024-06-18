@@ -267,8 +267,11 @@ public class Channel {
             return this;
         }
 
-        public Builder setGpgUrls(List<String> gpgUrls) {
-            this.gpgUrls = gpgUrls;
+        public Builder addGpgUrl(String gpgUrl) {
+            if (this.gpgUrls == null) {
+                this.gpgUrls = new ArrayList<>();
+            }
+            this.gpgUrls.add(gpgUrl);
             return this;
         }
     }
