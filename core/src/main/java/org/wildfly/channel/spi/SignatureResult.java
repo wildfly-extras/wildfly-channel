@@ -20,7 +20,15 @@ public class SignatureResult {
         return new SignatureResult(Result.EXPIRED, artifactCoordinate, keyID, null);
     }
 
-    public enum Result {OK, NO_MATCHING_CERT, REVOKED, EXPIRED;}
+    public static SignatureResult noSignature(ArtifactCoordinate artifactCoordinate) {
+        return new SignatureResult(Result.NO_SIGNATURE, artifactCoordinate, null, null);
+    }
+
+    public static SignatureResult invalid(ArtifactCoordinate artifactCoordinate) {
+        return new SignatureResult(Result.INVALID, artifactCoordinate, null, null);
+    }
+
+    public enum Result {OK, NO_MATCHING_CERT, REVOKED, EXPIRED, NO_SIGNATURE, INVALID;}
     private final Result result;
     public static SignatureResult ok() {
         return new SignatureResult(Result.OK, null, null, null);

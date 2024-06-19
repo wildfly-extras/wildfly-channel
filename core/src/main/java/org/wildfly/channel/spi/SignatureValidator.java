@@ -1,6 +1,5 @@
 package org.wildfly.channel.spi;
 
-import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.MavenArtifact;
 
 import java.io.File;
@@ -12,7 +11,7 @@ import java.util.List;
  */
 public interface SignatureValidator {
     SignatureValidator REJECTING_VALIDATOR = (artifact, signature, gpgUrl) -> {
-        throw new SignatureException("Not implemented");
+        throw new SignatureException("Not implemented", SignatureResult.noSignature(artifact));
     };
 
     /**
@@ -25,17 +24,14 @@ public interface SignatureValidator {
      * @throws IOException
      * @throws SignatureException
      */
-    SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws IOException, SignatureException;
+    SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws SignatureException;
 
     class SignatureException extends RuntimeException {
-        private SignatureResult signatureResult;
+        private final SignatureResult signatureResult;
 
-        public SignatureException(String message) {
-            super(message);
-        }
-
-        public SignatureException(String message, Throwable cause) {
+        public SignatureException(String message, Throwable cause, SignatureResult signatureResult) {
             super(message, cause);
+            this.signatureResult = signatureResult;
         }
 
         public SignatureException(String message, SignatureResult signatureResult) {

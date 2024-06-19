@@ -329,9 +329,9 @@ class ChannelImpl implements AutoCloseable {
                     throw new SignatureValidator.SignatureException("Failed to verify an artifact signature", signatureResult);
                 }
             } catch (ArtifactTransferException e) {
-                throw new SignatureValidator.SignatureException("Unable to find required signature for " + e.getUnresolvedArtifacts().stream().findFirst().get());
-            } catch (IOException e) {
-                throw new SignatureValidator.SignatureException("Unable to read the signature data", e);
+                final ArtifactCoordinate missingSignatureCoords = e.getUnresolvedArtifacts().stream().findFirst().get();
+                throw new SignatureValidator.SignatureException("Unable to find required signature for " + missingSignatureCoords,
+                        SignatureResult.noSignature(missingSignatureCoords));
             }
         }
         return new ResolveArtifactResult(artifact, this);
@@ -352,13 +352,14 @@ class ChannelImpl implements AutoCloseable {
                     final MavenArtifact mavenArtifact = new MavenArtifact(c.getGroupId(), c.getArtifactId(),
                             c.getExtension(), c.getClassifier(), c.getVersion(), artifact);
                     final File signature = signatures.get(i);
-                    signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrls());
+                    final SignatureResult signatureResult = signatureValidator.validateSignature(mavenArtifact, signature, channelDefinition.getGpgUrls());
+                    if (signatureResult.getResult() != SignatureResult.Result.OK) {
+                        throw new SignatureValidator.SignatureException("Failed to verify an artifact signature", signatureResult);
+                    }
                 }
             } catch (ArtifactTransferException e) {
                 final ArtifactCoordinate artifact = e.getUnresolvedArtifacts().stream().findFirst().get();
-                throw new SignatureValidator.SignatureException(String.format("Unable to find required signature for %s:%s:%s",artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()));
-            } catch (IOException e) {
-                throw new SignatureValidator.SignatureException("Unable to read signature file",e);
+                throw new SignatureValidator.SignatureException(String.format("Unable to find required signature for %s:%s:%s",artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()), SignatureResult.noSignature(artifact));
             }
         }
 

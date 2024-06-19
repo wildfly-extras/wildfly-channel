@@ -61,11 +61,20 @@ public class GpgSignatureValidator implements SignatureValidator {
     }
 
     @Override
-    public SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws IOException, SignatureException {
+    public SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws SignatureException {
         Objects.requireNonNull(artifact);
         Objects.requireNonNull(signature);
 
-        final PGPSignature pgpSignature = readSignatureFile(signature);
+        final PGPSignature pgpSignature;
+        try {
+            pgpSignature = readSignatureFile(signature);
+        } catch (IOException e) {
+            throw new SignatureException("Could not find signature in provided signature file", e, SignatureResult.noSignature(toArtifactCoordinate(artifact)));
+        }
+
+        if (pgpSignature == null) {
+            throw new SignatureException("Could not find signature in provided signature file", SignatureResult.noSignature(toArtifactCoordinate(artifact)));
+        }
 
         final String keyID = Long.toHexString(pgpSignature.getKeyID()).toUpperCase(Locale.ROOT);
 
@@ -87,11 +96,18 @@ public class GpgSignatureValidator implements SignatureValidator {
                 }
             } catch (PGPException e) {
                 throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new SignatureException("Unable to parse the certificate downloaded from keyserver", e, SignatureResult.noSignature(artifact));
             }
 
             if (key == null) {
                 for (String gpgUrl : gpgUrls) {
-                    pgpPublicKeys = downloadPublicKey(gpgUrl);
+                    try {
+                        pgpPublicKeys = downloadPublicKey(gpgUrl);
+                    } catch (IOException e) {
+                        throw new SignatureException("Unable to parse the certificate downloaded from " + gpgUrl, e,
+                                SignatureResult.noSignature(artifact));
+                    }
                     if (pgpPublicKeys.stream().anyMatch(k -> k.getKeyID() == pgpSignature.getKeyID())) {
                         key = pgpPublicKeys.stream().filter(k -> k.getKeyID() == pgpSignature.getKeyID()).findFirst().get();
                         break;
@@ -182,12 +198,12 @@ public class GpgSignatureValidator implements SignatureValidator {
         // Verify the signature
         try {
             if (!pgpSignature.verify()) {
-                throw new SignatureException(String.format(
-                        "The signature for artifact %s:%s:%s is invalid. The artifact might be corrupted or tampered with.",
-                        mavenArtifact.getGroupId(), mavenArtifact.getArtifactId(), mavenArtifact.getVersion()));
+                throw new SignatureException(
+                        "The signature for artifact is invalid. The artifact might be corrupted or tampered with.",
+                        SignatureResult.invalid(mavenArtifact));
             }
         } catch (PGPException e) {
-            throw new SignatureException("Unable to verify the file signature", e);
+            throw new SignatureException("Unable to verify the file signature", e, SignatureResult.invalid(mavenArtifact));
         }
     }
 
@@ -204,37 +220,30 @@ public class GpgSignatureValidator implements SignatureValidator {
                 pgpSignature = signatureList.get(0);
             } else if (o instanceof PGPSignature) {
                 pgpSignature = (PGPSignature) o;
-            } else {
-                throw new SignatureException("Could not find signature in provided signature file");
             }
         }
         return pgpSignature;
     }
 
-    private static List<PGPPublicKey> downloadPublicKey(String signatureUrl) {
-        try {
-            final URI uri = URI.create(signatureUrl);
-            final InputStream inputStream;
-            if (uri.getScheme().equals("classpath")) {
-                final String keyPath = uri.getSchemeSpecificPart();
-                inputStream = GpgSignatureValidator.class.getClassLoader().getResourceAsStream(keyPath);
-            } else {
-                final URLConnection urlConnection = uri.toURL().openConnection();
-                urlConnection.connect();
-                inputStream = urlConnection.getInputStream();
+    private static List<PGPPublicKey> downloadPublicKey(String signatureUrl) throws IOException {
+        final URI uri = URI.create(signatureUrl);
+        final InputStream inputStream;
+        if (uri.getScheme().equals("classpath")) {
+            final String keyPath = uri.getSchemeSpecificPart();
+            inputStream = GpgSignatureValidator.class.getClassLoader().getResourceAsStream(keyPath);
+        } else {
+            final URLConnection urlConnection = uri.toURL().openConnection();
+            urlConnection.connect();
+            inputStream = urlConnection.getInputStream();
+        }
+        try (InputStream decoderStream = new ArmoredInputStream(inputStream)) {
+            final PGPPublicKeyRing pgpPublicKeys = new PGPPublicKeyRing(decoderStream, new JcaKeyFingerprintCalculator());
+            final ArrayList<PGPPublicKey> res = new ArrayList<>();
+            final Iterator<PGPPublicKey> publicKeys = pgpPublicKeys.getPublicKeys();
+            while (publicKeys.hasNext()) {
+                res.add(publicKeys.next());
             }
-            try (InputStream decoderStream = new ArmoredInputStream(inputStream)) {
-                final PGPPublicKeyRing pgpPublicKeys = new PGPPublicKeyRing(decoderStream, new JcaKeyFingerprintCalculator());
-                final ArrayList<PGPPublicKey> res = new ArrayList<>();
-                final Iterator<PGPPublicKey> publicKeys = pgpPublicKeys.getPublicKeys();
-                while (publicKeys.hasNext()) {
-                    res.add(publicKeys.next());
-                }
-                return res;
-            }
-
-        } catch (IOException e) {
-            throw new SignatureException("Unable to parse the certificate downloaded from " + signatureUrl, e);
+            return res;
         }
     }
 
