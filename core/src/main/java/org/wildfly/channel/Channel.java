@@ -88,7 +88,7 @@ public class Channel {
                    @JsonProperty(value = "blocklist") @JsonInclude(NON_EMPTY) BlocklistCoordinate blocklistCoordinate,
                    @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy,
                    @JsonProperty(value = "gpg-check") Boolean gpgCheck,
-                   @JsonProperty(value = "gpg-urls") List<String> gpgUrls) {
+                   @JsonProperty(value = "gpg-keys") List<String> gpgUrls) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
@@ -154,7 +154,7 @@ public class Channel {
     }
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @JsonProperty("gpg-urls")
+    @JsonProperty("gpg-keys")
     public List<String> getGpgUrls() {
         return gpgUrls;
     }
