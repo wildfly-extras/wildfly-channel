@@ -5,7 +5,7 @@
 
 [cols="1,1"]
 |===
-| Channel schema Version | 2.0.0
+| Channel schema Version | 2.1.0
 | Manifest schema Version | 1.1.0
 | Blocklist schema Version | 1.0.0
 |===
@@ -76,6 +76,8 @@ A channel is composed of several fields:
 ** `maven-latest` - a version marked as `latest` in the Maven metadata
 ** `maven-release` - a version marked as `release` in the Maven metadata
 ** `none` - do not attempt to resolve versions of artifact not listed in the `streams` collection. Default value if no strategy is provided.
+* Optional `gpg-check` boolean indicating if the artifacts resolved from this channel have to have a valid GPG signature.
+* Optional `gpg-urls` a list of URLs that the public GPG keys used to validate artifact signatures are resolved from.
 
 ### Manifest definition
 A Channel Manifest is composed of following fields:
@@ -234,7 +236,32 @@ A blocklist applies only to the channel that defined it, not its required channe
 
 During artifact version resolution, a stream matching artifact GA is located in the channel. The blocklist is always checked for excluded versions, except when using `resolveDirectMavenArtifact` method. The excluded versions are removed from the set of available artifact versions before the latest remaining version matching the stream’s pattern is used to resolve the artifact. If the blocklist excludes all available artifact versions, `UnresolvedMavenArtifactException` is thrown.
 
+### Verifing artifact PGP signatures
+
+If a channel sets value of `gpg-check` property to `true`, any artifact resolved from it (including the manifest itself) has to have a valid GPG signature.
+
+#### Verifing maven artifact signatures
+
+Maven artifacts are expected to have their detached GPG signatures available in the channel repositories. The detached artifacts must have the same GAV as the artifact, but append ".asc" suffix to the file expension. The signature file must contain an armoured GPG signature.
+
+The signature file is resolved at the same time as the artifact. If the signature is invalid, the public key is not found, the public key is expired or revoked, the artifact must be rejected and a SignatureException must be thrown.
+
+#### Verifing manifest signatures
+
+If the manifest of a channel is defined as a Maven GA(V), it is treated as any other maven artifact. If it is defined as an URL, the signature file must be available at the same URL with ".asc" suffix. If the signature cannot be resolved, the channel creation must fail.
+
+#### Public keys
+
+The public keys are identified by the a keyID in hexadecimal form. The public keys required by the channel can be defined using `gpg-urls` property. Each `gpg-urls` must be a URL to a downloadable key.
+
+Implementations may provide additional means of providing keys - local stores, remote keyservers, etc.
+
 ### Changelog
+
+### Version 2.1.0
+
+* Adding ability to verify artifact signatures
+** Adding `gpg-check` and `gpg-urls` fields to the Channel definition.
 
 ### Version 2.0.0
 
