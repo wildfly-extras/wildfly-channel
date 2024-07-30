@@ -60,10 +60,12 @@ import org.wildfly.channel.ArtifactTransferException;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelMetadataCoordinate;
+import org.wildfly.channel.MavenArtifact;
 import org.wildfly.channel.Repository;
 import org.wildfly.channel.NoStreamFoundException;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.spi.SignatureValidator;
 import org.wildfly.channel.version.VersionMatcher;
 import org.jboss.logging.Logger;
 
@@ -96,6 +98,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
                                   RepositorySystemSession session) {
         this(system, session, DEFAULT_REPOSITORY_MAPPER);
     }
+
     public VersionResolverFactory(RepositorySystem system,
                                   RepositorySystemSession session,
                                   Function<Repository, RemoteRepository> repositoryFactory) {
@@ -173,7 +176,8 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
         }
 
         @Override
-        public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws ArtifactTransferException {
+        public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version)
+                throws ArtifactTransferException, SignatureValidator.SignatureException {
             requireNonNull(groupId);
             requireNonNull(artifactId);
             requireNonNull(version);

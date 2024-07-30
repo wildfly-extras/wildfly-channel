@@ -35,6 +35,7 @@ import java.util.concurrent.ForkJoinTask;
 
 import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
+import org.wildfly.channel.spi.SignatureValidator;
 import org.wildfly.channel.version.VersionMatcher;
 
 /**
@@ -60,19 +61,24 @@ public class ChannelSession implements AutoCloseable {
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
     public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory) {
-        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM);
+        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM, SignatureValidator.REJECTING_VALIDATOR);
+    }
+
+    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory, SignatureValidator signatureValidator) {
+        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM, signatureValidator);
     }
 
     /**
      * Create a ChannelSession.
      *
-     * @param channels the list of channels to resolve Maven artifact
+     * @param channelDefinitions the list of channels to resolve Maven artifact
      * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
      * @param versionResolutionParallelism Number of threads to use when resolving available artifact versions.
      * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
-    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory, int versionResolutionParallelism) {
+    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory,
+                          int versionResolutionParallelism, SignatureValidator signatureValidator) {
         requireNonNull(channelDefinitions);
         requireNonNull(factory);
 
@@ -81,7 +87,7 @@ public class ChannelSession implements AutoCloseable {
 
         List<ChannelImpl> channelList = channelDefinitions.stream().map(ChannelImpl::new).collect(Collectors.toList());
         for (ChannelImpl channel : channelList) {
-            channel.init(factory, channelList);
+            channel.init(factory, channelList, signatureValidator);
         }
         // filter out channels marked as dependency, so that resolution starts only at top level channels
         this.channels = channelList.stream().filter(c->!c.isDependency()).collect(Collectors.toList());

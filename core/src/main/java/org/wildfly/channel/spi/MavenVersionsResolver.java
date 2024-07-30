@@ -60,7 +60,8 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * @throws ArtifactTransferException if the artifact can not be resolved.
     */
-   File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws ArtifactTransferException;
+   File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version)
+           throws ArtifactTransferException;
 
    /**
     * Resolve a list of maven artifacts based on the full coordinates.
