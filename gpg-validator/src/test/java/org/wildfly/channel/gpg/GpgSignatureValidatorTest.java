@@ -40,14 +40,15 @@ import org.pgpainless.key.generation.type.rsa.RsaLength;
 import org.pgpainless.key.protection.UnprotectedKeysProtector;
 import org.pgpainless.key.util.RevocationAttributes;
 import org.wildfly.channel.ArtifactCoordinate;
-import org.wildfly.channel.MavenArtifact;
 import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
+import org.wildfly.channel.spi.ValidationResource;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -69,7 +70,10 @@ public class GpgSignatureValidatorTest {
     private PGPSecretKeyRing pgpExpiredKeys;
     private TestKeystore keystore = new TestKeystore();
     private GpgSignatureValidator validator;
-    private MavenArtifact anArtifact;
+    private ValidationResource.MavenResource anArtifact;
+    private InputStream artifactInputStream;
+    private File artifactFile;
+    private InputStream signatureInputStream;
     private File signatureFile;
 
     @BeforeEach
@@ -85,18 +89,20 @@ public class GpgSignatureValidatorTest {
         keystore = new TestKeystore();
         validator = new GpgSignatureValidator(keystore);
 
-        File artifactFile = tempDir.resolve("test-one.jar").toFile();
+        this.artifactFile = tempDir.resolve("test-one.jar").toFile();
         Files.writeString(artifactFile.toPath(), "test");
-        anArtifact = new MavenArtifact("org.test", "test-one", "jar", null, "1.0.0", artifactFile);
+        this.artifactInputStream = new FileInputStream(artifactFile);
+        anArtifact = new ValidationResource.MavenResource("org.test", "test-one", "jar", null, "1.0.0");
 
-        signatureFile = signFile(anArtifact.getFile(), pgpValidKeys);
+        this.signatureFile = signFile(artifactFile, pgpValidKeys);
+        this.signatureInputStream = new FileInputStream(signatureFile);
     }
 
     @Test
     public void validSignatureIsAccepted() throws Exception {
         keystore.using(pgpValidKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream, signatureInputStream, Collections.emptyList()))
                 .hasFieldOrPropertyWithValue("result", SignatureResult.Result.OK);
     }
 
@@ -104,11 +110,15 @@ public class GpgSignatureValidatorTest {
     public void invalidSignatureReturnsErrorStatus() throws Exception {
         keystore.using(pgpValidKeys);
 
-        final File signatureFile = signFile(anArtifact.getFile(), pgpAttackerKeys);
+        final File signatureFile = signFile(artifactFile, pgpAttackerKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
-                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.NO_MATCHING_CERT)
-                .hasFieldOrPropertyWithValue("artifact", toCoord());
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream, signatureInputStream, Collections.emptyList()))
+                .extracting(
+                        SignatureResult::getResult,
+                        SignatureResult::getResource)
+                .containsExactly(
+                        SignatureResult.Result.NO_MATCHING_CERT,
+                        anArtifact);
     }
 
     @Test
@@ -121,12 +131,17 @@ public class GpgSignatureValidatorTest {
             Thread.sleep(100);
         }
 
-        final File signatureFile = signFile(anArtifact.getFile(), pgpExpiredKeys);
+        final File signatureFile = signFile(artifactFile, pgpExpiredKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
-                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.EXPIRED)
-                .hasFieldOrPropertyWithValue("artifact", toCoord())
-                .hasFieldOrPropertyWithValue("keyId", toHex(pgpExpiredKeys.getPublicKey().getKeyID()));
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream, new FileInputStream(signatureFile), Collections.emptyList()))
+                .extracting(
+                        SignatureResult::getResult,
+                        SignatureResult::getResource,
+                        SignatureResult::getKeyId)
+                .containsExactly(
+                        SignatureResult.Result.EXPIRED,
+                        anArtifact,
+                        toHex(pgpExpiredKeys.getPublicKey().getKeyID()));
     }
 
     @Test
@@ -141,11 +156,17 @@ public class GpgSignatureValidatorTest {
                 .done();
         keystore.using(pgpExpiredKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, Collections.emptyList()))
-                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.REVOKED)
-                .hasFieldOrPropertyWithValue("artifact", toCoord())
-                .hasFieldOrPropertyWithValue("keyId", toHex(pgpValidKeys.getPublicKey().getKeyID()))
-                .hasFieldOrPropertyWithValue("message", "The key is revoked");
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream, signatureInputStream, Collections.emptyList()))
+                .extracting(
+                        SignatureResult::getResult,
+                        SignatureResult::getResource,
+                        SignatureResult::getKeyId,
+                        SignatureResult::getMessage)
+                .containsExactly(
+                        SignatureResult.Result.REVOKED,
+                        anArtifact,
+                        toHex(pgpValidKeys.getPublicKey().getKeyID()),
+                        "The key is revoked");
     }
 
     @Test
@@ -155,8 +176,9 @@ public class GpgSignatureValidatorTest {
         // export the public certificate
         final File publicCertFile = exportPublicCertificate(pgpValidKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
-                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.OK);
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream, signatureInputStream, List.of(publicCertFile.toURI().toString())))
+                .extracting(SignatureResult::getResult)
+                .isEqualTo(SignatureResult.Result.OK);
 
         Assertions.assertThat(keystore.getKeys().keySet())
                 .containsOnly(toHex(pgpValidKeys.getPublicKey().getKeyID()));
@@ -171,7 +193,7 @@ public class GpgSignatureValidatorTest {
         Files.writeString(publicCertFile.toPath(), "I'm not a certificate");
         final String certUrl = publicCertFile.toURI().toString();
 
-        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, signatureFile, List.of(certUrl)))
+        Assertions.assertThatThrownBy(()->validator.validateSignature(anArtifact, artifactInputStream, signatureInputStream, List.of(certUrl)))
                 .isInstanceOf(SignatureValidator.SignatureException.class)
                 .hasMessageContainingAll("Unable to parse the certificate downloaded from " + certUrl);
     }
@@ -180,15 +202,22 @@ public class GpgSignatureValidatorTest {
     public void invalidSignatureDownloadedReturnsError() throws Exception {
         keystore.using(Collections.emptyList());
 
-        final File signatureFile = signFile(anArtifact.getFile(), pgpAttackerKeys);
+        final File signatureFile = signFile(artifactFile, pgpAttackerKeys);
 
         // export the public certificate
         final File publicCertFile = exportPublicCertificate(pgpValidKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream,
+                        new FileInputStream(signatureFile), List.of(publicCertFile.toURI().toString())))
                 .hasFieldOrPropertyWithValue("result", SignatureResult.Result.NO_MATCHING_CERT)
-                .hasFieldOrPropertyWithValue("artifact", toCoord())
-                .hasFieldOrPropertyWithValue("keyId", toHex(pgpAttackerKeys.getPublicKey().getKeyID()));
+                .extracting(
+                        SignatureResult::getResult,
+                        SignatureResult::getResource,
+                        SignatureResult::getKeyId)
+                .containsExactly(
+                        SignatureResult.Result.NO_MATCHING_CERT,
+                        anArtifact,
+                        toHex(pgpAttackerKeys.getPublicKey().getKeyID()));
 
         // no certificates should have been imported
         Assertions.assertThat(keystore.getKeys().keySet())
@@ -203,10 +232,16 @@ public class GpgSignatureValidatorTest {
 
         final File publicCertFile = exportPublicCertificate(pgpValidKeys);
 
-        Assertions.assertThat(validator.validateSignature(anArtifact, signatureFile, List.of(publicCertFile.toURI().toString())))
-                .hasFieldOrPropertyWithValue("result", SignatureResult.Result.NO_MATCHING_CERT)
-                .hasFieldOrPropertyWithValue("artifact", toCoord())
-                .hasFieldOrPropertyWithValue("keyId", toHex(pgpValidKeys.getPublicKey().getKeyID()));
+        Assertions.assertThat(validator.validateSignature(anArtifact, artifactInputStream, signatureInputStream,
+                        List.of(publicCertFile.toURI().toString())))
+                .extracting(
+                        SignatureResult::getResult,
+                        SignatureResult::getResource,
+                        SignatureResult::getKeyId)
+                .containsExactly(
+                        SignatureResult.Result.NO_MATCHING_CERT,
+                        anArtifact,
+                        toHex(pgpValidKeys.getPublicKey().getKeyID()));
     }
 
     private ArtifactCoordinate toCoord() {

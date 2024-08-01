@@ -18,8 +18,6 @@ package org.wildfly.channel.gpg;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -50,6 +48,7 @@ import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.MavenArtifact;
 import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
+import org.wildfly.channel.spi.ValidationResource;
 
 public class GpgSignatureValidator implements SignatureValidator {
     private static final Logger LOG = Logger.getLogger(GpgSignatureValidator.class);
@@ -59,12 +58,12 @@ public class GpgSignatureValidator implements SignatureValidator {
     private SignatureValidatorListener listener = new SignatureValidatorListener() {
 
         @Override
-        public void artifactSignatureCorrect(MavenArtifact artifact, PGPPublicKey publicKey) {
+        public void artifactSignatureCorrect(ValidationResource artifact, PGPPublicKey publicKey) {
             // noop
         }
 
         @Override
-        public void artifactSignatureInvalid(MavenArtifact artifact, PGPPublicKey publicKey) {
+        public void artifactSignatureInvalid(ValidationResource artifact, PGPPublicKey publicKey) {
             // noop
         }
     };
@@ -83,20 +82,23 @@ public class GpgSignatureValidator implements SignatureValidator {
     }
 
     @Override
-    public SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws SignatureException {
-        Objects.requireNonNull(artifact);
-        Objects.requireNonNull(signature);
+    public SignatureResult validateSignature(ValidationResource artifactSource, InputStream artifactStream,
+                                      InputStream signatureStream, List<String> gpgUrls) throws SignatureException {
+        Objects.requireNonNull(artifactSource);
+        Objects.requireNonNull(artifactStream);
+        Objects.requireNonNull(signatureStream);
 
         final PGPSignature pgpSignature;
         try {
-            pgpSignature = readSignatureFile(signature);
+            pgpSignature = readSignatureFile(signatureStream);
         } catch (IOException e) {
-            throw new SignatureException("Could not find signature in provided signature file", e, SignatureResult.noSignature(toArtifactCoordinate(artifact)));
+            throw new SignatureException("Could not find signature in provided signature file", e,
+                    SignatureResult.noSignature(artifactSource));
         }
 
         if (pgpSignature == null) {
             LOG.error("Could not read the signature in provided signature file");
-            return SignatureResult.noSignature(toArtifactCoordinate(artifact));
+            return SignatureResult.noSignature(artifactSource);
         }
 
         final String keyID = Long.toHexString(pgpSignature.getKeyID()).toUpperCase(Locale.ROOT);
@@ -118,7 +120,8 @@ public class GpgSignatureValidator implements SignatureValidator {
                     }
                 }
             } catch (PGPException | IOException e) {
-                throw new SignatureException("Unable to parse the certificate downloaded from keyserver", e, SignatureResult.noSignature(artifact));
+                throw new SignatureException("Unable to parse the certificate downloaded from keyserver", e,
+                        SignatureResult.noSignature(artifactSource));
             }
 
             if (key == null) {
@@ -127,7 +130,7 @@ public class GpgSignatureValidator implements SignatureValidator {
                         pgpPublicKeys = downloadPublicKey(gpgUrl);
                     } catch (IOException e) {
                         throw new SignatureException("Unable to parse the certificate downloaded from " + gpgUrl, e,
-                                SignatureResult.noSignature(artifact));
+                                SignatureResult.noSignature(artifactSource));
                     }
                     if (pgpPublicKeys.stream().anyMatch(k -> k.getKeyID() == pgpSignature.getKeyID())) {
                         key = pgpPublicKeys.stream().filter(k -> k.getKeyID() == pgpSignature.getKeyID()).findFirst().get();
@@ -136,14 +139,12 @@ public class GpgSignatureValidator implements SignatureValidator {
                 }
             }
             if (key == null) {
-                final ArtifactCoordinate coord = toArtifactCoordinate(artifact);
-                return SignatureResult.noMatchingCertificate(coord, keyID);
+                return SignatureResult.noMatchingCertificate(artifactSource, keyID);
             } else {
                 if (keystore.add(pgpPublicKeys)) {
                     publicKey = key;
                 } else {
-                    final ArtifactCoordinate coord = toArtifactCoordinate(artifact);
-                    return SignatureResult.noMatchingCertificate(coord, keyID);
+                    return SignatureResult.noMatchingCertificate(artifactSource, keyID);
                 }
             }
         }
@@ -153,18 +154,18 @@ public class GpgSignatureValidator implements SignatureValidator {
             final PGPSignature subKey = subKeys.next();
             final PGPPublicKey masterKey = keystore.get(Long.toHexString(subKey.getKeyID()).toUpperCase(Locale.ROOT));
             if (masterKey.hasRevocation()) {
-                return SignatureResult.revoked(toArtifactCoordinate(artifact), keyID, getRevocationReason(publicKey));
+                return SignatureResult.revoked(artifactSource, keyID, getRevocationReason(publicKey));
             }
         }
 
         if (publicKey.hasRevocation()) {
-            return SignatureResult.revoked(toArtifactCoordinate(artifact), keyID, getRevocationReason(publicKey));
+            return SignatureResult.revoked(artifactSource, keyID, getRevocationReason(publicKey));
         }
 
         if (publicKey.getValidSeconds() > 0) {
             final Instant expiry = Instant.from(publicKey.getCreationTime().toInstant().plus(publicKey.getValidSeconds(), ChronoUnit.SECONDS));
             if (expiry.isBefore(Instant.now())) {
-                return SignatureResult.expired(toArtifactCoordinate(artifact), keyID);
+                return SignatureResult.expired(artifactSource, keyID);
             }
         }
 
@@ -172,15 +173,15 @@ public class GpgSignatureValidator implements SignatureValidator {
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
         } catch (PGPException e) {
             throw new SignatureException("Unable to verify the signature using key " + keyID, e,
-                    SignatureResult.invalid(artifact));
+                    SignatureResult.invalid(artifactSource));
         }
 
-        final SignatureResult result = verifyFile(artifact, pgpSignature);
+        final SignatureResult result = verifyFile(artifactSource, artifactStream, pgpSignature);
 
         if (result.getResult() == SignatureResult.Result.OK) {
-            listener.artifactSignatureCorrect(artifact, publicKey);
+            listener.artifactSignatureCorrect(artifactSource, publicKey);
         } else {
-            listener.artifactSignatureInvalid(artifact, publicKey);
+            listener.artifactSignatureInvalid(artifactSource, publicKey);
         }
 
         return result;
@@ -204,12 +205,12 @@ public class GpgSignatureValidator implements SignatureValidator {
         return revocationDescription;
     }
 
-    private static SignatureResult verifyFile(MavenArtifact mavenArtifact, PGPSignature pgpSignature) throws SignatureException {
+    private static SignatureResult verifyFile(ValidationResource artifactSource, InputStream artifactStream, PGPSignature pgpSignature) throws SignatureException {
         // Read file to verify
         byte[] data = new byte[1024];
         InputStream inputStream = null;
         try {
-            inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(mavenArtifact.getFile())));
+            inputStream = new DataInputStream(new BufferedInputStream(artifactStream));
             while (true) {
                 int bytesRead = inputStream.read(data, 0, 1024);
                 if (bytesRead == -1)
@@ -224,19 +225,20 @@ public class GpgSignatureValidator implements SignatureValidator {
         // Verify the signature
         try {
             if (!pgpSignature.verify()) {
-                return SignatureResult.invalid(mavenArtifact);
+                return SignatureResult.invalid(artifactSource);
             } else {
                 return SignatureResult.ok();
             }
         } catch (PGPException e) {
-            throw new SignatureException("Unable to verify the file signature", e, SignatureResult.invalid(mavenArtifact));
+            throw new SignatureException("Unable to verify the file signature", e,
+                    SignatureResult.invalid(artifactSource));
         }
     }
 
-    private static PGPSignature readSignatureFile(File signatureFile) throws IOException {
+    private static PGPSignature readSignatureFile(InputStream signatureStream) throws IOException {
         PGPSignature pgpSignature = null;
-        try (InputStream decoderStream = PGPUtil.getDecoderStream(new FileInputStream(signatureFile))) {
-            PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(decoderStream, new JcaKeyFingerprintCalculator());
+        try (InputStream decoderStream = PGPUtil.getDecoderStream(signatureStream)) {
+            final PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(decoderStream, new JcaKeyFingerprintCalculator());
             Object o = pgpObjectFactory.nextObject();
             if (o instanceof PGPSignatureList) {
                 PGPSignatureList signatureList = (PGPSignatureList) o;
@@ -275,8 +277,8 @@ public class GpgSignatureValidator implements SignatureValidator {
 
     public interface SignatureValidatorListener {
 
-        void artifactSignatureCorrect(MavenArtifact artifact, PGPPublicKey publicKey);
+        void artifactSignatureCorrect(ValidationResource artifact, PGPPublicKey publicKey);
 
-        void artifactSignatureInvalid(MavenArtifact artifact, PGPPublicKey publicKey);
+        void artifactSignatureInvalid(ValidationResource artifact, PGPPublicKey publicKey);
     }
 }
