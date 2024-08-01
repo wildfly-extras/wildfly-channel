@@ -97,8 +97,8 @@ public class ChannelSessionTestCase {
             String manifest = manifests[i];
             Path manifestFile = Files.writeString(tempDir.resolve("manifest" + i +".yaml"), manifest);
 
-            when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.channels", "channel" + i, "1.0.0")))))
-                    .thenReturn(List.of(manifestFile.toUri().toURL()));
+            when(resolver.resolveArtifact("org.channels", "channel" + i, ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER, "1.0.0"))
+                    .thenReturn(manifestFile.toFile());
         }
         return channels;
     }

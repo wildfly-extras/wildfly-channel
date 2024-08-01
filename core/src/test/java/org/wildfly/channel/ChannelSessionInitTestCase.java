@@ -24,7 +24,6 @@ import org.wildfly.channel.spi.MavenVersionsResolver;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -123,7 +122,8 @@ public class ChannelSessionInitTestCase {
                 .build();
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test.channels", "i-dont-exist", "1.0.0"))))
+        when(resolver.resolveArtifact("test.channels", "i-dont-exist", ChannelManifest.EXTENSION,
+                ChannelManifest.CLASSIFIER, "1.0.0"))
                 .thenThrow(ArtifactTransferException.class);
 
         List<Channel> channels = List.of(new Channel.Builder()
@@ -401,6 +401,10 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, requiredManifest, "test.channels:base-manifest:1.0.0");
         when(resolver.getAllVersions("test.channels", "blocklist", BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER))
                 .thenReturn(Set.of("1.0.0"));
+        final File testFile = tempDir.resolve("test.yaml").toFile();
+        Files.writeString(testFile.toPath(), "schemaVersion: 1.0.0");
+        when(resolver.resolveArtifact("test.channels", "blocklist", BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER, "1.0.0"))
+                .thenReturn(testFile);
 
         final List<Channel> channels = List.of(new Channel.Builder()
                 .setName("channel one")
@@ -422,17 +426,17 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, ChannelManifestMapper.toYaml(manifest), gav);
     }
 
-    private void mockManifest(MavenVersionsResolver resolver, String manifest, String gav) throws IOException {
+    private void mockManifest(MavenVersionsResolver resolver, String manifest, String gavString) throws IOException {
         Path manifestFile = tempDir.resolve("manifest_" + RandomUtils.nextInt() + ".yaml");
         Files.writeString(manifestFile, manifest);
 
-        mockManifest(resolver, manifestFile.toUri().toURL(), gav);
-    }
-
-    private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
-                .thenReturn(List.of(manifestUrl));
+
+        when(resolver.getAllVersions(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER))
+                .thenReturn(Set.of(splitGav.length == 3 ? gav.getVersion() : "1.0.0"));
+        when(resolver.resolveArtifact(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER,
+                splitGav.length == 3 ? gav.getVersion() : "1.0.0"))
+                .thenReturn(manifestFile.toFile());
     }
 }
