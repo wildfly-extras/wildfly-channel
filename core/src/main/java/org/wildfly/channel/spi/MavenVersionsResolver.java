@@ -92,6 +92,7 @@ public interface MavenVersionsResolver extends Closeable {
     *
     * @throws ArtifactTransferException if any artifacts can not be resolved.
     */
+   @Deprecated
    List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> manifestCoords) throws ArtifactTransferException;
 
    /**

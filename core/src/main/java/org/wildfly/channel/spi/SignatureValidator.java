@@ -16,18 +16,15 @@
  */
 package org.wildfly.channel.spi;
 
-import org.wildfly.channel.MavenArtifact;
-
-import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 /**
  * Called to validate detached signatures of artifacts resolved in the channel
  */
 public interface SignatureValidator {
-    SignatureValidator REJECTING_VALIDATOR = (artifact, signature, gpgUrl) -> {
-        throw new SignatureException("Not implemented", SignatureResult.noSignature(artifact));
+    SignatureValidator REJECTING_VALIDATOR = (artifactSource, artifactStream, signatureStream, gpgUrls) -> {
+        throw new SignatureException("Not implemented", SignatureResult.noSignature(artifactSource));
     };
 
     /**
@@ -39,7 +36,7 @@ public interface SignatureValidator {
      * @return {@link SignatureResult} with the result of validation
      * @throws SignatureException - if an unexpected error occurred when handling the keys.
      */
-    SignatureResult validateSignature(MavenArtifact artifact, File signature, List<String> gpgUrls) throws SignatureException;
+    SignatureResult validateSignature(ValidationResource artifactSource, InputStream artifactStream, InputStream signatureStream, List<String> gpgUrls) throws SignatureException;
 
     class SignatureException extends RuntimeException {
         private final SignatureResult signatureResult;
