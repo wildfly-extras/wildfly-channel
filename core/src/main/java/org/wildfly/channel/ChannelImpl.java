@@ -49,6 +49,7 @@ import org.wildfly.channel.version.VersionMatcher;
 class ChannelImpl implements AutoCloseable {
 
     private static final Logger LOG = Logger.getLogger(ChannelImpl.class);
+    protected static final String SIGNATURE_FILE_SUFFIX = ".asc";
 
     private final Channel channelDefinition;
     private Channel resolvedChannel;
@@ -322,9 +323,9 @@ class ChannelImpl implements AutoCloseable {
                 channels.add(coord.getUrl());
                 if (channelDefinition.isGpgCheck()) {
                     try {
-                        validateGpgSignature(coord.getUrl(), new URL(coord.getUrl().toExternalForm()+".asc"));
+                        validateGpgSignature(coord.getUrl(), new URL(coord.getUrl().toExternalForm()+ SIGNATURE_FILE_SUFFIX));
                     } catch (IOException e) {
-                        throw new InvalidChannelMetadataException("Unable to download a detached signature file from: " + coord.getUrl().toExternalForm()+".asc",
+                        throw new InvalidChannelMetadataException("Unable to download a detached signature file from: " + coord.getUrl().toExternalForm()+ SIGNATURE_FILE_SUFFIX,
                                 List.of(e.getMessage()), e);
                     }
                 }
@@ -494,7 +495,7 @@ class ChannelImpl implements AutoCloseable {
         final ValidationResource mavenArtifact = new ValidationResource.MavenResource(groupId, artifactId, extension,
                 classifier, version);
         try {
-            final File signature = resolver.resolveArtifact(groupId, artifactId, extension + ".asc",
+            final File signature = resolver.resolveArtifact(groupId, artifactId, extension + SIGNATURE_FILE_SUFFIX,
                     classifier, version);
             final SignatureResult signatureResult = signatureValidator.validateSignature(
                     mavenArtifact, new FileInputStream(artifact), new FileInputStream(signature),
@@ -504,7 +505,7 @@ class ChannelImpl implements AutoCloseable {
             }
         } catch (ArtifactTransferException | FileNotFoundException e) {
             throw new SignatureValidator.SignatureException("Unable to find required signature for " + mavenArtifact,
-                    SignatureResult.noSignature(mavenArtifact));
+                    e, SignatureResult.noSignature(mavenArtifact));
         }
     }
 
@@ -526,7 +527,7 @@ class ChannelImpl implements AutoCloseable {
         if (channelDefinition.isGpgCheck()) {
             try {
                 final List<File> signatures = resolver.resolveArtifacts(coordinates.stream()
-                        .map(c->new ArtifactCoordinate(c.getGroupId(), c.getArtifactId(), c.getExtension() + ".asc",
+                        .map(c->new ArtifactCoordinate(c.getGroupId(), c.getArtifactId(), c.getExtension() + SIGNATURE_FILE_SUFFIX,
                                 c.getClassifier(), c.getVersion()))
                         .collect(Collectors.toList()));
                 for (int i = 0; i < resolvedArtifacts.size(); i++) {

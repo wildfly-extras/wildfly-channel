@@ -331,9 +331,8 @@ public class ChannelWithBlocklistTestCase {
         verify(resolver, times(2)).close();
     }
 
-    private void mockBlocklist(MavenVersionsResolver resolver, String blocklistFileLocation, String groupId, String artifactId, String version) throws URISyntaxException {
-//        when(resolver.resolveChannelMetadata(List.of(new BlocklistCoordinate("org.wildfly", "wildfly-blocklist"))))
-//                .thenReturn(List.of(this.getClass().getClassLoader().getResource("channels/test-blocklist.yaml")));
+    private void mockBlocklist(MavenVersionsResolver resolver, String blocklistFileLocation,
+                               String groupId, String artifactId, String version) throws URISyntaxException {
 
         if (version == null) {
             when(resolver.getAllVersions(groupId, artifactId, BlocklistCoordinate.EXTENSION,

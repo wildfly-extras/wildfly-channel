@@ -81,6 +81,7 @@ public class ChannelSession implements AutoCloseable {
                           int versionResolutionParallelism, SignatureValidator signatureValidator) {
         requireNonNull(channelDefinitions);
         requireNonNull(factory);
+        requireNonNull(signatureValidator);
 
         final Set<Repository> repositories = channelDefinitions.stream().flatMap(c -> c.getRepositories().stream()).collect(Collectors.toSet());
         this.combinedResolver = factory.create(repositories);
