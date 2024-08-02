@@ -65,6 +65,7 @@ A channel is composed of several fields:
 **** Mandatory `groupId` and `artifactId` elements that are the Maven coordinates of the manifest.
 **** Optional `version` to stick to a given manifest version (instead of requiring the latest version of that manifest). In the absence of this `version`, the latest version of the manifest will be determined based on the Maven repository metadata (see <<Component Version>>).
 *** `url` corresponding to a URL where the manifest file can be found.
+*** `signature-url` corresponding to a URL where the signature of the manifest file can be found.
 * Optional `blocklist` corresponding to the Blocklist artifact. Blocklist is used to define versions of artifacts excluded from a channel.
 ** One of the following, mutually exclusive fields, used to resolve the Blocklist:
 *** `maven` corresponds to Maven coordinates of the Blocklist. It's composed of:
@@ -248,7 +249,7 @@ The signature file is resolved at the same time as the artifact. If the signatur
 
 #### Verifing manifest signatures
 
-If the manifest of a channel is defined as a Maven GA(V), it is treated as any other maven artifact. If it is defined as an URL, the signature file must be available at the same URL with ".asc" suffix. If the signature cannot be resolved, the channel creation must fail.
+If the manifest of a channel is defined as a Maven GA(V), it is treated as any other maven artifact. If it is defined as an URL, the signature file must be available at the same URL with ".asc" suffix. Alternatively, a `signature-url` element can be used to provide a location of the signature. If the signature cannot be resolved, the channel creation must fail.
 
 #### Public keys
 
