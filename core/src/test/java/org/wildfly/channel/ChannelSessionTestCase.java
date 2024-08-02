@@ -51,9 +51,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.wildfly.channel.spi.MavenVersionsResolver;
-import org.wildfly.channel.spi.SignatureResult;
-import org.wildfly.channel.spi.SignatureValidator;
-import org.wildfly.channel.spi.ValidationResource;
 
 public class ChannelSessionTestCase {
 

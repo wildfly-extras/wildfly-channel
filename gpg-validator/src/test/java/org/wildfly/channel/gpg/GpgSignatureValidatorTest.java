@@ -42,7 +42,7 @@ import org.pgpainless.key.util.RevocationAttributes;
 import org.wildfly.channel.ArtifactCoordinate;
 import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
-import org.wildfly.channel.spi.ValidationResource;
+import org.wildfly.channel.spi.ArtifactIdentifier;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -70,7 +70,7 @@ public class GpgSignatureValidatorTest {
     private PGPSecretKeyRing pgpExpiredKeys;
     private TestKeystore keystore = new TestKeystore();
     private GpgSignatureValidator validator;
-    private ValidationResource.MavenResource anArtifact;
+    private ArtifactIdentifier.MavenResource anArtifact;
     private InputStream artifactInputStream;
     private File artifactFile;
     private InputStream signatureInputStream;
@@ -92,7 +92,7 @@ public class GpgSignatureValidatorTest {
         this.artifactFile = tempDir.resolve("test-one.jar").toFile();
         Files.writeString(artifactFile.toPath(), "test");
         this.artifactInputStream = new FileInputStream(artifactFile);
-        anArtifact = new ValidationResource.MavenResource("org.test", "test-one", "jar", null, "1.0.0");
+        anArtifact = new ArtifactIdentifier.MavenResource("org.test", "test-one", "jar", null, "1.0.0");
 
         this.signatureFile = signFile(artifactFile, pgpValidKeys);
         this.signatureInputStream = new FileInputStream(signatureFile);

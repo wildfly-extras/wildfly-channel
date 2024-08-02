@@ -23,11 +23,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
-import org.wildfly.channel.spi.ValidationResource;
+import org.wildfly.channel.spi.ArtifactIdentifier;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -504,7 +503,7 @@ public class ChannelSessionInitTestCase {
         when(resolver.resolveArtifact("test.channels", "base-manifest",
                 ChannelManifest.EXTENSION + SIGNATURE_FILE_SUFFIX, ChannelManifest.CLASSIFIER, "1.0.0"))
                 .thenReturn(tempDir.resolve("test-manifest.yaml.asc").toFile());
-        when(signatureValidator.validateSignature(any(), any(), any(), any())).thenReturn(SignatureResult.invalid(mock(ValidationResource.class)));
+        when(signatureValidator.validateSignature(any(), any(), any(), any())).thenReturn(SignatureResult.invalid(mock(ArtifactIdentifier.class)));
         assertThrows(SignatureValidator.SignatureException.class, () -> new ChannelSession(channels, factory));
     }
 

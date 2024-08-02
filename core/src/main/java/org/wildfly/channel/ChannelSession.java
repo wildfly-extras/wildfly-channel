@@ -53,7 +53,7 @@ public class ChannelSession implements AutoCloseable {
     private final int versionResolutionParallelism;
 
     /**
-     * Create a ChannelSession.
+     * Create a ChannelSession with a default rejecting signature validator.
      *
      * @param channelDefinitions the list of channels to resolve Maven artifact
      * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
@@ -64,6 +64,15 @@ public class ChannelSession implements AutoCloseable {
         this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM, SignatureValidator.REJECTING_VALIDATOR);
     }
 
+    /**
+     * Create a ChannelSession with a default rejecting signature validator.
+     *
+     * @param channelDefinitions the list of channels to resolve Maven artifact
+     * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
+     * @param signatureValidator Validator to verify signatures of downloaded artifacts
+     * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
+     * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
+     */
     public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory, SignatureValidator signatureValidator) {
         this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM, signatureValidator);
     }
