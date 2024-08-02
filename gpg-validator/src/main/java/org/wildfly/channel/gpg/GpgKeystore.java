@@ -20,9 +20,28 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 
 import java.util.List;
 
+/**
+ * Local store of trusted public keys.
+ *
+ * Note: the keystore can reject a public key being added. In such case, the {@code GpgSignatureValidator} has to reject this key.
+ */
 public interface GpgKeystore {
 
+    /**
+     * resolve a public key from the store.
+     *
+     * @param keyID - a HEX form of the key ID
+     * @return - the resolved public key or {@code null} if the key was not found
+     */
     PGPPublicKey get(String keyID);
 
+    /**
+     * records the public keys in the store for future use.
+     *
+     * @param publicKey - list of trusted public keys
+     * @return true if the public keys have been added successfully
+     *         false otherwise.
+     * @throws KeystoreOperationException if the keystore threw an error during the operation
+     */
     boolean add(List<PGPPublicKey> publicKey) throws KeystoreOperationException;
 }

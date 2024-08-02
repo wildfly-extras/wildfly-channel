@@ -35,6 +35,9 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
+/**
+ * Retrieves a public key from a remote GPG keyserver using a PKS query
+ */
 public class Keyserver {
 
     private static final String LOOKUP_PATH = "/pks/lookup";
@@ -45,6 +48,14 @@ public class Keyserver {
         this.servers = serverUrls;
     }
 
+    /**
+     * download a public key matching the {@code keyID} from one of defined GPG keyservers
+     *
+     * @param keyID - hex representation of a GPG public key
+     * @return - the public key associated with the {@code keyID} or null if not found
+     * @throws PGPException
+     * @throws IOException
+     */
     public PGPPublicKeyRing downloadKey(String keyID) throws PGPException, IOException {
         for (URL server : servers) {
             final PGPPublicKeyRing publicKey = tryDownloadKey(server, keyID);

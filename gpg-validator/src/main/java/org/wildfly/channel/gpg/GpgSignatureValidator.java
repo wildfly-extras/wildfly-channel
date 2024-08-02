@@ -44,29 +44,30 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.jboss.logging.Logger;
-import org.wildfly.channel.ArtifactCoordinate;
-import org.wildfly.channel.MavenArtifact;
 import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
-import org.wildfly.channel.spi.ValidationResource;
+import org.wildfly.channel.spi.ArtifactIdentifier;
 
+/**
+ * Implementation of a GPG signature validator.
+ *
+ * Uses a combination of a local {@link GpgKeystore} and {@code GPG keyservers} to resolve certificates.
+ * To resolve a public key required by the artifact signature:
+ * <ul>
+ *     <li>check if the key is present in the local GpgKeystore.</li>
+ *     <li>check if one of the configured remote keystores contains the key.</li>
+ *     <li>try to download the keys linked in the {@code gpgUrls}</li>
+ * </ul>
+ *
+ * The {@code GpgKeystore} acts as a source of trusted keys. A new key, resolved from either the keyserver or
+ * the gpgUrls is added to the GpgKeystore and used in subsequent checks.
+ */
 public class GpgSignatureValidator implements SignatureValidator {
     private static final Logger LOG = Logger.getLogger(GpgSignatureValidator.class);
     private final GpgKeystore keystore;
     private final Keyserver keyserver;
 
-    private SignatureValidatorListener listener = new SignatureValidatorListener() {
-
-        @Override
-        public void artifactSignatureCorrect(ValidationResource artifact, PGPPublicKey publicKey) {
-            // noop
-        }
-
-        @Override
-        public void artifactSignatureInvalid(ValidationResource artifact, PGPPublicKey publicKey) {
-            // noop
-        }
-    };
+    private GpgSignatureValidatorListener listener = new NoopListener();
 
     public GpgSignatureValidator(GpgKeystore keystore) {
         this(keystore, new Keyserver(Collections.emptyList()));
@@ -77,36 +78,48 @@ public class GpgSignatureValidator implements SignatureValidator {
         this.keyserver = keyserver;
     }
 
-    public void addListener(SignatureValidatorListener listener) {
+    public void addListener(GpgSignatureValidatorListener listener) {
         this.listener = listener;
     }
 
     @Override
-    public SignatureResult validateSignature(ValidationResource artifactSource, InputStream artifactStream,
-                                      InputStream signatureStream, List<String> gpgUrls) throws SignatureException {
-        Objects.requireNonNull(artifactSource);
+    public SignatureResult validateSignature(ArtifactIdentifier artifactId, InputStream artifactStream,
+                                             InputStream signatureStream, List<String> gpgUrls) throws SignatureException {
+        Objects.requireNonNull(artifactId);
         Objects.requireNonNull(artifactStream);
         Objects.requireNonNull(signatureStream);
 
         final PGPSignature pgpSignature;
         try {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Reading the signature of artifact.");
+            }
             pgpSignature = readSignatureFile(signatureStream);
         } catch (IOException e) {
             throw new SignatureException("Could not find signature in provided signature file", e,
-                    SignatureResult.noSignature(artifactSource));
+                    SignatureResult.noSignature(artifactId));
         }
 
         if (pgpSignature == null) {
             LOG.error("Could not read the signature in provided signature file");
-            return SignatureResult.noSignature(artifactSource);
+            return SignatureResult.noSignature(artifactId);
         }
 
         final String keyID = Long.toHexString(pgpSignature.getKeyID()).toUpperCase(Locale.ROOT);
+        if (LOG.isTraceEnabled()) {
+            LOG.tracef("The signature was created using public key %s.", keyID);
+        }
 
         final PGPPublicKey publicKey;
         if (keystore.get(keyID) != null) {
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Using a public key %s was found in the local keystore.", keyID);
+            }
             publicKey = keystore.get(keyID);
         } else {
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Trying to download a public key %s from remote keyservers.", keyID);
+            }
             List<PGPPublicKey> pgpPublicKeys = null;
             PGPPublicKey key = null;
             try {
@@ -121,75 +134,122 @@ public class GpgSignatureValidator implements SignatureValidator {
                 }
             } catch (PGPException | IOException e) {
                 throw new SignatureException("Unable to parse the certificate downloaded from keyserver", e,
-                        SignatureResult.noSignature(artifactSource));
+                        SignatureResult.noSignature(artifactId));
             }
 
             if (key == null) {
                 for (String gpgUrl : gpgUrls) {
+                    if (LOG.isTraceEnabled()) {
+                        LOG.tracef("Trying to download a public key %s from channel defined URL %s.", keyID, gpgUrl);
+                    }
                     try {
                         pgpPublicKeys = downloadPublicKey(gpgUrl);
                     } catch (IOException e) {
                         throw new SignatureException("Unable to parse the certificate downloaded from " + gpgUrl, e,
-                                SignatureResult.noSignature(artifactSource));
+                                SignatureResult.noSignature(artifactId));
                     }
                     if (pgpPublicKeys.stream().anyMatch(k -> k.getKeyID() == pgpSignature.getKeyID())) {
                         key = pgpPublicKeys.stream().filter(k -> k.getKeyID() == pgpSignature.getKeyID()).findFirst().get();
                         break;
                     }
                 }
-            }
-            if (key == null) {
-                return SignatureResult.noMatchingCertificate(artifactSource, keyID);
-            } else {
-                if (keystore.add(pgpPublicKeys)) {
-                    publicKey = key;
-                } else {
-                    return SignatureResult.noMatchingCertificate(artifactSource, keyID);
+
+                if (key == null) {
+                    if (LOG.isTraceEnabled()) {
+                        LOG.tracef("A public key %s not found in the channel defined URLs.", keyID);
+                    }
+                    return SignatureResult.noMatchingCertificate(artifactId, keyID);
                 }
             }
-        }
 
-        final Iterator<PGPSignature> subKeys = publicKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING);
-        while (subKeys.hasNext()) {
-            final PGPSignature subKey = subKeys.next();
-            final PGPPublicKey masterKey = keystore.get(Long.toHexString(subKey.getKeyID()).toUpperCase(Locale.ROOT));
-            if (masterKey.hasRevocation()) {
-                return SignatureResult.revoked(artifactSource, keyID, getRevocationReason(publicKey));
+
+            if (keystore.add(pgpPublicKeys)) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.tracef("Adding a public key %s to the local keystore.", keyID);
+                }
+                publicKey = key;
+            } else {
+                return SignatureResult.noMatchingCertificate(artifactId, keyID);
             }
         }
 
-        if (publicKey.hasRevocation()) {
-            return SignatureResult.revoked(artifactSource, keyID, getRevocationReason(publicKey));
+        if (LOG.isTraceEnabled()) {
+            LOG.tracef("Checking if the public key %s is still valid.", artifactId);
+        }
+        SignatureResult res = checkRevoked(artifactId, keyID, publicKey);
+        if (res.getResult() != SignatureResult.Result.OK) {
+            return res;
         }
 
-        if (publicKey.getValidSeconds() > 0) {
-            final Instant expiry = Instant.from(publicKey.getCreationTime().toInstant().plus(publicKey.getValidSeconds(), ChronoUnit.SECONDS));
-            if (expiry.isBefore(Instant.now())) {
-                return SignatureResult.expired(artifactSource, keyID);
-            }
+        res = checkExpired(artifactId, publicKey, keyID);
+        if (res.getResult() != SignatureResult.Result.OK) {
+            return res;
         }
 
+        if (LOG.isTraceEnabled()) {
+            LOG.tracef("Verifying that artifact %s has been signed with public key %s.", artifactId, keyID);
+        }
         try {
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
         } catch (PGPException e) {
             throw new SignatureException("Unable to verify the signature using key " + keyID, e,
-                    SignatureResult.invalid(artifactSource));
+                    SignatureResult.invalid(artifactId));
         }
-
-        final SignatureResult result = verifyFile(artifactSource, artifactStream, pgpSignature);
+        final SignatureResult result = verifyFile(artifactId, artifactStream, pgpSignature);
 
         if (result.getResult() == SignatureResult.Result.OK) {
-            listener.artifactSignatureCorrect(artifactSource, publicKey);
+            listener.artifactSignatureCorrect(artifactId, publicKey);
         } else {
-            listener.artifactSignatureInvalid(artifactSource, publicKey);
+            listener.artifactSignatureInvalid(artifactId, publicKey);
         }
 
         return result;
     }
 
-    private static ArtifactCoordinate toArtifactCoordinate(MavenArtifact artifact) {
-        final ArtifactCoordinate coord = new ArtifactCoordinate(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier(), artifact.getVersion());
-        return coord;
+    private static SignatureResult checkExpired(ArtifactIdentifier artifactId, PGPPublicKey publicKey, String keyID) {
+        if (LOG.isTraceEnabled()) {
+            LOG.tracef("Checking if public key %s is not expired.", keyID);
+        }
+        if (publicKey.getValidSeconds() > 0) {
+            final Instant expiry = Instant.from(publicKey.getCreationTime().toInstant().plus(publicKey.getValidSeconds(), ChronoUnit.SECONDS));
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Public key %s expirates on %s.", keyID, expiry);
+            }
+            if (expiry.isBefore(Instant.now())) {
+                return SignatureResult.expired(artifactId, keyID);
+            }
+        } else {
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Public key %s has no expiration.", keyID);
+            }
+        }
+        return SignatureResult.ok();
+    }
+
+    private SignatureResult checkRevoked(ArtifactIdentifier artifactId, String keyID, PGPPublicKey publicKey) {
+        if (LOG.isTraceEnabled()) {
+            LOG.tracef("Checking if public key %s has been revoked.", keyID);
+        }
+
+        if (publicKey.hasRevocation()) {
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Public key %s has been revoked.", keyID);
+            }
+            return SignatureResult.revoked(artifactId, keyID, getRevocationReason(publicKey));
+        }
+
+        final Iterator<PGPSignature> subKeys = publicKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING);
+        while (subKeys.hasNext()) {
+            final PGPSignature subKeySignature = subKeys.next();
+            final PGPPublicKey subKey = keystore.get(Long.toHexString(subKeySignature.getKeyID()).toUpperCase(Locale.ROOT));
+            if (subKey.hasRevocation()) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.tracef("Sub-key %s has been revoked.", Long.toHexString(subKey.getKeyID()).toUpperCase(Locale.ROOT));
+                }
+                return SignatureResult.revoked(artifactId, keyID, getRevocationReason(publicKey));
+            }
+        }
+        return SignatureResult.ok();
     }
 
     private static String getRevocationReason(PGPPublicKey publicKey) {
@@ -205,7 +265,7 @@ public class GpgSignatureValidator implements SignatureValidator {
         return revocationDescription;
     }
 
-    private static SignatureResult verifyFile(ValidationResource artifactSource, InputStream artifactStream, PGPSignature pgpSignature) throws SignatureException {
+    private static SignatureResult verifyFile(ArtifactIdentifier artifactSource, InputStream artifactStream, PGPSignature pgpSignature) throws SignatureException {
         // Read file to verify
         byte[] data = new byte[1024];
         InputStream inputStream = null;
@@ -257,9 +317,15 @@ public class GpgSignatureValidator implements SignatureValidator {
         final URI uri = URI.create(signatureUrl);
         final InputStream inputStream;
         if (uri.getScheme().equals("classpath")) {
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Resolving the public key from classpath %s.", uri);
+            }
             final String keyPath = uri.getSchemeSpecificPart();
             inputStream = GpgSignatureValidator.class.getClassLoader().getResourceAsStream(keyPath);
         } else {
+            if (LOG.isTraceEnabled()) {
+                LOG.tracef("Downloading the public key from %s.", uri);
+            }
             final URLConnection urlConnection = uri.toURL().openConnection();
             urlConnection.connect();
             inputStream = urlConnection.getInputStream();
@@ -275,10 +341,16 @@ public class GpgSignatureValidator implements SignatureValidator {
         }
     }
 
-    public interface SignatureValidatorListener {
+    private static class NoopListener implements GpgSignatureValidatorListener {
 
-        void artifactSignatureCorrect(ValidationResource artifact, PGPPublicKey publicKey);
+        @Override
+        public void artifactSignatureCorrect(ArtifactIdentifier artifact, PGPPublicKey publicKey) {
+            // noop
+        }
 
-        void artifactSignatureInvalid(ValidationResource artifact, PGPPublicKey publicKey);
+        @Override
+        public void artifactSignatureInvalid(ArtifactIdentifier artifact, PGPPublicKey publicKey) {
+            // noop
+        }
     }
 }

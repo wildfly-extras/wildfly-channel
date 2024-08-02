@@ -23,21 +23,29 @@ import java.util.List;
  * Called to validate detached signatures of artifacts resolved in the channel
  */
 public interface SignatureValidator {
+    /**
+     * A default validator, rejecting all artifacts
+     */
     SignatureValidator REJECTING_VALIDATOR = (artifactSource, artifactStream, signatureStream, gpgUrls) -> {
         throw new SignatureException("Not implemented", SignatureResult.noSignature(artifactSource));
     };
 
     /**
-     * validates a signature of {@code artifact}. The locally downloaded {@code signature} has to be an armour encoded GPG signature.
+     * validates a signature of an artifact. The locally downloaded {@code signature} has to be an armour encoded GPG signature.
      *
-     * @param artifact  - {@code MavenArtifact} to validate. Includes a full GAV and the local artifact file.
-     * @param signature - local file containing armour encoded detached GPG signature for the {@code artifact}.
+     * @param artifactId  - an identifier of the resource to be validated.
+     * @param artifactStream - an {@code InputStream} of the artifact to be verified.
+     * @param signatureStream - an {@code InputStream} of the armour encoded detached GPG signature for the artifact.
      * @param gpgUrls   - URLs of the keys defined in the channel. Empty collection if channel does not define any signatures.
      * @return {@link SignatureResult} with the result of validation
      * @throws SignatureException - if an unexpected error occurred when handling the keys.
      */
-    SignatureResult validateSignature(ValidationResource artifactSource, InputStream artifactStream, InputStream signatureStream, List<String> gpgUrls) throws SignatureException;
+    SignatureResult validateSignature(ArtifactIdentifier artifactId, InputStream artifactStream,
+                                      InputStream signatureStream, List<String> gpgUrls) throws SignatureException;
 
+    /**
+     * An exception signifying issue with an artifact signature validation.
+     */
     class SignatureException extends RuntimeException {
         private final SignatureResult signatureResult;
 

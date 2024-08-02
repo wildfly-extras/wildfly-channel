@@ -39,7 +39,7 @@ import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.channel.spi.SignatureResult;
 import org.wildfly.channel.spi.SignatureValidator;
-import org.wildfly.channel.spi.ValidationResource;
+import org.wildfly.channel.spi.ArtifactIdentifier;
 import org.wildfly.channel.version.VersionMatcher;
 
 /**
@@ -77,6 +77,7 @@ class ChannelImpl implements AutoCloseable {
      *
      * @param factory
      * @param channels
+     * @param signatureValidator - the validator used to check the signatures of resolved artifacts
      * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
@@ -407,7 +408,7 @@ class ChannelImpl implements AutoCloseable {
 
     private void validateGpgSignature(String groupId, String artifactId, String extension, String classifier,
                                       String version, File artifact) {
-        final ValidationResource mavenArtifact = new ValidationResource.MavenResource(groupId, artifactId, extension,
+        final ArtifactIdentifier mavenArtifact = new ArtifactIdentifier.MavenResource(groupId, artifactId, extension,
                 classifier, version);
         try {
             final File signature = resolver.resolveArtifact(groupId, artifactId, extension + SIGNATURE_FILE_SUFFIX,
@@ -426,7 +427,7 @@ class ChannelImpl implements AutoCloseable {
 
     private void validateGpgSignature(URL artifactFile, URL signature) throws IOException {
         final SignatureResult signatureResult = signatureValidator.validateSignature(
-                new ValidationResource.UrlResource(artifactFile),
+                new ArtifactIdentifier.UrlResource(artifactFile),
                 artifactFile.openStream(), signature.openStream(),
                 channelDefinition.getGpgUrls()
         );
@@ -448,7 +449,7 @@ class ChannelImpl implements AutoCloseable {
                 for (int i = 0; i < resolvedArtifacts.size(); i++) {
                     final File artifact = resolvedArtifacts.get(i);
                     final ArtifactCoordinate c = coordinates.get(i);
-                    final ValidationResource.MavenResource mavenArtifact = new ValidationResource.MavenResource(c.getGroupId(), c.getArtifactId(),
+                    final ArtifactIdentifier.MavenResource mavenArtifact = new ArtifactIdentifier.MavenResource(c.getGroupId(), c.getArtifactId(),
                             c.getExtension(), c.getClassifier(), c.getVersion());
                     final File signature = signatures.get(i);
                     try {
@@ -464,7 +465,7 @@ class ChannelImpl implements AutoCloseable {
                     }
                 }
             } catch (ArtifactTransferException e) {
-                final ValidationResource.MavenResource artifact = new ValidationResource.MavenResource(e.getUnresolvedArtifacts().stream().findFirst().get());
+                final ArtifactIdentifier.MavenResource artifact = new ArtifactIdentifier.MavenResource(e.getUnresolvedArtifacts().stream().findFirst().get());
                 throw new SignatureValidator.SignatureException(String.format("Unable to find required signature for %s:%s:%s",
                         artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()),
                         SignatureResult.noSignature(artifact));

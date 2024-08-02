@@ -20,10 +20,13 @@ import java.net.URL;
 
 import org.wildfly.channel.ArtifactCoordinate;
 
-public interface ValidationResource {
+/**
+ * An identifier of an artifact being validated. It can be either a Maven coordinate or an URL.
+ */
+public interface ArtifactIdentifier {
 
-    class UrlResource implements ValidationResource {
-        private URL resourceUrl;
+    class UrlResource implements ArtifactIdentifier {
+        private final URL resourceUrl;
 
         public UrlResource(URL resourceUrl) {
             this.resourceUrl = resourceUrl;
@@ -32,9 +35,14 @@ public interface ValidationResource {
         public URL getResourceUrl() {
             return resourceUrl;
         }
+
+        @Override
+        public String getDescription() {
+            return resourceUrl.toExternalForm();
+        }
     }
 
-    class MavenResource extends ArtifactCoordinate implements ValidationResource {
+    class MavenResource extends ArtifactCoordinate implements ArtifactIdentifier {
 
         public MavenResource(String groupId, String artifactId, String extension, String classifier, String version) {
             super(groupId, artifactId, extension, classifier, version);
@@ -47,7 +55,23 @@ public interface ValidationResource {
                     artifactCoordinate.getClassifier(),
                     artifactCoordinate.getVersion());
         }
+
+        @Override
+        public String getDescription() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(groupId).append(":").append(artifactId).append(":");
+            if (classifier != null && !classifier.isEmpty()) {
+                sb.append(classifier).append(":");
+            }
+            if (extension != null && !extension.isEmpty()) {
+                sb.append(extension).append(":");
+            }
+            sb.append(version);
+            return sb.toString();
+        }
     }
+
+    String getDescription();
 
     default boolean isMavenResource() {
         return this instanceof MavenResource;
