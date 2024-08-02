@@ -148,9 +148,16 @@ class ChannelImpl implements AutoCloseable {
             version = latest.orElseThrow(() -> new RuntimeException(String.format("Can not determine the latest version for Maven artifact %s:%s:%s:%s",
                     groupId, artifactId, ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER)));
         }
-        final ChannelImpl requiredChannel = new ChannelImpl(new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, null, null, null, channelDefinition.getRepositories(),
-                new ChannelManifestCoordinate(groupId, artifactId, version), null,
-                Channel.NoStreamStrategy.NONE, channelDefinition.isGpgCheck(), channelDefinition.getGpgUrls()));
+        final Channel requiredChannelDefinition = new Channel.Builder(channelDefinition)
+                .setName(null)
+                .setDescription(null)
+                .setVendor(null)
+                .setManifestCoordinate(groupId, artifactId, version)
+                .setResolveStrategy(Channel.NoStreamStrategy.NONE)
+                .build();
+
+        final ChannelImpl requiredChannel = new ChannelImpl(requiredChannelDefinition);
+
         try {
             requiredChannel.init(factory, channels, signatureValidator);
         } catch (UnresolvedMavenArtifactException e) {
@@ -228,7 +235,7 @@ class ChannelImpl implements AutoCloseable {
      *
      * @throws ArtifactTransferException if any artifacts can not be resolved.
      */
-    public List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> coords, boolean optional) throws ArtifactTransferException {
+    private List<URL> resolveChannelMetadata(List<? extends ChannelMetadataCoordinate> coords, boolean optional) throws ArtifactTransferException {
         requireNonNull(coords);
 
         List<URL> channels = new ArrayList<>();
@@ -237,9 +244,15 @@ class ChannelImpl implements AutoCloseable {
             if (coord.getUrl() != null) {
                 LOG.infof("Resolving channel metadata at %s", coord.getUrl());
                 channels.add(coord.getUrl());
-                if (channelDefinition.requiresGpgCheck()) {
+                if (channelDefinition.isGpgCheck()) {
                     try {
-                        validateGpgSignature(coord.getUrl(), new URL(coord.getUrl().toExternalForm()+ SIGNATURE_FILE_SUFFIX));
+                        final URL signatureUrl;
+                        if (coord.getSignatureUrl() == null) {
+                            signatureUrl = new URL(coord.getUrl().toExternalForm() + SIGNATURE_FILE_SUFFIX);
+                        } else {
+                            signatureUrl = coord.getSignatureUrl();
+                        }
+                        validateGpgSignature(coord.getUrl(), signatureUrl);
                     } catch (IOException e) {
                         throw new InvalidChannelMetadataException("Unable to download a detached signature file from: " + coord.getUrl().toExternalForm()+ SIGNATURE_FILE_SUFFIX,
                                 List.of(e.getMessage()), e);
@@ -266,7 +279,7 @@ class ChannelImpl implements AutoCloseable {
             File channelArtifact = resolver.resolveArtifact(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), version);
             try {
                 channels.add(channelArtifact.toURI().toURL());
-                if (channelDefinition.requiresGpgCheck()) {
+                if (channelDefinition.isGpgCheck()) {
                     validateGpgSignature(coord.getGroupId(), coord.getArtifactId(), coord.getExtension(), coord.getClassifier(), version, channelArtifact);
                 }
             } catch (MalformedURLException e) {
@@ -400,7 +413,7 @@ class ChannelImpl implements AutoCloseable {
         }
 
         final File artifact = resolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
-        if (channelDefinition.requiresGpgCheck()) {
+        if (channelDefinition.isGpgCheck()) {
             validateGpgSignature(groupId, artifactId, extension, classifier, version, artifact);
         }
         return new ResolveArtifactResult(artifact, this);
@@ -440,7 +453,7 @@ class ChannelImpl implements AutoCloseable {
     List<ResolveArtifactResult> resolveArtifacts(List<ArtifactCoordinate> coordinates) throws UnresolvedMavenArtifactException {
         final List<File> resolvedArtifacts = resolver.resolveArtifacts(coordinates);
 
-        if (channelDefinition.requiresGpgCheck()) {
+        if (channelDefinition.isGpgCheck()) {
             try {
                 final List<File> signatures = resolver.resolveArtifacts(coordinates.stream()
                         .map(c->new ArtifactCoordinate(c.getGroupId(), c.getArtifactId(), c.getExtension() + SIGNATURE_FILE_SUFFIX,
