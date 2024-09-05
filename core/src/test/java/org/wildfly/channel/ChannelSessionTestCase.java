@@ -48,6 +48,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.wildfly.channel.spi.MavenVersionsResolver;
@@ -79,7 +81,7 @@ public class ChannelSessionTestCase {
             assertEquals("25.0.0.Final", version.getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     public static List<Channel> mockChannel(MavenVersionsResolver resolver, Path tempDir, String... manifests) throws IOException {
@@ -97,8 +99,8 @@ public class ChannelSessionTestCase {
             String manifest = manifests[i];
             Path manifestFile = Files.writeString(tempDir.resolve("manifest" + i +".yaml"), manifest);
 
-            when(resolver.resolveArtifact("org.channels", "channel" + i, ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER, "1.0.0"))
-                    .thenReturn(manifestFile.toFile());
+            when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("org.channels", "channel" + i, "1.0.0")))))
+                    .thenReturn(List.of(manifestFile.toUri().toURL()));
         }
         return channels;
     }
@@ -128,7 +130,7 @@ public class ChannelSessionTestCase {
             }
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -163,7 +165,7 @@ public class ChannelSessionTestCase {
             assertEquals("channel-0", artifact.getChannelName().get());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -192,7 +194,7 @@ public class ChannelSessionTestCase {
             }
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -231,7 +233,7 @@ public class ChannelSessionTestCase {
             assertEquals(Optional.empty(), artifact.getChannelName(), "The channel name should be null when resolving version directly");
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -280,7 +282,7 @@ public class ChannelSessionTestCase {
             assertEquals("25.0.0.Final", stream.get().getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -342,7 +344,7 @@ public class ChannelSessionTestCase {
             assertEquals("25.0.0.Final", stream.get().getVersion());
         }
 
-        verify(resolver, times(3)).close();
+        verify(resolver, times(2)).close();
     }
 
     @Test
@@ -373,8 +375,8 @@ public class ChannelSessionTestCase {
             assertNotNull(resolved);
 
             final List<MavenArtifact> expected = asList(
-               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1),
-               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2)
+               new MavenArtifact("org.foo", "foo", null, null, "25.0.0.Final", resolvedArtifactFile1, "channel-0"),
+               new MavenArtifact("org.bar", "bar", null, null, "26.0.0.Final", resolvedArtifactFile2, "channel-0")
             );
             assertContainsAll(expected, resolved);
 
@@ -386,7 +388,100 @@ public class ChannelSessionTestCase {
             assertEquals("25.0.0.Final", stream.get().getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
+    }
+
+    @Test
+    public void testResolveDirectMavenArtifactsFromTwoChannels() throws Exception {
+        String manifest = "schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                "streams:\n" +
+                "  - groupId: org.not\n" +
+                "    artifactId: used\n" +
+                "    version: \"1.0.0.Final\"";
+
+        /*
+         * create two resolvers. The first one will be used by the first channel, the other by the second channel
+         * Each resolver is only able to resolve one artifact and throws error when searching for both artifacts
+         */
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver1 = mock(MavenVersionsResolver.class);
+        MavenVersionsResolver resolver2 = mock(MavenVersionsResolver.class);
+        File resolvedArtifactFile1 = mock(File.class);
+        File resolvedArtifactFile2 = mock(File.class);
+
+        when(factory.create(any())).thenAnswer(inv->{
+            final Channel channel = inv.getArgument(0);
+            if (channel.getName().equals("channel-0")) {
+                return resolver1;
+            } else if (channel.getName().equals("channel-1")) {
+                return resolver2;
+            } else {
+                throw new RuntimeException("Unexpected channel " + channel.getName());
+            }
+        });
+
+        final ArtifactCoordinate fooArtifact = new ArtifactCoordinate("org.foo", "foo", null, null, "25.0.0.Final");
+        final ArtifactCoordinate barArtifact = new ArtifactCoordinate("org.bar", "bar", null, null, "26.0.0.Final");
+        final List<ArtifactCoordinate> coordinates = asList(
+                fooArtifact,
+                barArtifact);
+        when(resolver1.resolveArtifacts(any())).thenAnswer(inv -> {
+            final List<ArtifactCoordinate> coords = inv.getArgument(0);
+            if (coords.size() == 2) {
+                throw new ArtifactTransferException("",
+                        Set.of(barArtifact),
+                        Set.of(new Repository("test", "http://test.te"))
+                );
+            }  else if (coords.get(0).equals(fooArtifact)) {
+                return List.of(resolvedArtifactFile1);
+            } else {
+                throw new RuntimeException("Unexpected query " + coords);
+            }
+        });
+        when(resolver2.resolveArtifacts(any())).thenAnswer(inv -> {
+            final List<ArtifactCoordinate> coords = inv.getArgument(0);
+            if (coords.size() == 2) {
+                throw new ArtifactTransferException("",
+                        Set.of(fooArtifact),
+                        Set.of(new Repository("test", "http://test.te"))
+                );
+            }  else if (coords.get(0).equals(barArtifact)) {
+                return List.of(resolvedArtifactFile2);
+            } else {
+                throw new RuntimeException("Unexpected query " + coords);
+            }
+        });
+
+        /*
+         * create channel session with two channels. The manifests don't matter, but set different names
+         */
+        final List<Channel> channels = mockChannel(resolver1, tempDir, manifest);
+        channels.add(new Channel.Builder(mockChannel(resolver2, tempDir, manifest).get(0))
+                .setName("channel-1").build());
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+
+            List<MavenArtifact> resolved = session.resolveDirectMavenArtifacts(coordinates);
+            assertNotNull(resolved);
+
+            final List<MavenArtifact> expected = asList(
+                    new MavenArtifact(fooArtifact.getGroupId(), fooArtifact.getArtifactId(), fooArtifact.getExtension(),
+                            fooArtifact.getClassifier(), fooArtifact.getVersion(), resolvedArtifactFile1, "channel-0"),
+                    new MavenArtifact(barArtifact.getGroupId(), barArtifact.getArtifactId(), barArtifact.getExtension(),
+                            barArtifact.getClassifier(), barArtifact.getVersion(), resolvedArtifactFile2, "channel-1")
+            );
+            assertContainsAll(expected, resolved);
+
+            Optional<Stream> stream = session.getRecordedChannel().findStreamFor("org.bar", "bar");
+            assertTrue(stream.isPresent());
+            assertEquals("26.0.0.Final", stream.get().getVersion());
+            stream = session.getRecordedChannel().findStreamFor("org.foo", "foo");
+            assertTrue(stream.isPresent());
+            assertEquals("25.0.0.Final", stream.get().getVersion());
+        }
+
+        verify(resolver1, times(1)).close();
+        verify(resolver2, times(1)).close();
     }
 
     @Test

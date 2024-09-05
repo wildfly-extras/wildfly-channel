@@ -33,9 +33,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jboss.logging.Logger;
 import org.wildfly.channel.spi.MavenVersionsResolver;
-import org.wildfly.channel.spi.SignatureValidator;
 import org.wildfly.channel.version.VersionMatcher;
 
 /**
@@ -48,12 +48,10 @@ public class ChannelSession implements AutoCloseable {
 
     private final List<ChannelImpl> channels;
     private final ChannelRecorder recorder = new ChannelRecorder();
-    // resolver used for direct dependencies only. Uses combination of all repositories in the channels.
-    private final MavenVersionsResolver combinedResolver;
     private final int versionResolutionParallelism;
 
     /**
-     * Create a ChannelSession with a default rejecting signature validator.
+     * Create a ChannelSession.
      *
      * @param channelDefinitions the list of channels to resolve Maven artifact
      * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
@@ -61,20 +59,7 @@ public class ChannelSession implements AutoCloseable {
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
     public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory) {
-        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM, SignatureValidator.REJECTING_VALIDATOR);
-    }
-
-    /**
-     * Create a ChannelSession with a default rejecting signature validator.
-     *
-     * @param channelDefinitions the list of channels to resolve Maven artifact
-     * @param factory Factory to create {@code MavenVersionsResolver} that are performing the actual Maven resolution.
-     * @param signatureValidator Validator to verify signatures of downloaded artifacts
-     * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
-     * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
-     */
-    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory, SignatureValidator signatureValidator) {
-        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM, signatureValidator);
+        this(channelDefinitions, factory, DEFAULT_SPLIT_ARTIFACT_PARALLELISM);
     }
 
     /**
@@ -86,18 +71,13 @@ public class ChannelSession implements AutoCloseable {
      * @throws UnresolvedRequiredManifestException - if a required manifest cannot be resolved either via maven coordinates or in the list of channels
      * @throws CyclicDependencyException - if the required manifests form a cyclic dependency
      */
-    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory,
-                          int versionResolutionParallelism, SignatureValidator signatureValidator) {
+    public ChannelSession(List<Channel> channelDefinitions, MavenVersionsResolver.Factory factory, int versionResolutionParallelism) {
         requireNonNull(channelDefinitions);
         requireNonNull(factory);
-        requireNonNull(signatureValidator);
-
-        final Set<Repository> repositories = channelDefinitions.stream().flatMap(c -> c.getRepositories().stream()).collect(Collectors.toSet());
-        this.combinedResolver = factory.create(repositories);
 
         List<ChannelImpl> channelList = channelDefinitions.stream().map(ChannelImpl::new).collect(Collectors.toList());
         for (ChannelImpl channel : channelList) {
-            channel.init(factory, channelList, signatureValidator);
+            channel.init(factory, channelList);
         }
         // filter out channels marked as dependency, so that resolution starts only at top level channels
         this.channels = channelList.stream().filter(c->!c.isDependency()).collect(Collectors.toList());
@@ -218,9 +198,37 @@ public class ChannelSession implements AutoCloseable {
         requireNonNull(artifactId);
         requireNonNull(version);
 
-        File file = combinedResolver.resolveArtifact(groupId, artifactId, extension, classifier, version);
-        recorder.recordStream(groupId, artifactId, version);
-        return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
+        /*
+         * when resolving a direct artifact we don't care if a channel manifest lists that artifact, we resolve it
+         * if it is present in underlying repositories.
+         * BUT if the channel requires a GPG check, the artifact has to still be verified.
+         * Therefore, we're trying to resolve artifact from each available channel and returning the first match.
+         */
+
+        File file = null;
+        UnresolvedMavenArtifactException ex = null;
+        for (ChannelImpl channel : channels) {
+            try {
+                file = channel.resolveArtifact(groupId, artifactId, extension, classifier, version).file;
+                break;
+            } catch (UnresolvedMavenArtifactException e) {
+                ex = e;
+            }
+        }
+
+        if (file != null) {
+            recorder.recordStream(groupId, artifactId, version);
+            return new MavenArtifact(groupId, artifactId, extension, classifier, version, file);
+        } else if (ex != null) {
+            throw ex;
+        } else {
+            throw new ArtifactTransferException("Unable to resolve direct artifact.",
+                    Set.of(new ArtifactCoordinate(groupId, artifactId, extension, classifier, version)),
+                    channels.stream()
+                            .map(ChannelImpl::getResolvedChannelDefinition)
+                            .flatMap(cd->cd.getRepositories().stream())
+                            .collect(Collectors.toSet()));
+        }
     }
 
     /**
@@ -238,16 +246,64 @@ public class ChannelSession implements AutoCloseable {
             requireNonNull(c.getArtifactId());
             requireNonNull(c.getVersion());
         });
-        final List<File> files = combinedResolver.resolveArtifacts(coordinates);
 
-        final ArrayList<MavenArtifact> res = new ArrayList<>();
-        for (int i = 0; i < coordinates.size(); i++) {
-            final ArtifactCoordinate request = coordinates.get(i);
-            final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(), request.getExtension(), request.getClassifier(), request.getVersion(), files.get(i));
+        /*
+         * When resolving a "direct" artifact, we don't care if the artifact is listed in the channel's manifest,
+         * only if the underlying repositories contain that artifact.
+         * BUT, we still need to verify the artifact signature if the channel requires it. To achieve that, we're
+         * going to query each channel in turn, taking the artifacts it was able to resolve and keeping the rest
+         * to be resolved by remaining channels. At the end we should be left with no un-resolved artifacts, or have
+         * a list of artifacts not available in any channels.
+         * NOTE: if the same artifact is available in both GPG-enabled and GPG-disabled channel there is no guarantee
+         * which channel will be queried first.
+         */
 
-            recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion());
-            res.add(resolvedArtifact);
+        // list of artifacts that are being resolved in this step
+        List<ArtifactCoordinate> currentQuery = new ArrayList<>(coordinates);
+        // we need to preserve the ordering of artifacts, but that can be affected by the order of query/resolution between channels
+        final HashMap<ArtifactCoordinate, Pair<File, String>> resolvedArtifacts = new HashMap<>();
+        for (ChannelImpl channel : channels) {
+            if (currentQuery.isEmpty()) {
+                break;
+            }
+
+            try {
+                final List<ChannelImpl.ResolveArtifactResult> resolved = channel.resolveArtifacts(currentQuery);
+                // keep a map of AC -> File
+                for (int i = 0; i < currentQuery.size(); i++) {
+                    resolvedArtifacts.put(currentQuery.get(i), Pair.of(resolved.get(i).file, channel.getResolvedChannelDefinition().getName()));
+                }
+                // all the artifacts were resolved by this point, lets remove all artifacts from the current query
+                currentQuery = Collections.emptyList();
+            } catch (UnresolvedMavenArtifactException e) {
+                // at the end need to map them into a correct order
+                final Set<ArtifactCoordinate> unresolvedArtifacts = e.getUnresolvedArtifacts();
+                // coordinates - unresolved = it should be possible to resolve those artifacts from this channel
+                // we need to call resolve again, because the first call threw an exception
+                currentQuery.removeAll(unresolvedArtifacts);
+                final List<ChannelImpl.ResolveArtifactResult> resolved = channel.resolveArtifacts(currentQuery);
+                for (int i = 0; i < currentQuery.size(); i++) {
+                    resolvedArtifacts.put(currentQuery.get(i), Pair.of(resolved.get(i).file, channel.getResolvedChannelDefinition().getName()));
+                }
+                // unresolved - try with another channel, rinse and repeat until run out of channels or resolve all artifacts
+                currentQuery = new ArrayList<>(unresolvedArtifacts);
+            }
         }
+        if (!currentQuery.isEmpty()) {
+            throw new ArtifactTransferException("Unable to resolve some direct artifacts", new HashSet<>(currentQuery),
+                    channels.stream()
+                            .map(ChannelImpl::getResolvedChannelDefinition)
+                            .flatMap(cd->cd.getRepositories().stream())
+                            .collect(Collectors.toSet()));
+        }
+
+        // finally, build a list of resolved files in a correct order to return and record the streams
+        final List<MavenArtifact> res = coordinates.stream().map(ac -> new MavenArtifact(ac.getGroupId(), ac.getArtifactId(), ac.getExtension(),
+                ac.getClassifier(), ac.getVersion(), resolvedArtifacts.get(ac).getLeft(), resolvedArtifacts.get(ac).getRight())).collect(Collectors.toList());
+
+        res.forEach(resolvedArtifact->
+            recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion())
+        );
         return res;
     }
 
@@ -273,7 +329,6 @@ public class ChannelSession implements AutoCloseable {
         for (ChannelImpl channel : channels) {
             channel.close();
         }
-        combinedResolver.close();
     }
 
     /**

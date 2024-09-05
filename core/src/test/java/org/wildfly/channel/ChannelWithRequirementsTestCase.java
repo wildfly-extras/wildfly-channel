@@ -56,20 +56,21 @@ public class ChannelWithRequirementsTestCase {
         MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        File resolvedArtifactFile = mock(File.class);
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
-        File resolvedArtifactFile = new File(resolvedRequiredManifestURL.toURI());
 
         when(factory.create(any()))
                 .thenReturn(resolver);
         when(resolver.getAllVersions("test.channels", "required-manifest", "yaml", "manifest"))
                 .thenReturn(new HashSet<>(Arrays.asList("1", "2", "3")));
-        when(resolver.resolveArtifact("test.channels", "required-manifest", "yaml", "manifest", "3"))
+        when(resolver.resolveArtifact("org.example", "required-manifest", "yaml", "manifest", "3"))
                 .thenReturn(resolvedArtifactFile);
         when(resolver.getAllVersions("org.example", "foo-bar", null, null))
                 .thenReturn(new HashSet<>(Arrays.asList("1.0.0.Final, 1.1.0.Final", "1.2.0.Final")));
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
+        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
 
         String baseManifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My manifest\n" +
@@ -105,11 +106,6 @@ public class ChannelWithRequirementsTestCase {
         }
     }
 
-    private static void mockManifest(MavenVersionsResolver resolver, URL resolvedRequiredManifestURL) throws URISyntaxException {
-        when(resolver.resolveArtifact(any(), any(), eq(ChannelManifest.EXTENSION), eq(ChannelManifest.CLASSIFIER), any()))
-                .thenReturn(new File(resolvedRequiredManifestURL.toURI()));
-    }
-
     /**
      * Test that specific version of required channel is used when required
      */
@@ -128,7 +124,7 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolver);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "1.2.0.Final"))
                 .thenReturn(resolvedArtifactFile);
-        mockManifest(resolver, resolvedRequiredManifestURL);
+        when(resolver.resolveChannelMetadata(any())).thenReturn(List.of(resolvedRequiredManifestURL));
 
         String baseManifest = "schemaVersion: " + ChannelManifestMapper.CURRENT_SCHEMA_VERSION + "\n" +
                 "name: My manifest\n" +
@@ -196,7 +192,8 @@ public class ChannelWithRequirementsTestCase {
                 .thenReturn(resolvedArtifactFile120Final);
         when(resolver.resolveArtifact("org.example", "foo-bar", null, null, "2.0.0.Final"))
                 .thenReturn(resolvedArtifactFile200Final);
-        mockManifest(resolver, resolvedRequiredManifestURL, "test.channels:required-manifest:1.0.0");
+        when(resolver.resolveChannelMetadata(eq(List.of(new ChannelManifestCoordinate("test.channels", "required-manifest", "1.0.0")))))
+                .thenReturn(List.of(resolvedRequiredManifestURL));
 
         // The requiring channel requires newer version of foo-bar artifact
         List<Channel> channels = ChannelMapper.fromString(
@@ -568,19 +565,11 @@ public class ChannelWithRequirementsTestCase {
         }
     }
 
-    private void mockManifest(MavenVersionsResolver resolver, String manifest, String gavString) throws IOException {
+    private void mockManifest(MavenVersionsResolver resolver, String manifest, String gav) throws IOException {
         Path manifestFile = tempDir.resolve("manifest_" + RandomUtils.nextInt() + ".yaml");
         Files.writeString(manifestFile, manifest);
 
-        final String[] splitGav = gavString.split(":");
-        final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-        if (gav.getVersion() == null) {
-            when(resolver.getAllVersions(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER))
-                    .thenReturn(Set.of("1.0.0"));
-        }
-        when(resolver.resolveArtifact(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION,
-                ChannelManifest.CLASSIFIER, gav.getVersion() == null ? "1.0.0" : gav.getVersion()))
-                .thenReturn(manifestFile.toFile());
+        mockManifest(resolver, manifestFile.toUri().toURL(), gav);
     }
 
     @Test
@@ -629,15 +618,10 @@ public class ChannelWithRequirementsTestCase {
         }
     }
 
-    private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws URISyntaxException {
+    private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-        if (gav.getVersion() == null) {
-            when(resolver.getAllVersions(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER))
-                    .thenReturn(Set.of("1.0.0"));
-        }
-        when(resolver.resolveArtifact(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION,
-                ChannelManifest.CLASSIFIER, gav.getVersion() == null ? "1.0.0" : gav.getVersion()))
-                .thenReturn(new File(manifestUrl.toURI()));
+        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
+                .thenReturn(List.of(manifestUrl));
     }
 }

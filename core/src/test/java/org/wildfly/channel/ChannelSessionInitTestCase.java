@@ -21,12 +21,10 @@ import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.wildfly.channel.spi.MavenVersionsResolver;
-import org.wildfly.channel.spi.SignatureResult;
-import org.wildfly.channel.spi.SignatureValidator;
-import org.wildfly.channel.spi.ArtifactIdentifier;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -41,7 +39,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.wildfly.channel.ChannelImpl.SIGNATURE_FILE_SUFFIX;
 
 public class ChannelSessionInitTestCase {
     @TempDir
@@ -126,8 +123,7 @@ public class ChannelSessionInitTestCase {
                 .build();
         mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
 
-        when(resolver.resolveArtifact("test.channels", "i-dont-exist", ChannelManifest.EXTENSION,
-                ChannelManifest.CLASSIFIER, "1.0.0"))
+        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test.channels", "i-dont-exist", "1.0.0"))))
                 .thenThrow(ArtifactTransferException.class);
 
         List<Channel> channels = List.of(new Channel.Builder()
@@ -405,10 +401,6 @@ public class ChannelSessionInitTestCase {
         mockManifest(resolver, requiredManifest, "test.channels:base-manifest:1.0.0");
         when(resolver.getAllVersions("test.channels", "blocklist", BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER))
                 .thenReturn(Set.of("1.0.0"));
-        final File testFile = tempDir.resolve("test.yaml").toFile();
-        Files.writeString(testFile.toPath(), "schemaVersion: 1.0.0");
-        when(resolver.resolveArtifact("test.channels", "blocklist", BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER, "1.0.0"))
-                .thenReturn(testFile);
 
         final List<Channel> channels = List.of(new Channel.Builder()
                 .setName("channel one")
@@ -426,102 +418,21 @@ public class ChannelSessionInitTestCase {
         }
     }
 
-    @Test
-    public void mavenManifestWithoutSignatureCausesError() throws Exception {
-        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
-        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        when(factory.create(any())).thenReturn(resolver);
-
-        final ChannelManifest baseManifest = new ManifestBuilder()
-                .setId("manifest-one")
-                .build();
-        mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
-
-        // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new Channel.Builder()
-                        .setName("channel one")
-                        .addRepository("test", "test")
-                        .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
-                        .setGpgCheck(true)
-                        .build()
-        );
-
-        when(resolver.resolveArtifact("test.channels", "base-manifest",
-                ChannelManifest.EXTENSION + SIGNATURE_FILE_SUFFIX, ChannelManifest.CLASSIFIER, "1.0.0"))
-                .thenThrow(ArtifactTransferException.class);
-        assertThrows(SignatureValidator.SignatureException.class, () -> new ChannelSession(channels, factory));
-    }
-
-    @Test
-    public void urlManifestWithoutSignatureCausesError() throws Exception {
-        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
-        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        when(factory.create(any())).thenReturn(resolver);
-
-        final ChannelManifest baseManifest = new ManifestBuilder()
-                .setId("manifest-one")
-                .build();
-        final Path manifestFile = tempDir.resolve("test-manifest.yaml");
-        Files.writeString(manifestFile, ChannelManifestMapper.toYaml(baseManifest));
-
-        // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new Channel.Builder()
-                .setName("channel one")
-                .addRepository("test", "test")
-                .setManifestCoordinate(new ChannelManifestCoordinate(manifestFile.toUri().toURL()))
-                .setGpgCheck(true)
-                .build()
-        );
-
-        when(resolver.resolveArtifact("test.channels", "base-manifest",
-                ChannelManifest.EXTENSION + SIGNATURE_FILE_SUFFIX, ChannelManifest.CLASSIFIER, "1.0.0"))
-                .thenThrow(ArtifactTransferException.class);
-        assertThrows(InvalidChannelMetadataException.class, () -> new ChannelSession(channels, factory));
-    }
-
-    @Test
-    public void invalidSignatureCausesError() throws Exception {
-        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
-        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
-        final SignatureValidator signatureValidator = mock(SignatureValidator.class);
-        when(factory.create(any())).thenReturn(resolver);
-
-        final ChannelManifest baseManifest = new ManifestBuilder()
-                .setId("manifest-one")
-                .build();
-        mockManifest(resolver, baseManifest, "test.channels:base-manifest:1.0.0");
-
-        // two channels providing base- and required- manifests
-        List<Channel> channels = List.of(new Channel.Builder()
-                .setName("channel one")
-                .addRepository("test", "test")
-                .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
-                .setGpgCheck(true)
-                .build()
-        );
-
-        when(resolver.resolveArtifact("test.channels", "base-manifest",
-                ChannelManifest.EXTENSION + SIGNATURE_FILE_SUFFIX, ChannelManifest.CLASSIFIER, "1.0.0"))
-                .thenReturn(tempDir.resolve("test-manifest.yaml.asc").toFile());
-        when(signatureValidator.validateSignature(any(), any(), any(), any())).thenReturn(SignatureResult.invalid(mock(ArtifactIdentifier.class)));
-        assertThrows(SignatureValidator.SignatureException.class, () -> new ChannelSession(channels, factory));
-    }
-
     private void mockManifest(MavenVersionsResolver resolver, ChannelManifest manifest, String gav) throws IOException {
         mockManifest(resolver, ChannelManifestMapper.toYaml(manifest), gav);
     }
 
-    private void mockManifest(MavenVersionsResolver resolver, String manifest, String gavString) throws IOException {
+    private void mockManifest(MavenVersionsResolver resolver, String manifest, String gav) throws IOException {
         Path manifestFile = tempDir.resolve("manifest_" + RandomUtils.nextInt() + ".yaml");
         Files.writeString(manifestFile, manifest);
 
+        mockManifest(resolver, manifestFile.toUri().toURL(), gav);
+    }
+
+    private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
-
-        when(resolver.getAllVersions(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER))
-                .thenReturn(Set.of(splitGav.length == 3 ? gav.getVersion() : "1.0.0"));
-        when(resolver.resolveArtifact(gav.getGroupId(), gav.getArtifactId(), ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER,
-                splitGav.length == 3 ? gav.getVersion() : "1.0.0"))
-                .thenReturn(manifestFile.toFile());
+        when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
+                .thenReturn(List.of(manifestUrl));
     }
 }

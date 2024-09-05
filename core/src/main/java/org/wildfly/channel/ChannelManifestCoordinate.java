@@ -69,7 +69,7 @@ public class ChannelManifestCoordinate extends ChannelMetadataCoordinate {
                 return new ChannelManifestCoordinate(gav.getGroupId(), gav.getArtifactId(), gav.getVersion());
             }
         } else {
-            return new ChannelManifestCoordinate(new URL(url));
+            return new ChannelManifestCoordinate(new URL(url), signatureUrl == null ? null : new URL(signatureUrl));
         }
     }
 
