@@ -77,7 +77,7 @@ A channel is composed of several fields:
 ** `maven-latest` - a version marked as `latest` in the Maven metadata
 ** `maven-release` - a version marked as `release` in the Maven metadata
 ** `none` - do not attempt to resolve versions of artifact not listed in the `streams` collection. Default value if no strategy is provided.
-* Optional `gpg-check` boolean indicating if the artifacts resolved from this channel have to have a valid GPG signature.
+* Optional gpg-check boolean indicating that during artifact resolution, this channel will verify a signature of every artifact. If the artifact signature cannot be found, or cannot be validated, the artifact will not be resolved from the channel. The channel repositories must contain a detached GPG signature paired with the artifact as described below.
 * Optional `gpg-urls` a list of URLs that the public GPG keys used to validate artifact signatures are resolved from.
 
 ### Manifest definition
@@ -262,6 +262,7 @@ Implementations may provide additional means of providing keys - local stores, r
 
 * Adding ability to verify artifact signatures
 ** Adding `gpg-check` and `gpg-urls` fields to the Channel definition.
+** Adding `signature-url` field to the Channel's manifest coordinate definition.
 
 ### Version 2.0.0
 

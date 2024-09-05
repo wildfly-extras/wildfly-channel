@@ -71,7 +71,7 @@ public class ChannelTestCase {
     }
 
     @Test
-    public void simpleChannelTest() throws IOException {
+    public void simpleChannelTest() throws MalformedURLException {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         URL file = tccl.getResource("channels/simple-channel.yaml");
 
