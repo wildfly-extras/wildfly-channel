@@ -51,9 +51,11 @@ import static java.util.Objects.requireNonNull;
 public class ChannelManifestMapper {
 
     public static final String SCHEMA_VERSION_1_0_0 = "1.0.0";
-    public static final String CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_1_0_0;
+    public static final String SCHEMA_VERSION_1_1_0 = "1.1.0";
+    public static final String CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_1_1_0;
 
     private static final String SCHEMA_1_0_0_FILE = "org/wildfly/manifest/v1.0.0/schema.json";
+    private static final String SCHEMA_1_1_0_FILE = "org/wildfly/manifest/v1.1.0/schema.json";
     private static final YAMLFactory YAML_FACTORY = new YAMLFactory()
             .configure(YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR, true);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(YAML_FACTORY)
@@ -64,6 +66,7 @@ public class ChannelManifestMapper {
 
     static {
         SCHEMAS.put(SCHEMA_VERSION_1_0_0, SCHEMA_FACTORY.getSchema(ChannelManifestMapper.class.getClassLoader().getResourceAsStream(SCHEMA_1_0_0_FILE)));
+        SCHEMAS.put(SCHEMA_VERSION_1_1_0, SCHEMA_FACTORY.getSchema(ChannelManifestMapper.class.getClassLoader().getResourceAsStream(SCHEMA_1_1_0_FILE)));
     }
 
     private static JsonSchema getSchema(JsonNode node) {

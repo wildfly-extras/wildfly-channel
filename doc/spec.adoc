@@ -6,7 +6,7 @@
 [cols="1,1"]
 |===
 | Channel schema Version | 2.0.0
-| Manifest schema Version | 1.0.0
+| Manifest schema Version | 1.1.0
 | Blocklist schema Version | 1.0.0
 |===
 
@@ -83,6 +83,7 @@ A Channel Manifest is composed of following fields:
 * An optional `name` that is a human-readable one-line description of the channel (`manifest for WildFly 27`)
 * An optional `id` element that is used to identify channel.
 * An optional `description` that provides human-readable description of the channel
+* An optional `logical-version` that provides a human-readable short description of the version of the manifest. Note this may, but doesn't need to correspond to the Maven version of the artifact (from Manifest schema 1.1.0).
 * A collection of `requires`. Each element of that list corresponds to another channel that is required to provision components from this channel.
 This field can be used for layered products to enforce their dependencies so that the installation only need to update the top level channel to get updates from all required channels.
 Each element is composed of:
@@ -242,4 +243,3 @@ During artifact version resolution, a stream matching artifact GA is located in 
 ### Version 1.0.0
 
 * Initial release of the Channel specification
-

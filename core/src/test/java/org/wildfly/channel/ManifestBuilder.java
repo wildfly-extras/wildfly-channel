@@ -22,15 +22,21 @@ import java.util.List;
 class ManifestBuilder {
 
     private String id;
+    private String logicalVersion;
     private List<ManifestRequirement> requirements = new ArrayList<>();
     private List<Stream> streams = new ArrayList<>();
 
     ChannelManifest build() {
-        return new ChannelManifest(null, id, null, requirements, streams);
+        return new ChannelManifest(null, id, logicalVersion, null, requirements, streams);
     }
 
     ManifestBuilder setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public ManifestBuilder setLogicalVersion(String logicalVersion) {
+        this.logicalVersion = logicalVersion;
         return this;
     }
 
