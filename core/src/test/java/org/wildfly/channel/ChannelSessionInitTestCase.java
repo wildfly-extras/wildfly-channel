@@ -360,6 +360,7 @@ public class ChannelSessionInitTestCase {
     }
 
     private void mockManifest(MavenVersionsResolver resolver, ChannelManifest manifest, String gav) throws IOException {
+
         mockManifest(resolver, ChannelManifestMapper.toYaml(manifest), gav);
     }
 
@@ -373,6 +374,7 @@ public class ChannelSessionInitTestCase {
     private void mockManifest(MavenVersionsResolver resolver, URL manifestUrl, String gavString) throws IOException {
         final String[] splitGav = gavString.split(":");
         final MavenCoordinate gav = new MavenCoordinate(splitGav[0], splitGav[1], splitGav.length == 3 ? splitGav[2] : null);
+
         when(resolver.resolveChannelMetadata(eq(List.of(ChannelManifestCoordinate.create(null, gav)))))
                 .thenReturn(List.of(manifestUrl));
     }

@@ -94,7 +94,7 @@ public class ChannelWithBlocklistTestCase {
             assertEquals("25.0.0.Final", version.getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -141,7 +141,7 @@ public class ChannelWithBlocklistTestCase {
             assertEquals("25.0.1.Final", version.getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -186,7 +186,7 @@ public class ChannelWithBlocklistTestCase {
             assertEquals("25.0.0.Final", version.getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -234,7 +234,7 @@ public class ChannelWithBlocklistTestCase {
             }
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -289,7 +289,7 @@ public class ChannelWithBlocklistTestCase {
             assertEquals(resolvedArtifactFile, artifact.getFile());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -337,7 +337,7 @@ public class ChannelWithBlocklistTestCase {
             }
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -409,7 +409,7 @@ public class ChannelWithBlocklistTestCase {
             assertEquals("26.0.0.Final", stream.get().getVersion());
         }
 
-        verify(resolver, times(2)).close();
+        verify(resolver, times(1)).close();
     }
 
     @Test
@@ -461,7 +461,7 @@ public class ChannelWithBlocklistTestCase {
             assertEquals("25.0.0.Final", version.getVersion());
         }
 
-        verify(resolver, times(3)).close();
+        verify(resolver, times(2)).close();
     }
 
     @Test

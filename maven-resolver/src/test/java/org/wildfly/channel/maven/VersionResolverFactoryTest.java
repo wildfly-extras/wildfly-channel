@@ -88,7 +88,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveVersionRange(eq(session), any(VersionRangeRequest.class))).thenReturn(versionRangeResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.singletonList(testRepository));
+        MavenVersionsResolver resolver = factory.create(new Channel.Builder().addRepository(testRepository.getId(), testRepository.getUrl()).build());
 
         Set<String> allVersions = resolver.getAllVersions("org.foo", "bar", null, null);
         assertEquals(3, allVersions.size());
@@ -111,7 +111,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifact(eq(session), any(ArtifactRequest.class))).thenReturn(artifactResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         File resolvedArtifact = resolver.resolveArtifact("org.foo", "bar", null, null, "1.0.0");
         assertEquals(artifactFile, resolvedArtifact);
@@ -125,7 +125,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifact(eq(session), any(ArtifactRequest.class))).thenThrow(ArtifactResolutionException.class);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
                     resolver.resolveArtifact("org.foo", "does-not-exist", null, null, "1.0.0");
@@ -179,7 +179,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifacts(eq(session), any(List.class))).thenReturn(Arrays.asList(artifactResult1, artifactResult2));
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         final List<ArtifactCoordinate> coordinates = asList(
            new ArtifactCoordinate("org.foo", "bar", null, null, "1.0.0"),
@@ -197,7 +197,7 @@ public class VersionResolverFactoryTest {
         RepositorySystemSession session = mock(RepositorySystemSession.class);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate(new URL("http://test.channel"))));
         assertEquals(new URL("http://test.channel"), resolvedURL.get(0));
@@ -231,7 +231,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifact(eq(session), artifactRequestArgumentCaptor.capture())).thenReturn(artifactResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.singletonList(testRepository));
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel")));
         assertEquals(artifactFile.toURI().toURL(), resolvedURL.get(0));
@@ -253,7 +253,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveArtifact(eq(session), artifactRequestArgumentCaptor.capture())).thenReturn(artifactResult);
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         List<URL> resolvedURL = resolver.resolveChannelMetadata(List.of(new ChannelCoordinate("org.test", "channel", "1.0.0")));
         assertEquals(artifactFile.toURI().toURL(), resolvedURL.get(0));
@@ -265,9 +265,11 @@ public class VersionResolverFactoryTest {
         RepositorySystem system = mock(RepositorySystem.class);
         RepositorySystemSession session = mock(RepositorySystemSession.class);
 
-        VersionResolverFactory factory = new VersionResolverFactory(system, session,
+        VersionResolverFactory factory = new VersionResolverFactory(system, session, null,
                 r -> new RemoteRepository.Builder(r.getId(), "default", r.getUrl() + ".new").build());
-        MavenVersionsResolver resolver = factory.create(List.of(new Repository("test_1", "http://test_1")));
+        MavenVersionsResolver resolver = factory.create(new Channel.Builder()
+                        .addRepository("test_1", "http://test_1")
+                        .build());
 
         File artifactFile = new File("test");
         ArtifactResult artifactResult = new ArtifactResult(new ArtifactRequest());
@@ -312,7 +314,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveMetadata(eq(session), any())).thenReturn(List.of(result1, result2));
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         final String res = resolver.getMetadataLatestVersion("org.foo", "bar");
 
@@ -332,7 +334,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveMetadata(eq(session), any())).thenReturn(List.of(result));
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
             resolver.getMetadataLatestVersion("org.foo", "bar");
@@ -348,7 +350,7 @@ public class VersionResolverFactoryTest {
         when(system.resolveMetadata(eq(session), any())).thenReturn(List.of(result));
 
         VersionResolverFactory factory = new VersionResolverFactory(system, session);
-        MavenVersionsResolver resolver = factory.create(Collections.emptyList());
+        MavenVersionsResolver resolver = factory.create(new Channel());
 
         Assertions.assertThrows(UnresolvedMavenArtifactException.class, () -> {
             resolver.getMetadataLatestVersion("org.foo", "bar");

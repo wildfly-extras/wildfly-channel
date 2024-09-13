@@ -16,14 +16,16 @@
  */
 package org.wildfly.channel;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ChannelMapperTestCase {
@@ -105,5 +107,45 @@ public class ChannelMapperTestCase {
 
         Channel readChannel = ChannelMapper.fromString(yaml).get(0);
         assertEquals(Channel.NoStreamStrategy.NONE, readChannel.getNoStreamStrategy());
+    }
+
+    @Test
+    public void setGpgCheck() throws Exception {
+        verifyGpgCheck(false);
+        verifyGpgCheck(true);
+    }
+
+    @Test
+    public void nullGpgCheckIsNotSerialized() throws Exception {
+        Channel.Builder channel = new Channel.Builder()
+                .addRepository("test", "https://test.org/repository");
+
+        final String yaml = ChannelMapper.toYaml(channel.build());
+        assertThat(yaml)
+                .doesNotContain("gpg-check");
+    }
+
+    @Test
+    public void writeChannelWithGpgKeys() throws Exception {
+        Channel.Builder channel = new Channel.Builder()
+                .addRepository("test", "https://test.org/repository")
+                .addGpgUrl("https://gpg.test/key");
+
+        final String yaml = ChannelMapper.toYaml(channel.build());
+
+        Channel readChannel = ChannelMapper.fromString(yaml).get(0);
+        Assertions.assertThat(readChannel.getGpgUrls())
+                .containsExactly("https://gpg.test/key");
+    }
+
+    private static void verifyGpgCheck(boolean value) throws IOException {
+        Channel.Builder channel = new Channel.Builder()
+                .addRepository("test", "https://test.org/repository")
+                .setGpgCheck(value);
+
+        final String yaml = ChannelMapper.toYaml(channel.build());
+
+        Channel readChannel = ChannelMapper.fromString(yaml).get(0);
+        assertEquals(value, readChannel.isGpgCheck());
     }
 }

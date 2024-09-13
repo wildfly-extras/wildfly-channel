@@ -26,12 +26,14 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Assertions;
@@ -581,8 +583,7 @@ public class ChannelWithRequirementsTestCase {
         File resolvedArtifactFile = mock(File.class);
 
         URL resolvedRequiredManifestURL = tccl.getResource("channels/required-manifest.yaml");
-        when(resolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("org.test", "required-manifest", "1.0.0"))))
-                .thenReturn(List.of(resolvedRequiredManifestURL));
+        mockManifest(resolver, resolvedRequiredManifestURL, "org.test:required-manifest:1.0.0");
 
         when(factory.create(any()))
            .thenReturn(resolver);
