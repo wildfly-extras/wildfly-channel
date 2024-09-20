@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -569,6 +570,46 @@ public class ChannelSessionTestCase {
                session.resolveMavenArtifact("org.foo", "bar", null, null, "25.0.1.Final")
             );
         }
+    }
+
+    @Test
+    public void testGetManifests() throws Exception {
+        String name1 = "manifest1";
+        String name2 = "manifest2";
+        Stream[] streams1 = {new Stream("org.foo", "foo", "25.0.0.Final"), new Stream("org.foo", "bar", "23.0.0.Final")};
+        Stream[] streams2 = {new Stream("org.bar", "foo", "20.0.0.Final"), new Stream("org.bar", "bar", "21.0.0.Final")};
+        String manifest1 = buildManifest(name1, streams1);
+        String manifest2 = buildManifest(name2, streams2);
+
+        MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        when(factory.create(any())).thenReturn(resolver);
+
+        final List<Channel> channels = mockChannel(resolver, tempDir, manifest1, manifest2);
+
+        try (ChannelSession session = new ChannelSession(channels, factory)) {
+            assertEquals(2,session.getManifests().size());
+            checkManifest(session.getManifests().get(0), name1, streams1);
+            checkManifest(session.getManifests().get(1), name2, streams2);
+        }
+    }
+
+    private String buildManifest(String name, Stream... streams) {
+        StringBuilder manifest = new StringBuilder("schemaVersion: " + CURRENT_SCHEMA_VERSION + "\n" +
+                          "name: " + name + "\n" +
+                          "streams:\n");
+        for(Stream stream : streams) {
+            manifest.append(
+                    "  - groupId: "+ stream.getGroupId() + "\n"
+                    + "    artifactId: "+ stream.getArtifactId() + "\n"
+                    + "    version: \"" + stream.getVersion() + "\"\n");
+        }
+        return manifest.toString();
+    }
+    
+    private void checkManifest(ChannelManifest manifest, String name, Stream... streams) {
+        assertEquals(name, manifest.getName());
+        assertTrue(Set.of(streams).containsAll(manifest.getStreams()));
     }
 
     @Test
