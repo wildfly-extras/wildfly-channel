@@ -380,9 +380,39 @@ public class ChannelSessionInitTestCase {
                 .setManifestCoordinate("test.channels", "base-manifest")
                 .build());
         try (ChannelSession channelSession = new ChannelSession(channels, factory)) {
-            assertThat(channelSession.getResolvedChannelDefinitions())
+            assertThat(channelSession.getRuntimeChannels())
+                    .map(RuntimeChannel::getChannelDefinition)
                     .map(Channel::getManifestCoordinate)
                     .map(ChannelManifestCoordinate::getVersion)
+                    .containsOnly("1.0.0");
+
+        }
+    }
+
+    @Test
+    public void getVersionOfResolvedBlocklist() throws Exception {
+        final MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        when(factory.create(any())).thenReturn(resolver);
+
+        final ChannelManifest requiredManifest = new ManifestBuilder()
+                .setId("manifest-one")
+                .build();
+        mockManifest(resolver, requiredManifest, "test.channels:base-manifest:1.0.0");
+        when(resolver.getAllVersions("test.channels", "blocklist", BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER))
+                .thenReturn(Set.of("1.0.0"));
+
+        final List<Channel> channels = List.of(new Channel.Builder()
+                .setName("channel one")
+                .addRepository("test", "test")
+                .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
+                .setBlocklistCoordinate(new BlocklistCoordinate("test.channels", "blocklist"))
+                .build());
+        try (ChannelSession channelSession = new ChannelSession(channels, factory)) {
+            assertThat(channelSession.getRuntimeChannels())
+                    .map(RuntimeChannel::getChannelDefinition)
+                    .map(Channel::getBlocklistCoordinate)
+                    .map(BlocklistCoordinate::getVersion)
                     .containsOnly("1.0.0");
 
         }

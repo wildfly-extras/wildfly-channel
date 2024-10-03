@@ -94,11 +94,11 @@ public class ChannelSession implements AutoCloseable {
      * Get the definitions of channels used by this session. Returned version contains resolved versions
      * of channel metadata (if applicable).
      *
-     * @return List of {@code Channel}s used to resolve artifacts by this session
+     * @return List of {@code RuntimeChannel}s used to resolve artifacts by this session
      */
-    public List<Channel> getResolvedChannelDefinitions() {
+    public List<RuntimeChannel> getRuntimeChannels() {
         return this.channels.stream()
-                .map(ChannelImpl::getResolvedChannelDefinition)
+                .map(c->new RuntimeChannel(c.getResolvedChannelDefinition(), c.getManifest(), c.getBlocklist()))
                 .collect(Collectors.toList());
     }
 
