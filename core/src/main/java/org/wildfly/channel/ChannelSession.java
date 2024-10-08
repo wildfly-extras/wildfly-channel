@@ -91,6 +91,18 @@ public class ChannelSession implements AutoCloseable {
     }
 
     /**
+     * Get the definitions of channels used by this session. Returned version contains resolved versions
+     * of channel metadata (if applicable).
+     *
+     * @return List of {@code RuntimeChannel}s used to resolve artifacts by this session
+     */
+    public List<RuntimeChannel> getRuntimeChannels() {
+        return this.channels.stream()
+                .map(c->new RuntimeChannel(c.getResolvedChannelDefinition(), c.getManifest(), c.getBlocklist()))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Resolve the Maven artifact according to the session's channels.
      * <p>
      * In order to find the stream corresponding to the Maven artifact, the channels are searched depth-first, starting
@@ -121,7 +133,7 @@ public class ChannelSession implements AutoCloseable {
 
         ChannelImpl.ResolveArtifactResult artifact = channel.resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
         recorder.recordStream(groupId, artifactId, latestVersion);
-        return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file, artifact.channel.getChannelDefinition().getName());
+        return new MavenArtifact(groupId, artifactId, extension, classifier, latestVersion, artifact.file, artifact.channel.getResolvedChannelDefinition().getName());
     }
 
     /**
@@ -153,7 +165,7 @@ public class ChannelSession implements AutoCloseable {
                 final MavenArtifact resolvedArtifact = new MavenArtifact(request.getGroupId(), request.getArtifactId(),
                         request.getExtension(), request.getClassifier(), request.getVersion(),
                         resolveArtifactResults.get(i).file,
-                        resolveArtifactResults.get(i).channel.getChannelDefinition().getName());
+                        resolveArtifactResults.get(i).channel.getResolvedChannelDefinition().getName());
 
                 recorder.recordStream(resolvedArtifact.getGroupId(), resolvedArtifact.getArtifactId(), resolvedArtifact.getVersion());
                 res.add(resolvedArtifact);
@@ -227,7 +239,7 @@ public class ChannelSession implements AutoCloseable {
      */
     public VersionResult findLatestMavenArtifactVersion(String groupId, String artifactId, String extension, String classifier, String baseVersion) throws NoStreamFoundException {
         final ChannelImpl.ResolveLatestVersionResult channelWithLatestVersion = findChannelWithLatestVersion(groupId, artifactId, extension, classifier, baseVersion);
-        return new VersionResult(channelWithLatestVersion.version, channelWithLatestVersion.channel.getChannelDefinition().getName());
+        return new VersionResult(channelWithLatestVersion.version, channelWithLatestVersion.channel.getResolvedChannelDefinition().getName());
     }
 
     @Override
@@ -274,7 +286,7 @@ public class ChannelSession implements AutoCloseable {
         return foundVersions.get(foundLatestVersionInChannels.orElseThrow(() -> {
             final ArtifactCoordinate coord = new ArtifactCoordinate(groupId, artifactId, extension, classifier, "");
             final Set<Repository> repositories = channels.stream()
-                    .map(ChannelImpl::getChannelDefinition)
+                    .map(ChannelImpl::getResolvedChannelDefinition)
                     .flatMap(d -> d.getRepositories().stream())
                     .collect(Collectors.toSet());
             throw new NoStreamFoundException(

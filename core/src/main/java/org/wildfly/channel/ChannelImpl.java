@@ -16,6 +16,7 @@
  */
 package org.wildfly.channel;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.wildfly.channel.version.VersionMatcher.COMPARATOR;
 
@@ -24,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +43,8 @@ class ChannelImpl implements AutoCloseable {
 
     private static final Logger LOG = Logger.getLogger(ChannelImpl.class);
 
-    private Channel channelDefinition;
+    private final Channel channelDefinition;
+    private Channel resolvedChannel;
 
     private List<ChannelImpl> requiredChannels = Collections.emptyList();
 
@@ -53,6 +56,7 @@ class ChannelImpl implements AutoCloseable {
     private boolean dependency = false;
 
     public Optional<Blocklist> blocklist = Optional.empty();
+    private ChannelManifestCoordinate resolvedCoordinate;
 
     public ChannelManifest getManifest() {
         return channelManifest;
@@ -78,8 +82,11 @@ class ChannelImpl implements AutoCloseable {
 
         resolver = factory.create(channelDefinition.getRepositories());
 
+        final Channel.Builder resolvedChannelBuilder = new Channel.Builder(channelDefinition);
         if (channelDefinition.getManifestCoordinate() != null) {
-            channelManifest = resolveManifest(channelDefinition.getManifestCoordinate());
+            final ChannelManifestCoordinate coordinate = resolveManifestVersion(channelDefinition);
+            resolvedChannelBuilder.setManifestCoordinate(coordinate);
+            channelManifest = resolveManifest(coordinate);
         } else {
             channelManifest = new ChannelManifest(null, null, null, Collections.emptyList());
         }
@@ -94,12 +101,17 @@ class ChannelImpl implements AutoCloseable {
         }
 
         if (channelDefinition.getBlocklistCoordinate() != null) {
-            BlocklistCoordinate blocklistCoordinate = channelDefinition.getBlocklistCoordinate();
-            final List<URL> urls = resolver.resolveChannelMetadata(List.of(blocklistCoordinate));
-            this.blocklist = urls.stream()
-                    .map(Blocklist::from)
-                    .findFirst();
+            BlocklistCoordinate blocklistCoordinate = resolveBlocklistVersion(channelDefinition);
+            if (blocklistCoordinate != null) {
+                resolvedChannelBuilder.setBlocklistCoordinate(blocklistCoordinate);
+                final List<URL> urls = resolver.resolveChannelMetadata(List.of(blocklistCoordinate));
+                this.blocklist = urls.stream()
+                        .map(Blocklist::from)
+                        .findFirst();
+            }
         }
+
+        this.resolvedChannel = resolvedChannelBuilder.build();
     }
 
     private ChannelImpl findRequiredChannel(MavenVersionsResolver.Factory factory, List<ChannelImpl> channels, ManifestRequirement manifestRequirement) {
@@ -179,8 +191,12 @@ class ChannelImpl implements AutoCloseable {
         return dependency;
     }
 
-    Channel getChannelDefinition() {
-        return channelDefinition;
+    Channel getResolvedChannelDefinition() {
+        return resolvedChannel;
+    }
+
+    public Blocklist getBlocklist() {
+        return blocklist.orElse(null);
     }
 
     static class ResolveLatestVersionResult {
@@ -193,8 +209,79 @@ class ChannelImpl implements AutoCloseable {
         }
     }
 
+    private Set<Repository> attemptedRepositories() {
+        return new HashSet<>(channelDefinition.getRepositories());
+    }
+
+    private ChannelManifestCoordinate resolveManifestVersion(Channel baseDefinition) {
+        final ChannelManifestCoordinate manifestCoordinate = baseDefinition.getManifestCoordinate();
+
+        // if we already have a version or it is a URL manifest, return it
+        if (manifestCoordinate.getUrl() != null || manifestCoordinate.getMaven().getVersion() != null) {
+            return manifestCoordinate;
+        }
+
+        final Set<String> allVersions = resolver.getAllVersions(
+                manifestCoordinate.getGroupId(),
+                manifestCoordinate.getArtifactId(),
+                manifestCoordinate.getExtension(),
+                manifestCoordinate.getClassifier()
+        );
+        Optional<String> latestVersion = VersionMatcher.getLatestVersion(allVersions);
+        String version = latestVersion.orElseThrow(() ->
+                new ArtifactTransferException(String.format("Unable to resolve the latest version of channel metadata %s:%s", manifestCoordinate.getGroupId(), manifestCoordinate.getArtifactId()),
+                        singleton(new ArtifactCoordinate(manifestCoordinate.getGroupId(), manifestCoordinate.getArtifactId(), manifestCoordinate.getExtension(), manifestCoordinate.getClassifier(), "")),
+                        attemptedRepositories()));
+
+        return new ChannelManifestCoordinate(manifestCoordinate.getGroupId(), manifestCoordinate.getArtifactId(), version);
+
+    }
+
+    private BlocklistCoordinate resolveBlocklistVersion(Channel baseDefinition) {
+        final BlocklistCoordinate blocklistCoordinate = baseDefinition.getBlocklistCoordinate();
+
+        if (blocklistCoordinate == null) {
+            return null;
+        }
+
+        // if we already have a version or it is a URL blocklist, return it
+        if (blocklistCoordinate.getUrl() != null || blocklistCoordinate.getMaven().getVersion() != null) {
+            return blocklistCoordinate;
+        }
+
+        final Set<String> allVersions = resolver.getAllVersions(
+                blocklistCoordinate.getGroupId(),
+                blocklistCoordinate.getArtifactId(),
+                blocklistCoordinate.getExtension(),
+                blocklistCoordinate.getClassifier()
+        );
+        Optional<String> latestVersion = VersionMatcher.getLatestVersion(allVersions);
+
+        // different from manifest resolution. If we were not able to resolve the blocklist, we assume it doesn't exist (yet) and
+        // we proceed without blocklist
+        return latestVersion
+                .map(v->new BlocklistCoordinate(blocklistCoordinate.getGroupId(), blocklistCoordinate.getArtifactId(), v))
+                .orElse(null);
+    }
+
     private ChannelManifest resolveManifest(ChannelManifestCoordinate manifestCoordinate) throws UnresolvedMavenArtifactException {
-        return resolver.resolveChannelMetadata(List.of(manifestCoordinate))
+        if (manifestCoordinate.getUrl() == null && manifestCoordinate.getMaven().getVersion() == null) {
+            final Set<String> allVersions = resolver.getAllVersions(
+                    manifestCoordinate.getGroupId(),
+                    manifestCoordinate.getArtifactId(),
+                    manifestCoordinate.getExtension(),
+                    manifestCoordinate.getClassifier()
+                    );
+            Optional<String> latestVersion = VersionMatcher.getLatestVersion(allVersions);
+            String version = latestVersion.orElseThrow(() ->
+                    new ArtifactTransferException(String.format("Unable to resolve the latest version of channel metadata %s:%s", manifestCoordinate.getGroupId(), manifestCoordinate.getArtifactId()),
+                            singleton(new ArtifactCoordinate(manifestCoordinate.getGroupId(), manifestCoordinate.getArtifactId(), manifestCoordinate.getExtension(), manifestCoordinate.getClassifier(), "")),
+                            attemptedRepositories()));
+            resolvedCoordinate = new ChannelManifestCoordinate(manifestCoordinate.getGroupId(), manifestCoordinate.getArtifactId(), version);
+        } else {
+            resolvedCoordinate = manifestCoordinate;
+        }
+        return resolver.resolveChannelMetadata(List.of(resolvedCoordinate))
                 .stream()
                 .map(ChannelManifestMapper::from)
                 .findFirst().orElseThrow();
@@ -248,7 +335,7 @@ class ChannelImpl implements AutoCloseable {
                         return Optional.of(new ResolveLatestVersionResult(latestMetadataVersion, this));
                     } catch (NoStreamFoundException e) {
                         LOG.debugf(e, "Metadata resolution for %s:%s failed in channel %s",
-                                groupId, artifactId, this.getChannelDefinition().getName());
+                                groupId, artifactId, this.getResolvedChannelDefinition().getName());
                         return Optional.empty();
                     }
                 case MAVEN_RELEASE:
@@ -260,7 +347,7 @@ class ChannelImpl implements AutoCloseable {
                         return Optional.of(new ResolveLatestVersionResult(releaseMetadataVersion, this));
                     } catch (NoStreamFoundException e) {
                         LOG.debugf(e, "Metadata resolution for %s:%s failed in channel %s",
-                                groupId, artifactId, this.getChannelDefinition().getName());
+                                groupId, artifactId, this.getResolvedChannelDefinition().getName());
                         return Optional.empty();
                     }
                 default:
