@@ -28,7 +28,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -357,6 +359,63 @@ public class ChannelSessionInitTestCase {
                         .build()
         );
         assertThrows(RuntimeException.class, () -> new ChannelSession(channels, factory));
+    }
+
+    @Test
+    public void getVersionOfResolvedManifest() throws Exception {
+        final MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        when(factory.create(any())).thenReturn(resolver);
+
+        final ChannelManifest requiredManifest = new ManifestBuilder()
+                .setId("manifest-one")
+                .build();
+        mockManifest(resolver, requiredManifest, "test.channels:base-manifest:1.0.0");
+        when(resolver.getAllVersions("test.channels", "base-manifest", ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER))
+                .thenReturn(Set.of("1.0.0"));
+
+        final List<Channel> channels = List.of(new Channel.Builder()
+                .setName("channel one")
+                .addRepository("test", "test")
+                .setManifestCoordinate("test.channels", "base-manifest")
+                .build());
+        try (ChannelSession channelSession = new ChannelSession(channels, factory)) {
+            assertThat(channelSession.getRuntimeChannels())
+                    .map(RuntimeChannel::getChannelDefinition)
+                    .map(Channel::getManifestCoordinate)
+                    .map(ChannelManifestCoordinate::getVersion)
+                    .containsOnly("1.0.0");
+
+        }
+    }
+
+    @Test
+    public void getVersionOfResolvedBlocklist() throws Exception {
+        final MavenVersionsResolver.Factory factory = mock(MavenVersionsResolver.Factory.class);
+        MavenVersionsResolver resolver = mock(MavenVersionsResolver.class);
+        when(factory.create(any())).thenReturn(resolver);
+
+        final ChannelManifest requiredManifest = new ManifestBuilder()
+                .setId("manifest-one")
+                .build();
+        mockManifest(resolver, requiredManifest, "test.channels:base-manifest:1.0.0");
+        when(resolver.getAllVersions("test.channels", "blocklist", BlocklistCoordinate.EXTENSION, BlocklistCoordinate.CLASSIFIER))
+                .thenReturn(Set.of("1.0.0"));
+
+        final List<Channel> channels = List.of(new Channel.Builder()
+                .setName("channel one")
+                .addRepository("test", "test")
+                .setManifestCoordinate("test.channels", "base-manifest", "1.0.0")
+                .setBlocklistCoordinate(new BlocklistCoordinate("test.channels", "blocklist"))
+                .build());
+        try (ChannelSession channelSession = new ChannelSession(channels, factory)) {
+            assertThat(channelSession.getRuntimeChannels())
+                    .map(RuntimeChannel::getChannelDefinition)
+                    .map(Channel::getBlocklistCoordinate)
+                    .map(BlocklistCoordinate::getVersion)
+                    .containsOnly("1.0.0");
+
+        }
     }
 
     private void mockManifest(MavenVersionsResolver resolver, ChannelManifest manifest, String gav) throws IOException {
