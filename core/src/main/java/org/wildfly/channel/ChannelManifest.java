@@ -228,6 +228,7 @@ public class ChannelManifest {
         private String schemaVersion;
         private String name;
         private String id;
+        private String logicalVersion;
         private String description;
         private List<Stream> streams;
         private List<ManifestRequirement> manifestRequirements;
@@ -235,7 +236,9 @@ public class ChannelManifest {
         public ChannelManifest build() {
             return new ChannelManifest(
                     schemaVersion,
+                    name,
                     id,
+                    logicalVersion,
                     description,
                     manifestRequirements,
                     streams);
@@ -254,6 +257,10 @@ public class ChannelManifest {
         public Builder setId(String id) {
             this.id = id;
             return this;
+        }
+
+        public void setLogicalVersion(String logicalVersion) {
+            this.logicalVersion = logicalVersion;
         }
 
         public Builder setDescription(String description) {
