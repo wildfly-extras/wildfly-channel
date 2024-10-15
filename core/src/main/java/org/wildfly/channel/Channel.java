@@ -231,14 +231,14 @@ public class Channel {
 
         public Builder(Channel from) {
             this.name = from.getName();
-            this.repositories = new ArrayList<>(from.getRepositories());
+            this.repositories = from.getRepositories() == null ? null : new ArrayList<>(from.getRepositories());
             this.manifestCoordinate = from.getManifestCoordinate();
             this.blocklistCoordinate = from.getBlocklistCoordinate();
             this.strategy = from.getNoStreamStrategy();
             this.description = from.getDescription();
             this.vendor = from.getVendor();
             this.gpgCheck = from._isGpgCheck();
-            this.gpgUrls = new ArrayList<>(from.getGpgUrls());
+            this.gpgUrls = from.getGpgUrls() == null ? null : new ArrayList<>(from.getGpgUrls());
         }
 
         public Channel build() {

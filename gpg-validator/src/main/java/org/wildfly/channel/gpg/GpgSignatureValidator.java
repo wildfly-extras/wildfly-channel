@@ -105,7 +105,7 @@ public class GpgSignatureValidator implements SignatureValidator {
             return SignatureResult.noSignature(artifactId);
         }
 
-        final String keyID = Long.toHexString(pgpSignature.getKeyID()).toUpperCase(Locale.ROOT);
+        final String keyID = getKeyID(pgpSignature);
         if (LOG.isTraceEnabled()) {
             LOG.tracef("The signature was created using public key %s.", keyID);
         }
@@ -134,7 +134,7 @@ public class GpgSignatureValidator implements SignatureValidator {
                 }
             } catch (PGPException | IOException e) {
                 throw new SignatureException("Unable to parse the certificate downloaded from keyserver", e,
-                        SignatureResult.noSignature(artifactId));
+                        SignatureResult.noMatchingCertificate(artifactId, keyID));
             }
 
             if (key == null) {
@@ -146,7 +146,7 @@ public class GpgSignatureValidator implements SignatureValidator {
                         pgpPublicKeys = downloadPublicKey(gpgUrl);
                     } catch (IOException e) {
                         throw new SignatureException("Unable to parse the certificate downloaded from " + gpgUrl, e,
-                                SignatureResult.noSignature(artifactId));
+                                SignatureResult.noMatchingCertificate(artifactId, keyID));
                     }
                     if (pgpPublicKeys.stream().anyMatch(k -> k.getKeyID() == pgpSignature.getKeyID())) {
                         key = pgpPublicKeys.stream().filter(k -> k.getKeyID() == pgpSignature.getKeyID()).findFirst().get();
@@ -193,7 +193,7 @@ public class GpgSignatureValidator implements SignatureValidator {
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
         } catch (PGPException e) {
             throw new SignatureException("Unable to verify the signature using key " + keyID, e,
-                    SignatureResult.invalid(artifactId));
+                    SignatureResult.invalid(artifactId, keyID));
         }
         final SignatureResult result = verifyFile(artifactId, artifactStream, pgpSignature);
 
@@ -241,7 +241,7 @@ public class GpgSignatureValidator implements SignatureValidator {
         final Iterator<PGPSignature> subKeys = publicKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING);
         while (subKeys.hasNext()) {
             final PGPSignature subKeySignature = subKeys.next();
-            final PGPPublicKey subKey = keystore.get(Long.toHexString(subKeySignature.getKeyID()).toUpperCase(Locale.ROOT));
+            final PGPPublicKey subKey = keystore.get(getKeyID(subKeySignature));
             if (subKey.hasRevocation()) {
                 if (LOG.isTraceEnabled()) {
                     LOG.tracef("Sub-key %s has been revoked.", Long.toHexString(subKey.getKeyID()).toUpperCase(Locale.ROOT));
@@ -285,14 +285,18 @@ public class GpgSignatureValidator implements SignatureValidator {
         // Verify the signature
         try {
             if (!pgpSignature.verify()) {
-                return SignatureResult.invalid(artifactSource);
+                return SignatureResult.invalid(artifactSource, getKeyID(pgpSignature));
             } else {
                 return SignatureResult.ok();
             }
         } catch (PGPException e) {
             throw new SignatureException("Unable to verify the file signature", e,
-                    SignatureResult.invalid(artifactSource));
+                    SignatureResult.invalid(artifactSource, getKeyID(pgpSignature)));
         }
+    }
+
+    private static String getKeyID(PGPSignature pgpSignature) {
+        return Long.toHexString(pgpSignature.getKeyID()).toUpperCase(Locale.ROOT);
     }
 
     private static PGPSignature readSignatureFile(InputStream signatureStream) throws IOException {

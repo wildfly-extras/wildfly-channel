@@ -48,19 +48,30 @@ public interface SignatureValidator {
      */
     class SignatureException extends RuntimeException {
         private final SignatureResult signatureResult;
+        private String missingSignature;
 
         public SignatureException(String message, Throwable cause, SignatureResult signatureResult) {
-            super(message, cause);
+            super(buildErrorMessage(message, signatureResult), cause);
             this.signatureResult = signatureResult;
+            this.missingSignature = signatureResult.getKeyId();
         }
 
         public SignatureException(String message, SignatureResult signatureResult) {
-            super(message);
+            super(buildErrorMessage(message, signatureResult));
             this.signatureResult = signatureResult;
+            this.missingSignature = signatureResult.getKeyId();
+        }
+
+        private static String buildErrorMessage(String message, SignatureResult signatureResult) {
+            return String.format("%s: %s%s", message, signatureResult.getResult(), signatureResult.getMessage() == null ? "" : signatureResult.getResult());
         }
 
         public SignatureResult getSignatureResult() {
             return signatureResult;
+        }
+
+        public String getMissingSignature() {
+            return missingSignature;
         }
     }
 }

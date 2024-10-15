@@ -50,8 +50,8 @@ public class SignatureResult {
         return new SignatureResult(Result.NO_SIGNATURE, resource, null, null);
     }
 
-    public static SignatureResult invalid(ArtifactIdentifier resource) {
-        return new SignatureResult(Result.INVALID, resource, null, null);
+    public static SignatureResult invalid(ArtifactIdentifier resource, String keyID) {
+        return new SignatureResult(Result.INVALID, resource, keyID, null);
     }
 
     public enum Result {OK, NO_MATCHING_CERT, REVOKED, EXPIRED, NO_SIGNATURE, INVALID;}

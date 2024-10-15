@@ -92,7 +92,7 @@ class SignedVersionResolverWrapperTest {
         when(resolver.resolveArtifact("test.channels", "base-manifest",
                 ChannelManifest.EXTENSION + SIGNATURE_FILE_SUFFIX, ChannelManifest.CLASSIFIER, "1.0.0"))
                 .thenReturn(tempDir.resolve("test-manifest.yaml.asc").toFile());
-        when(signatureValidator.validateSignature(any(), any(), any(), any())).thenReturn(SignatureResult.invalid(mock(ArtifactIdentifier.class)));
+        when(signatureValidator.validateSignature(any(), any(), any(), any())).thenReturn(SignatureResult.invalid(mock(ArtifactIdentifier.class), "abcd"));
         assertThrows(SignatureValidator.SignatureException.class,
                 () -> signedResolver.resolveChannelMetadata(List.of(new ChannelManifestCoordinate("test.channels", "base-manifest", "1.0.0"))));
     }
@@ -154,7 +154,7 @@ class SignedVersionResolverWrapperTest {
                 ARTIFACT.classifier, ARTIFACT.version))
                 .thenReturn(signatureFile);
         when(signatureValidator.validateSignature(eq(ARTIFACT),
-                any(), any(), any())).thenReturn(SignatureResult.invalid(ARTIFACT));
+                any(), any(), any())).thenReturn(SignatureResult.invalid(ARTIFACT, "abcd"));
 
         assertThrows(SignatureValidator.SignatureException.class, () -> signedResolver.resolveArtifact(ARTIFACT.groupId,
                 ARTIFACT.artifactId, ARTIFACT.extension, ARTIFACT.classifier, ARTIFACT.version));
