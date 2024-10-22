@@ -137,6 +137,16 @@ public class ChannelSession implements AutoCloseable {
     }
 
     /**
+     * Return the list of manifests configured in this channel session.
+     * @return The list of manifests.
+     */
+    public List<ChannelManifest> getManifests() {
+        return channels.stream()
+                .map(p -> p.getManifest())
+                .collect(Collectors.toUnmodifiableList());
+    }
+    
+    /**
      * Resolve a list of Maven artifacts according to the session's channels.
      * <p>
      * In order to find the stream corresponding to the Maven artifact, the channels are searched depth-first, starting
