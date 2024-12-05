@@ -29,8 +29,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.wildfly.channel.ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
 
@@ -114,5 +116,17 @@ public class ChannelManifestTestCase {
         ManifestRequirement requirement = channelManifest.getManifestRequirements().get(0);
         assertEquals("org.foo.channels", requirement.getGroupId());
         assertEquals("my-required-channel", requirement.getArtifactId());
+    }
+
+    @Test
+    public void manifestStreamsContainsChecksStreamVersion() {
+        final ChannelManifest manifest = new ChannelManifest.Builder()
+                .addStreams(new Stream("a", "b", "1"))
+                .build();
+
+        assertTrue(manifest.getStreams().contains(new Stream("a", "b", "1")));
+        assertFalse(manifest.getStreams().contains(new Stream("a", "b", "2")));
+        assertFalse(manifest.getStreams().contains(new Stream("b", "b", "1")));
+        assertFalse(manifest.getStreams().contains(new Stream("b", "b", Pattern.compile(".*"))));
     }
 }
