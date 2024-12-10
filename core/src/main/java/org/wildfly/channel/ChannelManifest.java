@@ -38,6 +38,9 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 /**
  * Java representation of a Channel Manifest.
  */
+@JsonPropertyOrder(
+        {"schemaVersion", "name", "id", "description", "logicalVersion", "streams"}
+)
 public class ChannelManifest {
 
     public static final String CLASSIFIER="manifest";
@@ -225,7 +228,7 @@ public class ChannelManifest {
     }
 
     public static class Builder {
-        private String schemaVersion;
+        private String schemaVersion = ChannelManifestMapper.CURRENT_SCHEMA_VERSION;
         private String name;
         private String id;
         private String logicalVersion;
