@@ -162,7 +162,7 @@ public class Stream implements Comparable<Stream> {
     }
 
     /*
-     * Sort streams by groupId and then artifactId
+     * Sort streams by groupId, artifactId and finally version or versionPattern.
      */
     @Override
     public int compareTo(Stream other) {
@@ -170,7 +170,17 @@ public class Stream implements Comparable<Stream> {
         if (groupIdComp != 0) {
             return groupIdComp;
         }
-        return this.artifactId.compareTo(other.artifactId);
+        final int artifactIdComp = this.artifactId.compareTo(other.artifactId);
+        if (artifactIdComp != 0) {
+            return artifactIdComp;
+        }
+        if (this.version != null && other.getVersion() != null) {
+            return version.compareTo(other.getVersion());
+        }
+        if (this.versionPattern != null && other.getVersionPattern() != null) {
+            return versionPattern.pattern().compareTo(other.getVersionPattern().pattern());
+        }
+        return 0;
     }
 
     @Override
