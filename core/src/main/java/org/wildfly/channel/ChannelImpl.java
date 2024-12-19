@@ -80,7 +80,7 @@ class ChannelImpl implements AutoCloseable {
             return;
         }
 
-        resolver = factory.create(channelDefinition.getRepositories());
+        resolver = factory.create(channelDefinition);
 
         final Channel.Builder resolvedChannelBuilder = new Channel.Builder(channelDefinition);
         if (channelDefinition.getManifestCoordinate() != null) {
@@ -149,9 +149,16 @@ class ChannelImpl implements AutoCloseable {
             version = latest.orElseThrow(() -> new RuntimeException(String.format("Can not determine the latest version for Maven artifact %s:%s:%s:%s",
                     groupId, artifactId, ChannelManifest.EXTENSION, ChannelManifest.CLASSIFIER)));
         }
-        final ChannelImpl requiredChannel = new ChannelImpl(new Channel(null, null, null, channelDefinition.getRepositories(),
-                new ChannelManifestCoordinate(groupId, artifactId, version), null,
-                Channel.NoStreamStrategy.NONE));
+        final Channel requiredChannelDefinition = new Channel.Builder(channelDefinition)
+                .setName(null)
+                .setDescription(null)
+                .setVendor(null)
+                .setManifestCoordinate(groupId, artifactId, version)
+                .setResolveStrategy(Channel.NoStreamStrategy.NONE)
+                .build();
+
+        final ChannelImpl requiredChannel = new ChannelImpl(requiredChannelDefinition);
+
         try {
             requiredChannel.init(factory, channels);
         } catch (UnresolvedMavenArtifactException e) {

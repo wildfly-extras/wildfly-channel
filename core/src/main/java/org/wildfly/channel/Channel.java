@@ -47,6 +47,8 @@ public class Channel {
     private BlocklistCoordinate blocklistCoordinate;
     private ChannelManifestCoordinate manifestCoordinate;
     private NoStreamStrategy noStreamStrategy = NoStreamStrategy.NONE;
+    private Boolean gpgCheck;
+    private List<String> gpgUrls;
 
     // no-arg constructor for maven plugins
     public Channel() {
@@ -56,7 +58,7 @@ public class Channel {
     /**
      * Representation of a Channel resource using the current schema version.
      *
-     * @see #Channel(String, String, String, Vendor, List, ChannelManifestCoordinate, BlocklistCoordinate, NoStreamStrategy)
+     * @see #Channel(String, String, String, Vendor, List, ChannelManifestCoordinate, BlocklistCoordinate, NoStreamStrategy, Boolean, String)
      */
     public Channel(String name,
                    String description,
@@ -72,7 +74,8 @@ public class Channel {
                 repositories,
                 manifestCoordinate,
                 blocklistCoordinate,
-                noStreamStrategy);
+                noStreamStrategy,
+                null, null);
     }
 
     @JsonCreator
@@ -84,7 +87,9 @@ public class Channel {
                                  @JsonInclude(NON_EMPTY) List<Repository> repositories,
                    @JsonProperty(value = "manifest") ChannelManifestCoordinate manifestCoordinate,
                    @JsonProperty(value = "blocklist") @JsonInclude(NON_EMPTY) BlocklistCoordinate blocklistCoordinate,
-                   @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy) {
+                   @JsonProperty(value = "resolve-if-no-stream") NoStreamStrategy noStreamStrategy,
+                   @JsonProperty(value = "gpg-check") Boolean gpgCheck,
+                   @JsonProperty(value = "gpg-urls") List<String> gpgUrls) {
         this.schemaVersion = schemaVersion;
         this.name = name;
         this.description = description;
@@ -93,6 +98,8 @@ public class Channel {
         this.blocklistCoordinate = blocklistCoordinate;
         this.manifestCoordinate = manifestCoordinate;
         this.noStreamStrategy = (noStreamStrategy != null) ? noStreamStrategy: NoStreamStrategy.NONE;
+        this.gpgCheck = gpgCheck;
+        this.gpgUrls = (gpgUrls != null) ? gpgUrls : emptyList();
     }
 
     public String getSchemaVersion() {
@@ -135,6 +142,25 @@ public class Channel {
     @JsonProperty("resolve-if-no-stream")
     public NoStreamStrategy getNoStreamStrategy() {
         return noStreamStrategy;
+    }
+
+    // using a private method to return a Boolean for serializing
+    // this way channels without gpg-check field can be read/written without modifications
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("gpg-check")
+    private Boolean _isGpgCheck() {
+        return gpgCheck;
+    }
+
+    @JsonIgnore
+    public boolean isGpgCheck() {
+        return gpgCheck!=null?gpgCheck:false;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @JsonProperty("gpg-urls")
+    public List<String> getGpgUrls() {
+        return gpgUrls;
     }
 
     /**
@@ -197,22 +223,26 @@ public class Channel {
         private NoStreamStrategy strategy;
         private String description;
         private Vendor vendor;
+        private Boolean gpgCheck;
+        private List<String> gpgUrls;
 
         public Builder() {
         }
 
         public Builder(Channel from) {
             this.name = from.getName();
-            this.repositories = new ArrayList<>(from.getRepositories());
+            this.repositories = from.getRepositories() == null ? null : new ArrayList<>(from.getRepositories());
             this.manifestCoordinate = from.getManifestCoordinate();
             this.blocklistCoordinate = from.getBlocklistCoordinate();
             this.strategy = from.getNoStreamStrategy();
             this.description = from.getDescription();
             this.vendor = from.getVendor();
+            this.gpgCheck = from._isGpgCheck();
+            this.gpgUrls = from.getGpgUrls() == null ? null : new ArrayList<>(from.getGpgUrls());
         }
 
         public Channel build() {
-            return new Channel(name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy);
+            return new Channel(ChannelMapper.CURRENT_SCHEMA_VERSION, name, description, vendor, repositories, manifestCoordinate, blocklistCoordinate, strategy, gpgCheck, gpgUrls);
         }
 
         public Builder setName(String name) {
@@ -276,6 +306,19 @@ public class Channel {
 
         public Builder setResolveStrategy(NoStreamStrategy strategy) {
             this.strategy = strategy;
+            return this;
+        }
+
+        public Builder setGpgCheck(boolean gpgCheck) {
+            this.gpgCheck = gpgCheck;
+            return this;
+        }
+
+        public Builder addGpgUrl(String gpgUrl) {
+            if (this.gpgUrls == null) {
+                this.gpgUrls = new ArrayList<>();
+            }
+            this.gpgUrls.add(gpgUrl);
             return this;
         }
     }
