@@ -35,7 +35,6 @@ public class ChannelMetadataCoordinate {
     private String extension;
 
     private URL url;
-    protected URL signatureUrl;
 
     protected ChannelMetadataCoordinate() {
     }
@@ -56,12 +55,6 @@ public class ChannelMetadataCoordinate {
     public ChannelMetadataCoordinate(URL url) {
         this(null, null, null, null, null, url);
         requireNonNull(url);
-    }
-
-    public ChannelMetadataCoordinate(URL url, URL signatureUrl) {
-        this(null, null, null, null, null, url);
-        requireNonNull(url);
-        this.signatureUrl = signatureUrl;
     }
 
     private ChannelMetadataCoordinate(String groupId, String artifactId, String version, String classifier, String extension, URL url) {
@@ -99,10 +92,6 @@ public class ChannelMetadataCoordinate {
 
     public String getExtension() {
         return extension;
-    }
-
-    public URL getSignatureUrl() {
-        return signatureUrl;
     }
 
     @Override

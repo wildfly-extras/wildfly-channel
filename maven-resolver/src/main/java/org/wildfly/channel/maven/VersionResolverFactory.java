@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,10 +62,8 @@ import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelMetadataCoordinate;
 import org.wildfly.channel.Repository;
 import org.wildfly.channel.NoStreamFoundException;
-import org.wildfly.channel.SignedVersionResolverWrapper;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.spi.MavenVersionsResolver;
-import org.wildfly.channel.spi.SignatureValidator;
 import org.wildfly.channel.version.VersionMatcher;
 import org.jboss.logging.Logger;
 
@@ -91,44 +91,27 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
     private final RepositorySystem system;
     private final RepositorySystemSession session;
     private final Function<Repository, RemoteRepository> repositoryFactory;
-    private SignatureValidator signatureValidator;
 
     public VersionResolverFactory(RepositorySystem system,
                                   RepositorySystemSession session) {
-        this(system, session, null);
+        this(system, session, DEFAULT_REPOSITORY_MAPPER);
     }
-
     public VersionResolverFactory(RepositorySystem system,
                                   RepositorySystemSession session,
-                                  SignatureValidator signatureValidator) {
-        this(system, session, signatureValidator, DEFAULT_REPOSITORY_MAPPER);
-    }
-
-    public VersionResolverFactory(RepositorySystem system,
-                                  RepositorySystemSession session,
-                                  SignatureValidator signatureValidator,
                                   Function<Repository, RemoteRepository> repositoryFactory) {
         this.system = system;
         this.session = session;
-        this.signatureValidator = signatureValidator;
         this.repositoryFactory = repositoryFactory;
     }
 
     @Override
-    public MavenVersionsResolver create(Channel channel) {
-        Objects.requireNonNull(channel);
+    public MavenVersionsResolver create(Collection<Repository> repositories) {
+        Objects.requireNonNull(repositories);
 
-        final List<RemoteRepository> mvnRepositories = channel.getRepositories().stream()
+        final List<RemoteRepository> mvnRepositories = repositories.stream()
                 .map(repositoryFactory::apply)
                 .collect(Collectors.toList());
-        if (channel.isGpgCheck()) {
-            if (signatureValidator == null) {
-                throw new RuntimeException("The channel %s requires GPG verification, but the signature validator is not configured.");
-            }
-            return new SignedVersionResolverWrapper(create(mvnRepositories), channel.getRepositories(), signatureValidator, channel.getGpgUrls());
-        } else {
-            return create(mvnRepositories);
-        }
+        return create(mvnRepositories);
     }
 
     private MavenResolverImpl create(List<RemoteRepository> mvnRepositories) {
@@ -190,8 +173,7 @@ public class VersionResolverFactory implements MavenVersionsResolver.Factory {
         }
 
         @Override
-        public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version)
-                throws ArtifactTransferException, SignatureValidator.SignatureException {
+        public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws ArtifactTransferException {
             requireNonNull(groupId);
             requireNonNull(artifactId);
             requireNonNull(version);

@@ -45,23 +45,12 @@ public class ChannelManifestCoordinate extends ChannelMetadataCoordinate {
         super(url);
     }
 
-    public ChannelManifestCoordinate(URL url, URL signatureUrl) {
-        super(url, signatureUrl);
-    }
-
     public ChannelManifestCoordinate() {
         super(ChannelManifest.CLASSIFIER, ChannelManifest.EXTENSION);
     }
 
-    public static ChannelManifestCoordinate create(String url,
-                                                   MavenCoordinate gav) throws MalformedURLException {
-        return create(url, null, gav);
-    }
-
     @JsonCreator
-    public static ChannelManifestCoordinate create(@JsonProperty(value = "url") String url,
-                                                   @JsonProperty(value = "signature-url") String signatureUrl,
-                                                   @JsonProperty(value = "maven") MavenCoordinate gav) throws MalformedURLException {
+    public static ChannelManifestCoordinate create(@JsonProperty(value = "url") String url, @JsonProperty(value = "maven") MavenCoordinate gav) throws MalformedURLException {
         if (gav != null) {
             if (gav.getVersion() == null || gav.getVersion().isEmpty()) {
                 return new ChannelManifestCoordinate(gav.getGroupId(), gav.getArtifactId());
@@ -69,7 +58,7 @@ public class ChannelManifestCoordinate extends ChannelMetadataCoordinate {
                 return new ChannelManifestCoordinate(gav.getGroupId(), gav.getArtifactId(), gav.getVersion());
             }
         } else {
-            return new ChannelManifestCoordinate(new URL(url), signatureUrl == null ? null : new URL(signatureUrl));
+            return new ChannelManifestCoordinate(new URL(url));
         }
     }
 
@@ -91,11 +80,5 @@ public class ChannelManifestCoordinate extends ChannelMetadataCoordinate {
     @Override
     public URL getUrl() {
         return super.getUrl();
-    }
-
-    @JsonProperty(value = "signature-url")
-    @JsonInclude(NON_NULL)
-    public URL getSignatureUrl() {
-        return super.getSignatureUrl();
     }
 }

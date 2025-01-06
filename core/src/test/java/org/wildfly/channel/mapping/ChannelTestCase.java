@@ -18,7 +18,6 @@ package org.wildfly.channel.mapping;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,15 +98,5 @@ public class ChannelTestCase {
         assertEquals("blocklist", blocklist.getArtifactId());
         assertEquals("org.wildfly", blocklist.getGroupId());
         assertEquals("1.2.3",  blocklist.getVersion());
-    }
-
-    @Test
-    public void channelWithGpgCheck() throws IOException {
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        URL file = tccl.getResource("channels/channel-with-gpg-check.yaml");
-
-        Channel channel = ChannelMapper.from(file);
-
-        assertTrue(channel.isGpgCheck());
     }
 }

@@ -26,11 +26,6 @@ public class InvalidChannelMetadataException extends RuntimeException {
         this.messages = messages;
     }
 
-    public InvalidChannelMetadataException(String message, List<String> messages, Exception cause) {
-        super(message, cause);
-        this.messages = messages;
-    }
-
     public List<String> getValidationMessages() {
         return messages;
     }
