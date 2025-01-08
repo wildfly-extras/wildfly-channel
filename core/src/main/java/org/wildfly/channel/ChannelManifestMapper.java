@@ -25,6 +25,8 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import org.jboss.logging.Logger;
+import org.wildfly.channel.version.VersionMatcher;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,7 +37,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -48,7 +52,7 @@ import static java.util.Objects.requireNonNull;
  *
  * YAML input is validated against a schema.
  */
-public class ChannelManifestMapper {
+public class ChannelManifestMapper extends VersionedMapper {
 
     public static final String SCHEMA_VERSION_1_0_0 = "1.0.0";
     public static final String SCHEMA_VERSION_1_1_0 = "1.1.0";
@@ -75,7 +79,7 @@ public class ChannelManifestMapper {
         if (version == null || version.isEmpty()) {
             throw new InvalidChannelMetadataException("Invalid Manifest", List.of("The manifest does not specify a schemaVersion."));
         }
-        JsonSchema schema = SCHEMAS.get(version);
+        JsonSchema schema = getSchema(version, SCHEMAS);
         if (schema == null) {
             throw new InvalidChannelMetadataException("Invalid Manifest", List.of("Unknown schema version " + schemaVersion));
         }
