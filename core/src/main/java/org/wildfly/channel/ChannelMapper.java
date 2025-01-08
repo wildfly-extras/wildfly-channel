@@ -49,7 +49,7 @@ import org.wildfly.channel.proxy.HttpProxy;
  *
  * YAML input is validated against a schema.
  */
-public class ChannelMapper {
+public class ChannelMapper extends VersionedMapper {
 
     public static final String SCHEMA_VERSION_1_0_0 = "1.0.0";
     public static final String SCHEMA_VERSION_2_0_0 = "2.0.0";
@@ -80,11 +80,12 @@ public class ChannelMapper {
         JsonNode schemaVersion = node.path("schemaVersion");
         String version = schemaVersion.asText();
         if (version == null || version.isEmpty()) {
-            throw new InvalidChannelMetadataException("Invalid Manifest", List.of("The manifest does not specify a schemaVersion."));
+            throw new InvalidChannelMetadataException("Invalid Channel", List.of("The channel definition does not specify a schemaVersion."));
         }
-        JsonSchema schema = SCHEMAS.get(version);
+
+        final JsonSchema schema = getSchema(version, SCHEMAS);
         if (schema == null) {
-            throw new InvalidChannelMetadataException("Invalid Manifest", List.of("Unknown schema version " + schemaVersion));
+            throw new InvalidChannelMetadataException("Invalid Channel", List.of("Unknown schema version " + schemaVersion));
         }
         return schema;
     }

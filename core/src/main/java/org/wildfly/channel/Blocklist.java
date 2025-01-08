@@ -44,7 +44,7 @@ import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTR
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
-public class Blocklist {
+public class Blocklist extends VersionedMapper {
 
    public static final String SCHEMA_VERSION_1_0_0 = "1.0.0";
    private static final String SCHEMA_1_0_0_FILE = "org/wildfly/blocklist/v1.0.0/schema.json";
@@ -130,9 +130,9 @@ public class Blocklist {
       JsonNode schemaVersion = node.path("schemaVersion");
       String version = schemaVersion.asText();
       if (version == null || version.isEmpty()) {
-         throw new InvalidChannelMetadataException("Invalid Manifest", List.of("The manifest does not specify a schemaVersion."));
+         throw new InvalidChannelMetadataException("Invalid Blocklist", List.of("The blocklist definition does not specify a schemaVersion."));
       }
-      JsonSchema schema = SCHEMAS.get(version);
+      JsonSchema schema = getSchema(version, SCHEMAS);
       if (schema == null) {
          throw new InvalidChannelMetadataException("Invalid Manifest", List.of("Unknown schema version " + schemaVersion));
       }

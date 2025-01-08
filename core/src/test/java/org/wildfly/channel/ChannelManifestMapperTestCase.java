@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ChannelManifestMapperTestCase {
 
@@ -65,6 +66,21 @@ public class ChannelManifestMapperTestCase {
 
         Channel channel = ChannelMapper.from(file);
         assertNotNull(channel);
+    }
+
+    @Test
+    public void testReadChannelWithUnknownMicroVersionFallsBackToLatestParser() {
+        String yaml = "schemaVersion: 1.0.99999";
+
+        ChannelManifest manifest = ChannelManifestMapper.fromString(yaml);
+        assertNotNull(manifest);
+    }
+
+    @Test
+    public void testReadChannelWithUnknownMinorVersionReturnsError() {
+        String yaml = "schemaVersion: 1.999999999.0";
+
+        assertThrows(InvalidChannelMetadataException.class, ()->ChannelManifestMapper.fromString(yaml));
     }
 
     @Test
