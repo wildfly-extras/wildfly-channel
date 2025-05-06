@@ -19,3 +19,7 @@ You can build the library by running:
 ```
 mvn clean verify
 ```
+
+# Release
+
+The procedure to release the `wildfly-channel` artifacts is described in [Release-Procedure wiki page](https://github.com/wildfly-extras/wildfly-channel/wiki/Release-Procedure).
