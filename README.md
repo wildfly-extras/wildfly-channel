@@ -22,4 +22,4 @@ mvn clean verify
 
 # Release
 
-The procedure to release the `wildfly-channel` artifacts is described in [Release-Procedure wiki page](https://github.com/wildfly-extras/wildfly-channel/wiki/Release-Procedure).
+The procedure to release the `wildfly-channel` artifacts is described in the [Release-Procedure wiki page](https://github.com/wildfly-extras/wildfly-channel/wiki/Release-Procedure).
