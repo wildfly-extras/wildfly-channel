@@ -113,12 +113,11 @@ JSON Schemas are provided to validate that channels and manifests comply with th
 
 ## Channel Representation
 
-A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/v2.0.0./schema.json[corresponding JSON schema] to validate its structure.
+A channel is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/channel/v2.0.0/schema.json[corresponding JSON schema] to validate its structure.
 
-A manifest is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/manifest/v1.0.0./schema.json[corresponding JSON schema] to validate its structure.
+A manifest is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/manifest/v1.0.0/schema.json[corresponding JSON schema] to validate its structure.
 
-A blocklist is specified in the YAML language with a link:.
-./core/src/main/resources/org/wildfly/blocklist/v1.0.0./schema.json[corresponding JSON schema] to validate its structure.
+A blocklist is specified in the YAML language with a link:../core/src/main/resources/org/wildfly/blocklist/v1.0.0/schema.json[corresponding JSON schema] to validate its structure.
 
 ### Channel Actions and Responsibilities
 
