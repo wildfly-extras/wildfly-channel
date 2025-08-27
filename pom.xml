@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>47</version>
+        <version>50</version>
     </parent>
 
     <groupId>org.wildfly.channel</groupId>
@@ -13,13 +13,31 @@
     <version>1.3.0.Final-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>WildFly Channel - Parent</name>
+    <url>https://wildfly.org</url>
+
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://repository.jboss.org/licenses/apache-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <scm>
         <connection>scm:git:git@github.com:wildfly-extras/wildfly-channel.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly-extras/wildfly-channel.git</developerConnection>
         <url>https://github.com/wildfly-extras/wildfly-channel</url>
-        <tag>1.1.0.Final</tag>
+        <tag>HEAD</tag>
     </scm>
+
+        <developers>
+        <developer>
+            <id>wildfly.org</id>
+            <name>WildFly Community</name>
+            <organization>wildfly.org</organization>
+            <organizationUrl>http://wildfly.org</organizationUrl>
+        </developer>
+    </developers>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -40,6 +58,10 @@
         <version.release.plugin>3.1.1</version.release.plugin>
         <version.maven.resolver-api>1.9.22</version.maven.resolver-api>
         <version.maven.repository.metadata>3.9.9</version.maven.repository.metadata>
+
+        <!-- Repository Deployment Settings -->
+        <nexus.repository.staging>wildfly-extras-staging</nexus.repository.staging>
+        <nexus.staging.tag>wildfly-channel-${project.version}</nexus.staging.tag>
     </properties>
 
     <dependencyManagement>
