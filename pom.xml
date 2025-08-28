@@ -204,9 +204,9 @@
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagNameFormat>@{project.version}</tagNameFormat>
                     <preparationGoals>verify</preparationGoals>
-                    <pushChanges>false</pushChanges>
+                    <pushChanges>true</pushChanges>
                     <localCheckout>true</localCheckout>
-                    <remoteTagging>false</remoteTagging>
+                    <remoteTagging>true</remoteTagging>
                     <arguments>-DskipTests ${release.arguments}</arguments>
                 </configuration>
             </plugin>
