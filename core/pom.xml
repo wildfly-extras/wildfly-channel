@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>channel-core</artifactId>
+    <packaging>jar</packaging>
     <name>WildFly Channel - Core</name>
 
     <dependencies>

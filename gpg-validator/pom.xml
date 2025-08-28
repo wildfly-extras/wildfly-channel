@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>gpg-validator</artifactId>
+    <packaging>jar</packaging>
     <name>WildFly Channel - GPG Validator</name>
 
     <dependencies>

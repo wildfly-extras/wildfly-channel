@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>maven-resolver</artifactId>
+    <packaging>jar</packaging>
     <name>WildFly Channel - Maven Resolver</name>
 
     <dependencies>
