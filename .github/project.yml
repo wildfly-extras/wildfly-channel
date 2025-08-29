@@ -1,6 +1,0 @@
-name: WildFly Channels
-# Open the PR to do the PR from
-# the wildfly/wildfly-channel repository
-release:
-  current-version: 1.2.1.Final
-  next-version: 1.2.2.Final-SNAPSHOT
