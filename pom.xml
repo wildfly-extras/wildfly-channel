@@ -24,9 +24,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git@github.com:wildfly-extras/wildfly-channel.git</connection>
-        <developerConnection>scm:git:git@github.com:wildfly-extras/wildfly-channel.git</developerConnection>
-        <url>https://github.com/wildfly-extras/wildfly-channel</url>
+        <connection>scm:git:git@github.com:wildfly/wildfly-channel.git</connection>
+        <developerConnection>scm:git:git@github.com:wildfly/wildfly-channel.git</developerConnection>
+        <url>https://github.com/wildfly/wildfly-channel</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -60,7 +60,6 @@
         <version.maven.repository.metadata>3.9.9</version.maven.repository.metadata>
 
         <!-- Repository Deployment Settings -->
-        <nexus.repository.staging>wildfly-extras-staging</nexus.repository.staging>
         <nexus.staging.tag>wildfly-channel-${project.version}</nexus.staging.tag>
     </properties>
 
