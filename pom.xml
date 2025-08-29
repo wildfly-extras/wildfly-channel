@@ -60,6 +60,7 @@
         <version.maven.repository.metadata>3.9.9</version.maven.repository.metadata>
 
         <!-- Repository Deployment Settings -->
+        <nexus.repository.staging>wildfly-staging</nexus.repository.staging>
         <nexus.staging.tag>wildfly-channel-${project.version}</nexus.staging.tag>
     </properties>
 
